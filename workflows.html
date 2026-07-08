@@ -4289,7 +4289,7 @@ function ContentControls({ onNewChat, onBack, canGoBack, onPickPrompt, onPickHis
       <span className="w-px h-4 bg-slate-200 mx-0.5" />
       <button onClick={onOpenDashboardGallery}
         className="inline-flex items-center gap-1.5 text-[12.5px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-2 py-1 rounded focus-ring">
-        {I.chart}<span>Dashboard Library</span>
+        {I.chart}<span>Reports Library</span>
       </button>
       {/* Agents tab — hidden for now, re-enable by removing the "hidden" class */}
       <span className="hidden">
@@ -4306,7 +4306,7 @@ function ContentControls({ onNewChat, onBack, canGoBack, onPickPrompt, onPickHis
           <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.4"/>
           <path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
         </svg>
-        <span>My Dashboards</span>
+        <span>My Reports</span>
       </button>
       {/* Shared tab — hidden for now, re-enable by removing the "hidden" class */}
       <span className="hidden">
@@ -7659,12 +7659,12 @@ function DashboardGallery({ onClose, onPickDashboard, onNewDashboard, favoriteDa
     <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-4 px-6 py-3.5 bg-white border-b border-slate-200 flex-shrink-0">
-        <h1 className="text-[15px] font-semibold text-slate-900">Netskope Dashboards</h1>
+        <h1 className="text-[15px] font-semibold text-slate-900">Netskope Reports</h1>
         <span className="text-[12px] text-slate-400">{filtered.length} of {allItems.length}</span>
         <button onClick={onNewDashboard}
           className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[12.5px] font-medium transition-colors">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-          New dashboard
+          New report
         </button>
       </div>
 
@@ -7853,8 +7853,8 @@ function SpaceGallery({ onPickDashboard, favoriteDashboardIds = [], onToggleFavo
     <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
       <div className="flex items-center gap-3 px-6 py-3.5 bg-white border-b border-slate-200 flex-shrink-0">
         <svg className="w-4 h-4 text-slate-500" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-        <h1 className="text-[15px] font-semibold text-slate-900">My Dashboards</h1>
-        <span className="text-[12px] text-slate-400">{myDashboards.length} dashboards</span>
+        <h1 className="text-[15px] font-semibold text-slate-900">My Reports</h1>
+        <span className="text-[12px] text-slate-400">{myDashboards.length} reports</span>
       </div>
       <div className="flex items-center gap-2 px-6 py-2.5 bg-white border-b border-slate-100 flex-shrink-0">
         <svg className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" d="M2 4h12M4 8h8M6 12h4"/></svg>
@@ -8988,7 +8988,7 @@ function Dashboard({ dashboard, dashboardId, extras, replacements, onDrill, onRe
               onClick={(e) => { onSaveToMyDashboards(e); setSaveHover(false); }}
               onMouseEnter={() => setSaveHover(true)}
               onMouseLeave={() => setSaveHover(false)}
-              title={isSavedToMyDashboards ? "Click to remove from My Dashboards" : "Save a copy to My Dashboards"}
+              title={isSavedToMyDashboards ? "Click to remove from My Reports" : "Save a copy to My Reports"}
               className={`inline-flex items-center gap-1.5 text-[12.5px] font-medium px-3 py-1.5 rounded-lg border transition-all ${
                 isSavedToMyDashboards
                   ? (saveHover ? "text-rose-700 bg-rose-50 border-rose-200" : "text-emerald-700 bg-emerald-50 border-emerald-200")
@@ -9315,7 +9315,7 @@ function App() {
   const toggleSaveDashboard = (item) => {
     if (isDashboardSaved(item.dashboardId)) {
       setMyDashboards(prev => prev.filter(d => d.dashboardId !== item.dashboardId));
-      toast(`Removed "${item.title}" from My Dashboards`);
+      toast(`Removed "${item.title}" from My Reports`);
       return;
     }
     const dash = DASHBOARDS[item.dashboardId];
@@ -9325,7 +9325,7 @@ function App() {
       desc: item.desc || dash?.description || "",
       personas: item.personas || [],
     }]);
-    toast(`Saved "${item.title}" to My Dashboards`);
+    toast(`Saved "${item.title}" to My Reports`);
   };
   const [showWelcome, setShowWelcome] = useState(true);
   const [showDashboardGallery, setShowDashboardGallery] = useState(false);
