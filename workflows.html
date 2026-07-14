@@ -7150,7 +7150,7 @@ function FeedbackForm({ onSubmit, onCancel }) {
 }
 
 /* ---------------------------- Response renderer ---------------------------- */
-function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashboardId, activeDashboardTitle, onStartReplace, onSaveWidget, onCreateAgent, hideInsight = false, singleChart = false }) {
+function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashboardId, activeDashboardTitle, onStartReplace, onSaveWidget, onCreateAgent, hideInsight = false, singleChart = false, saveToMode = false, myReports = [], onSaveToReport, onCreateReport }) {
   const toast = useToast();
   const options = useMemo(() => getChartOptions(response), [response]);
   const [chartType, setChartType] = useState(response.chartType);
@@ -7158,8 +7158,9 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [menuView, setMenuView] = useState("main");
+  const [newReportName, setNewReportName] = useState("");
   const moreRef = useRef(null);
-  const closeMenu = () => { setMoreOpen(false); setMenuView("main"); };
+  const closeMenu = () => { setMoreOpen(false); setMenuView("main"); setNewReportName(""); };
   useClickOutside(moreRef, closeMenu);
   const widgetReady = !!responseToWidget(response);
 
@@ -7254,7 +7255,42 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
               className="p-1.5 rounded text-slate-500 hover:bg-slate-100 focus-ring" title="More">{I.more}</button>
             {moreOpen && (
               <div className="menu-pop absolute right-0 mt-1 w-64 bg-white border border-slate-200 rounded-lg card-shadow z-20 py-1 max-h-96 overflow-y-auto">
-                {menuView === "main" ? (
+                {menuView === "saveTo" ? (
+                  <>
+                    <button onClick={() => { setMenuView("main"); setNewReportName(""); }} className="w-full text-left px-3 py-1.5 text-[11.5px] text-slate-500 hover:bg-slate-50 flex items-center gap-1 focus-ring">‹ Back</button>
+                    <div className="h-px bg-slate-100 my-1" />
+                    <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400 font-semibold">New report</div>
+                    <div className="px-3 py-1.5 flex items-center gap-1.5">
+                      <input value={newReportName} onChange={e => setNewReportName(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && onCreateReport) { onCreateReport(response, newReportName); closeMenu(); } }}
+                        placeholder={response.title || "Report name"}
+                        className="flex-1 min-w-0 text-[12px] border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400" />
+                      <button onClick={() => { if (onCreateReport) onCreateReport(response, newReportName); closeMenu(); }}
+                        className="text-[12px] font-medium text-white bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 flex-shrink-0 focus-ring">Create</button>
+                    </div>
+                    <div className="h-px bg-slate-100 my-1" />
+                    <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400 font-semibold">Existing reports</div>
+                    {myReports.length === 0 ? (
+                      <div className="px-3 py-1.5 text-[12px] text-slate-400">No reports yet — create one above.</div>
+                    ) : myReports.map(r => (
+                      <button key={r.dashboardId} onClick={() => { if (onSaveToReport) onSaveToReport(response, r); closeMenu(); }}
+                        className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2 focus-ring">
+                        <span className="truncate flex-1">{r.title}</span>
+                      </button>
+                    ))}
+                  </>
+                ) : saveToMode ? (
+                  <>
+                    {widgetReady ? (
+                      <button onClick={() => setMenuView("saveTo")} className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">
+                        {I.save} <span className="flex-1">Save to</span>
+                        <span className="text-slate-400">›</span>
+                      </button>
+                    ) : (
+                      <div className="px-3 py-1.5 text-[12px] text-slate-400">Nothing to save from this card.</div>
+                    )}
+                  </>
+                ) : menuView === "main" ? (
                   <>
                     <button onClick={() => { closeMenu(); handleShare(); }} className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">{I.share} Share conversation</button>
                     <button onClick={() => { closeMenu(); handleCopy(); }} className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">{I.copy} Copy insight</button>
@@ -8512,7 +8548,7 @@ function PersonaDropdown({ persona, onChangePersona, selectedIds = [], onToggleT
    user clicks "Customize view". */
 let welcomePersonaPickerSeen = true;
 
-function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onSetPersonaOnly, onPickDashboard, pinnedPreviewId = "genai-admin", chatMode, messages, onPickFollowup }) {
+function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onSetPersonaOnly, onPickDashboard, pinnedPreviewId = "genai-admin", chatMode, messages, onPickFollowup, myReports = [], onSaveToReport, onCreateReport }) {
   const scrollRef = useRef(null);
   const [personaPickerSeen, setPersonaPickerSeenState] = useState(welcomePersonaPickerSeen);
   const setPersonaPickerSeen = (v) => { welcomePersonaPickerSeen = v; setPersonaPickerSeenState(v); };
@@ -8551,7 +8587,8 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
               <div key={i}>
                 {m.role === "user" ? <UserBubble text={m.text} /> :
                  m.dashboardPreview ? <DashboardPreviewCard item={m.dashboardPreview} onOpen={onPickDashboard} /> :
-                 m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} singleChart /> :
+                 m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} singleChart
+                                 saveToMode myReports={myReports} onSaveToReport={onSaveToReport} onCreateReport={onCreateReport} /> :
                  <AISummaryBubble text={m.text} onPickFollowup={onPickFollowup} />}
               </div>
             ))}
@@ -9904,6 +9941,46 @@ const [isAgentView, setIsAgentView] = useState(false);
     toast(`Saved as widget — "${response.title}"`);
   };
 
+  /* Save an in-chat chart into an existing report in My Reports. */
+  const saveResponseToReport = (response, report) => {
+    const widget = responseToWidget(response);
+    if (!widget) {
+      toast(`Can't save — chart type "${response.chartType}" isn't a widget`, { kind: "error" });
+      return;
+    }
+    setDashboardExtras(prev => ({
+      ...prev,
+      [report.dashboardId]: [...(prev[report.dashboardId] || []), widget],
+    }));
+    toast(`Saved "${response.title}" → ${report.title}`);
+  };
+
+  /* Create a brand-new report in My Reports seeded with this chart. */
+  const createReportFromResponse = (response, name) => {
+    const widget = responseToWidget(response);
+    if (!widget) {
+      toast(`Can't save — chart type "${response.chartType}" isn't a widget`, { kind: "error" });
+      return;
+    }
+    const title = (name || "").trim() || response.title || "Untitled report";
+    const newId = `my-report-${Date.now()}`;
+    DASHBOARDS[newId] = {
+      title,
+      description: "Report created from the AI assistant.",
+      summary: `${title} — created from the AI assistant. Ask a question to add more charts.`,
+      examplePrompts: [],
+      widgets: [],
+    };
+    setMyDashboards(prev => [...prev, {
+      dashboardId: newId, title, desc: "Created from the AI assistant", personas: [], folder: "Custom",
+    }]);
+    setDashboardExtras(prev => ({
+      ...prev,
+      [newId]: [...(prev[newId] || []), widget],
+    }));
+    toast(`Created report "${title}" in My Reports`);
+  };
+
   const removeSavedWidget = (id) => {
     setSavedWidgets(prev => prev.filter(w => w.id !== id));
     toast("Removed from Widgets library", { kind: "info" });
@@ -10055,6 +10132,7 @@ const [isAgentView, setIsAgentView] = useState(false);
                        persona={persona} onChangePersona={onChangePersona} onSetPersonaOnly={id => setPersonaId(id)}
                        onPickDashboard={onPickDashboard} pinnedPreviewId={pinnedPreviewId}
                        chatMode={welcomeChatMode} messages={messages} onPickFollowup={onFollowup}
+                       myReports={myDashboards} onSaveToReport={saveResponseToReport} onCreateReport={createReportFromResponse}
                        />
         ) : (
           <>
