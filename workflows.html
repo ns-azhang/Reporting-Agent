@@ -9247,19 +9247,19 @@ function DualPane({ activeDashboard, messages, loading, onSend, onPickFollowup, 
           <button
             onClick={() => setChatOpen(o => !o)}
             title={chatOpen ? "Collapse AI Assistant" : "Expand AI Assistant"}
-            className="flex-shrink-0 flex flex-col items-center justify-center gap-2 bg-blue-800 border-l border-blue-900 hover:bg-blue-700 transition-colors"
+            className="group flex-shrink-0 flex flex-col items-center justify-center gap-2 bg-slate-200 border-l border-slate-300 hover:bg-blue-700 transition-colors"
             style={{ width: 22 }}
           >
-            <div className="w-4 h-4 rounded-full bg-blue-600 text-white grid place-items-center flex-shrink-0">
+            <div className="w-4 h-4 rounded-full bg-slate-500 text-white grid place-items-center flex-shrink-0 group-hover:bg-blue-600">
               {I.spark}
             </div>
             <span
-              className="text-[10px] font-semibold tracking-wide text-blue-100 uppercase select-none"
+              className="text-[10px] font-semibold tracking-wide text-slate-600 group-hover:text-blue-100 uppercase select-none"
               style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
             >
               AI Assistant
             </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-blue-200 flex-shrink-0" style={{ transform: chatOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-slate-500 group-hover:text-blue-200 flex-shrink-0" style={{ transform: chatOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}>
               <path d="M9 18l6-6-6-6" />
             </svg>
           </button>
@@ -9370,16 +9370,16 @@ function AgentPane({ agentMessages, followUpMessages, loading, onSend, onPickFol
         <button
           onClick={() => setChatOpen(o => !o)}
           title={chatOpen ? "Collapse AI Assistant" : "Expand AI Assistant"}
-          className="flex-shrink-0 flex flex-col items-center justify-center gap-2 bg-blue-800 border-l border-blue-900 hover:bg-blue-700 transition-colors"
+          className="group flex-shrink-0 flex flex-col items-center justify-center gap-2 bg-slate-200 border-l border-slate-300 hover:bg-blue-700 transition-colors"
           style={{ width: 32 }}
         >
-          <div className="w-4 h-4 rounded-full bg-blue-600 text-white grid place-items-center flex-shrink-0">{I.spark}</div>
-          <span className="text-[10px] font-semibold tracking-wide text-blue-100 uppercase select-none"
+          <div className="w-4 h-4 rounded-full bg-slate-500 text-white grid place-items-center flex-shrink-0 group-hover:bg-blue-600">{I.spark}</div>
+          <span className="text-[10px] font-semibold tracking-wide text-slate-600 group-hover:text-blue-100 uppercase select-none"
             style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}>
             AI Assistant
           </span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"
-            className="w-3 h-3 text-blue-200 flex-shrink-0"
+            className="w-3 h-3 text-slate-500 group-hover:text-blue-200 flex-shrink-0"
             style={{ transform: chatOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}>
             <path d="M9 18l6-6-6-6" />
           </svg>
