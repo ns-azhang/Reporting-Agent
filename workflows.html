@@ -7150,7 +7150,7 @@ function FeedbackForm({ onSubmit, onCancel }) {
 }
 
 /* ---------------------------- Response renderer ---------------------------- */
-function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashboardId, activeDashboardTitle, onStartReplace, onSaveWidget, onCreateAgent, hideInsight = false }) {
+function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashboardId, activeDashboardTitle, onStartReplace, onSaveWidget, onCreateAgent, hideInsight = false, singleChart = false }) {
   const toast = useToast();
   const options = useMemo(() => getChartOptions(response), [response]);
   const [chartType, setChartType] = useState(response.chartType);
@@ -7169,6 +7169,18 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
 
   const renderChart = () => {
     if (chartType === "kpi+line") {
+      // Welcome-chat widgets show exactly one chart: drop the KPI scorecard
+      // row and render only the line chart (or the KPIs if there is no series).
+      if (singleChart) {
+        const pd = response.periodPicker
+          ? ((response.periodData && response.periodData[response.periodPicker.default]) || response)
+          : response;
+        if (pd.series) {
+          return <LineChart series={pd.series} xLabels={pd.xLabels} anomalies={pd.anomalies || []}
+                            forecastIndex={response.forecastIndex ?? null} onDrill={onPickFollowup} />;
+        }
+        return response.kpis ? <KPIRow kpis={response.kpis} /> : null;
+      }
       if (response.periodPicker) {
         return <KPILineWithPeriod response={response} onPickFollowup={onPickFollowup} />;
       }
@@ -8539,7 +8551,7 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
               <div key={i}>
                 {m.role === "user" ? <UserBubble text={m.text} /> :
                  m.dashboardPreview ? <DashboardPreviewCard item={m.dashboardPreview} onOpen={onPickDashboard} /> :
-                 m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} hideInsight /> :
+                 m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} hideInsight singleChart /> :
                  <AISummaryBubble text={m.text} onPickFollowup={onPickFollowup} />}
               </div>
             ))}
