@@ -8691,6 +8691,26 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
 }
 
 /* --------------------------------- App ----------------------------------- */
+/* Split a single chat submission into distinct questions so each one can get
+   its own widget. A submission counts as multiple questions when it spans
+   several lines (Shift+Enter) or contains several "?"-terminated clauses.
+   Text with no line breaks and no "?" is treated as a single question. */
+function splitQuestions(text) {
+  const parts = [];
+  String(text).split(/\r?\n+/).forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    // Break a line into separate questions on "?" (keeping the mark).
+    const segs = trimmed.match(/[^?]+\?+|[^?]+$/g);
+    if (segs) {
+      segs.forEach(s => { const t = s.trim(); if (t) parts.push(t); });
+    } else {
+      parts.push(trimmed);
+    }
+  });
+  return parts.length ? parts : [String(text).trim()];
+}
+
 function classifyPrompt(text) {
   const t = text.toLowerCase();
   if (/\b(kpi|key metric|summary metric|top[- ]line|create.*kpi|build.*kpi|kpi row|metric row|scorecard)\b/.test(t)) return "kpi-row-custom";
@@ -9652,6 +9672,26 @@ const [isAgentView, setIsAgentView] = useState(false);
         setLoading(false);
       }, 800);
       return;
+    }
+    // Welcome page: if the user entered multiple questions in one submission,
+    // create exactly one widget per question (single questions fall through to
+    // the normal keyword-routing / chat path below, which yields one widget).
+    if (showWelcome && !knownResponseId) {
+      const questions = splitQuestions(text);
+      if (questions.length > 1) {
+        setMessages(m => [...m, { role: "user", text }]);
+        setLoading(true);
+        setWelcomeChatMode(true);
+        setTimeout(() => {
+          const responses = questions.map(q => {
+            const id = classifyPrompt(q);
+            return { role: "ai", response: RESPONSES[id] || RESPONSES.freeform };
+          });
+          setMessages(m => [...m, ...responses]);
+          setLoading(false);
+        }, 800);
+        return;
+      }
     }
     // Welcome page / no active dashboard: keyword routing + normal chat
     if (!knownResponseId) {
