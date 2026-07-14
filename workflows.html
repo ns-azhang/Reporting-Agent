@@ -9223,7 +9223,7 @@ function DualPane({ activeDashboard, messages, loading, onSend, onPickFollowup, 
             onClick={() => setChatOpen(o => !o)}
             title={chatOpen ? "Collapse AI Assistant" : "Expand AI Assistant"}
             className="group flex-shrink-0 flex flex-col items-center justify-center gap-2 bg-transparent border-l border-slate-300 hover:bg-blue-700 transition-colors"
-            style={{ width: 22 }}
+            style={{ width: 16 }}
           >
             <div className="w-4 h-4 rounded-full bg-slate-500 text-white grid place-items-center flex-shrink-0 group-hover:bg-blue-600">
               {I.spark}
@@ -9348,7 +9348,7 @@ function AgentPane({ agentMessages, followUpMessages, loading, onSend, onPickFol
           onClick={() => setChatOpen(o => !o)}
           title={chatOpen ? "Collapse AI Assistant" : "Expand AI Assistant"}
           className="group flex-shrink-0 flex flex-col items-center justify-center gap-2 bg-transparent border-l border-slate-300 hover:bg-blue-700 transition-colors"
-          style={{ width: 32 }}
+          style={{ width: 16 }}
         >
           <div className="w-4 h-4 rounded-full bg-slate-500 text-white grid place-items-center flex-shrink-0 group-hover:bg-blue-600">{I.spark}</div>
           <span className="text-[10px] font-semibold tracking-wide text-slate-600 group-hover:text-blue-100 uppercase select-none"
