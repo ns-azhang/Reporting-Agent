@@ -8899,155 +8899,128 @@ function Widget({ widget, added, onDrill, onRemove, replaceMode, onReplaceClick,
    3. Executive share — full-screen iframe link for external stakeholders,
       addressing the spec's "Executive Sharing is Cumbersome" pain point. */
 function ShareDashboardMenu({ dashboard }) {
-  const toast = useToast();
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useClickOutside(ref, () => setOpen(false));
-
+  const [level, setLevel] = useState("specific");
+  const [role, setRole] = useState("View");
   const [people, setPeople] = useState([
-    { email: "olivia.park@abc.com",   role: "Owner",      initials: "OL", bg: "#dcfce7", fg: "#15803d" },
-    { email: "luke.hayward@abc.com",  role: "View",       initials: "LH", bg: "#dbeafe", fg: "#1e40af" },
+    { email: "aarondemo@netskope.com", role: "Edit" },
+    { email: "maydemo@netskope.com",   role: "View" },
   ]);
-  const [draft, setDraft] = useState("");
-  const [linkOn, setLinkOn] = useState(true);
-  const [linkExpiry, setLinkExpiry] = useState("30d");
+  const [emailInput, setEmailInput] = useState("");
+  const [addRole, setAddRole] = useState("View");
 
-  const invite = () => {
-    const v = draft.trim();
-    if (!v) return;
-    const email = /@/.test(v) ? v : `${v.toLowerCase().replace(/\s+/g, ".")}@abc.com`;
-    const initials = email.split("@")[0].split(/[._-]/).map(p => p[0]?.toUpperCase()).slice(0, 2).join("");
-    setPeople(p => [...p, { email, role: "View", initials: initials || "?", bg: "#e0e7ff", fg: "#3730a3" }]);
-    setDraft("");
-    toast(`Invited ${email}`);
+  const ACCESS_LEVELS = [
+    { id: "only-me",  label: "Only me",             icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" strokeLinecap="round"/><path d="M11 3h4M11 5h4" strokeLinecap="round"/></svg> },
+    { id: "netskope", label: "Everyone at my organization", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 2c0 0-3 2-3 6s3 6 3 6M8 2c0 0 3 2 3 6s-3 6-3 6M2 8h12" strokeLinecap="round"/></svg> },
+    { id: "specific", label: "Specific people",      icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5"><circle cx="5.5" cy="5" r="2.5"/><path d="M1 14c0-2.8 2-4.5 4.5-4.5S10 11.2 10 14" strokeLinecap="round"/><circle cx="11.5" cy="5" r="2.5"/><path d="M10.5 9.6c.4-.1.7-.1 1-.1 2.5 0 4.5 1.7 4.5 4.5" strokeLinecap="round"/></svg> },
+  ];
+
+  const addPerson = () => {
+    const email = emailInput.trim();
+    if (!email) return;
+    setPeople(prev => [...prev, { email, role: addRole }]);
+    setEmailInput("");
   };
-  const removePerson = (email) => {
-    setPeople(p => p.filter(x => x.email !== email));
-    toast(`Removed ${email}`, { kind: "info" });
-  };
-  const cyclePermission = (email) => {
-    const next = { "View": "Edit", "Edit": "View", "Owner": "Owner" };
-    setPeople(p => p.map(x => x.email === email ? { ...x, role: next[x.role] || "View" } : x));
-  };
-  const copyInternalLink = () => {
-    const slug = dashboard.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    try { navigator.clipboard?.writeText(`https://abc.netskope.com/analytics/dashboards/${slug}?expires=${linkExpiry}`); } catch {}
-    toast("Internal link copied to clipboard");
-  };
-  const generateExecLink = () => {
-    const id = Math.random().toString(36).slice(2, 10);
-    try { navigator.clipboard?.writeText(`https://abc.netskope.com/exec/${id}`); } catch {}
-    toast("Executive share link generated and copied");
-  };
+  const removePerson = (email) => setPeople(prev => prev.filter(p => p.email !== email));
 
   return (
-    <div className="relative" ref={ref}>
-      <button onClick={() => setOpen(o => !o)}
+    <>
+      <button onClick={() => setOpen(true)}
         className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-md focus-ring">
         {I.share} Share
       </button>
-      {open && (
-        <div className="menu-pop absolute right-0 mt-1 w-[26rem] bg-white border border-slate-200 rounded-xl card-shadow z-30 overflow-hidden max-h-[36rem] overflow-y-auto">
-          <div className="px-4 py-3 border-b border-slate-200">
-            <div className="text-[14px] font-semibold text-slate-900">Share dashboard</div>
-            <div className="text-[12px] text-slate-500 mt-0.5 truncate">{dashboard.title}</div>
-          </div>
 
-          {/* People section */}
-          <div className="p-4 border-b border-slate-100">
-            <label className="text-[10.5px] uppercase tracking-wide text-slate-500 font-semibold mb-2 block">Add people</label>
-            <div className="flex items-center gap-2">
-              <input type="text" value={draft} onChange={e => setDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); invite(); } }}
-                placeholder="Email or name…"
-                className="flex-1 text-[12.5px] border border-slate-300 rounded-md px-2.5 py-1.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none" />
-              <button onClick={invite} disabled={!draft.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[12.5px] font-medium px-3 py-1.5 rounded-md focus-ring">
-                Invite
+      {open && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[15px] font-semibold text-slate-900">Share "{dashboard.title}"</h2>
+              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
-            {people.length > 0 && (
-              <div className="mt-3 space-y-1">
+
+            {/* Add people (only for specific) */}
+            {level === "specific" && (
+              <div className="flex gap-2 mb-4">
+                <input value={emailInput} onChange={e => setEmailInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addPerson()}
+                  placeholder="Add people by email"
+                  className="flex-1 text-[13px] border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400" />
+                <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden flex-shrink-0">
+                  {["View","Edit"].map(r => (
+                    <button key={r} onClick={() => setAddRole(r)}
+                      className={`px-3 py-2 text-[12px] font-medium transition-colors ${addRole === r ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={addPerson}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[12.5px] font-medium rounded-lg transition-colors">Add</button>
+              </div>
+            )}
+
+            {/* People list */}
+            {level === "specific" && people.length > 0 && (
+              <div className="mb-4 flex flex-col gap-1.5">
                 {people.map(p => (
-                  <div key={p.email} className="group flex items-center justify-between gap-2 text-[12.5px] py-1 px-1 -mx-1 rounded hover:bg-slate-50">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-full grid place-items-center text-[10px] font-semibold flex-shrink-0"
-                           style={{ background: p.bg, color: p.fg }}>{p.initials}</div>
-                      <span className="text-slate-700 truncate">{p.email}</span>
+                  <div key={p.email} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-[10px] font-semibold flex items-center justify-center">{p.email[0].toUpperCase()}</span>
+                      <span className="text-[13px] text-slate-700">{p.email}</span>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {p.role === "Owner"
-                        ? <span className="text-[11px] px-1.5 py-0.5 rounded border border-slate-200 text-slate-500">Owner</span>
-                        : <select value={p.role} onChange={e => setPeople(ps => ps.map(x => x.email === p.email ? { ...x, role: e.target.value } : x))}
-                            className="text-[11px] px-1.5 py-0.5 rounded border border-slate-200 text-slate-600 bg-white hover:border-slate-300 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 cursor-pointer">
-                            <option>View</option>
-                            <option>Edit</option>
-                          </select>
-                      }
-                      {p.role !== "Owner" && (
-                        <button onClick={() => removePerson(p.email)} title="Remove"
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-opacity">
-                          {I.x}
-                        </button>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
+                        {["View","Edit"].map(r => (
+                          <button key={r} onClick={() => setPeople(prev => prev.map(pp => pp.email === p.email ? { ...pp, role: r } : pp))}
+                            className={`px-2.5 py-1 text-[11.5px] font-medium transition-colors ${p.role === r ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={() => removePerson(p.email)} className="text-slate-300 hover:text-red-400 transition-colors">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Internal link section */}
-          <div className="p-4 border-b border-slate-100">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 grid place-items-center flex-shrink-0">{I.globe}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-[12.5px] font-medium text-slate-800">Anyone at abc-corp with the link</div>
-                  <button onClick={() => { setLinkOn(o => !o); toast(linkOn ? "Link disabled" : "Link enabled"); }}
-                    className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${linkOn ? "bg-blue-600" : "bg-slate-300"}`}>
-                    <span className={`absolute top-[3px] left-[3px] w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform ${linkOn ? "translate-x-4" : "translate-x-0"}`}></span>
-                  </button>
-                </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">View only · requires Okta SSO</div>
-                {linkOn && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <select value={linkExpiry} onChange={e => setLinkExpiry(e.target.value)}
-                      className="text-[11.5px] border border-slate-200 rounded px-2 py-1 bg-white text-slate-600 focus-ring">
-                      <option value="24h">Expires in 24 hours</option>
-                      <option value="7d">Expires in 7 days</option>
-                      <option value="30d">Expires in 30 days</option>
-                      <option value="never">Never expires</option>
-                    </select>
-                    <button onClick={copyInternalLink}
-                      className="text-[12px] text-blue-700 hover:bg-blue-50 px-2 py-1 rounded focus-ring inline-flex items-center gap-1">
-                      {I.copy} Copy link
+            {/* Access level selector */}
+            <div className="border-t border-slate-100 pt-4">
+              <p className="text-[11.5px] text-slate-400 font-medium mb-2 uppercase tracking-wide">General access</p>
+              <div className="flex flex-col gap-1">
+                {ACCESS_LEVELS.map(l => (
+                  <div key={l.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${level === l.id ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50 border border-transparent"}`}>
+                    <button className="flex items-center gap-3 flex-1 text-left" onClick={() => setLevel(l.id)}>
+                      <span className={level === l.id ? "text-blue-600" : "text-slate-400"}>{l.icon}</span>
+                      <span className={`text-[13px] font-medium ${level === l.id ? "text-blue-700" : "text-slate-700"}`}>{l.label}</span>
+                      {level === l.id && <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
                     </button>
+                    {level === l.id && l.id !== "specific" && l.id !== "only-me" && (
+                      <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden flex-shrink-0">
+                        {["View","Edit"].map(r => (
+                          <button key={r} onClick={() => setRole(r)}
+                            className={`px-3 py-1 text-[12px] font-medium transition-colors ${role === r ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Executive share */}
-          <div className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 grid place-items-center flex-shrink-0">{I.share}</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[12.5px] font-medium text-slate-800">Executive share</div>
-                <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Full-screen, mobile-friendly view for external stakeholders. Read-only, no AI chat. Single secure link, no Okta required.
-                </div>
-                <button onClick={generateExecLink}
-                  className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-medium bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 px-2.5 py-1 rounded focus-ring">
-                  Generate link
-                </button>
-              </div>
-            </div>
+            <button onClick={() => setOpen(false)}
+              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium py-2 rounded-xl transition-colors">
+              Done
+            </button>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
