@@ -6056,6 +6056,18 @@ const RESPONSES = {
     ],
   },
 
+  "unrecognized": {
+    title: "I couldn't find a confident match",
+    chartType: "unrecognized",
+    summary: "I wasn't able to map that to a known metric or dataset with enough confidence to answer accurately — it may need a more specific term (an app, policy, severity, or user) or a narrower time range. Try one of the prompts below, or pick a suggested report to get started.",
+    followUps: [
+      M("Show me DLP incidents this week",                         "weekly-overview"),
+      M("Show top policies",                                       "top-policies"),
+      M("Show top users",                                          "top-users"),
+      M("Show top destinations",                                   "destinations"),
+    ],
+  },
+
   /* ---------- root cause / drill-down responses ---------- */
   "rca-saturday": {
     title: "Root cause — Saturday incident spike",
@@ -7164,7 +7176,8 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
   const widgetReady = !!responseToWidget(response);
 
   const isAgent  = response.chartType === "agent-flow" || response.chartType === "agent-report";
-  const isAction = response.chartType === "action" || response.chartType === "ack" || isAgent;
+  const isUnrecognized = response.chartType === "unrecognized";
+  const isAction = response.chartType === "action" || response.chartType === "ack" || isAgent || isUnrecognized;
   const showSelector = options.length > 1 && !isAction;
 
   const renderChart = () => {
@@ -7196,6 +7209,12 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
         {response.ackKind === "cancelled" ? "Cancelled — no changes applied." : "Acknowledged — recorded in your tenant."}
       </div>
     );
+    if (chartType === "unrecognized") return (
+      <div className="border border-dashed border-slate-300 rounded-lg p-6 text-center bg-slate-50/40">
+        <div className="w-9 h-9 mx-auto mb-2 rounded-full bg-slate-100 text-slate-400 grid place-items-center">{I.search}</div>
+        <div className="text-[12.5px] text-slate-500">No chart to show — try a more specific prompt or pick a follow-up below.</div>
+      </div>
+    );
     return null;
   };
 
@@ -7222,6 +7241,7 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
             <div className="text-[11px] text-slate-500">{
               response.chartType === "agent-flow"   ? `Pre-built agent · ${response.agent?.config?.dataSource || "naa-tenant"} · runs weekly Monday 10:00 AM`
             : response.chartType === "agent-report" ? `Weekly artifact · generated ${response.report?.generated || ""}`
+            : isUnrecognized                        ? "No confident match · 0.4s"
             : isAction                              ? "Action prepared · 0.4s"
             : "Generated · 1.2s · scoped to abc-corp"
             }</div>
@@ -8716,7 +8736,7 @@ function classifyPrompt(text) {
   if (/policy|policies/.test(t)) return "top-policies";
   if (/user|people|who/.test(t)) return "top-users";
   if (/destination|app|cloud|where|drive|dropbox/.test(t)) return "destinations";
-  return "freeform";
+  return "unrecognized";
 }
 
 /* ---------------------------- Dashboard renderer --------------------------- */
