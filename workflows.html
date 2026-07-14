@@ -8588,7 +8588,8 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
             ]}
           />
         </div>
-        {onPickDashboard && (
+        {/* Hidden for now (kept for future use): "Suggested dashboards" section + "Customize view" button. Change `false` back to `onPickDashboard` to re-enable. */}
+        {false && onPickDashboard && (
           <div className="w-full" style={{ marginTop: "calc(1.5rem - 0.7cm)" }}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-[11.5px] text-slate-400 font-medium uppercase tracking-wide flex items-center gap-1.5">{React.cloneElement(I.spark, { className: "w-3.5 h-3.5" })}Suggested dashboards</p>
