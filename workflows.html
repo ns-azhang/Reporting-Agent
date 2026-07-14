@@ -7150,7 +7150,7 @@ function FeedbackForm({ onSubmit, onCancel }) {
 }
 
 /* ---------------------------- Response renderer ---------------------------- */
-function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashboardId, activeDashboardTitle, onStartReplace, onSaveWidget, onCreateAgent }) {
+function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashboardId, activeDashboardTitle, onStartReplace, onSaveWidget, onCreateAgent, hideInsight = false }) {
   const toast = useToast();
   const options = useMemo(() => getChartOptions(response), [response]);
   const [chartType, setChartType] = useState(response.chartType);
@@ -7319,6 +7319,7 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
       <div className={isAgent ? "px-5 pt-3 pb-1" : "p-5"}>{renderChart()}</div>
 
       {/* Summary */}
+      {!hideInsight && (
       <div className="px-5 pb-5">
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
           <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide font-semibold text-slate-500 mb-1.5">
@@ -7327,6 +7328,7 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
           <p className="text-[13.5px] text-slate-700 leading-relaxed">{response.summary}</p>
         </div>
       </div>
+      )}
 
       {/* Follow-ups */}
       <div className="px-5 pb-5 flex items-start justify-between gap-4 flex-wrap">
@@ -8537,7 +8539,7 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
               <div key={i}>
                 {m.role === "user" ? <UserBubble text={m.text} /> :
                  m.dashboardPreview ? <DashboardPreviewCard item={m.dashboardPreview} onOpen={onPickDashboard} /> :
-                 m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} /> :
+                 m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} hideInsight /> :
                  <AISummaryBubble text={m.text} onPickFollowup={onPickFollowup} />}
               </div>
             ))}
