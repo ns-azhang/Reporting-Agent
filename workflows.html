@@ -7498,7 +7498,7 @@ function TypingBubble() {
   );
 }
 
-function Conversation({ messages, loading, onPickFollowup, scrollRef, onAddToDashboard, activeDashboardId, activeDashboardTitle, onStartReplace, onSaveWidget, onCreateAgent }) {
+function Conversation({ messages, loading, onPickFollowup, scrollRef, onAddToDashboard, activeDashboardId, activeDashboardTitle, onStartReplace, onSaveWidget, onCreateAgent, myReports = [], onSaveToReport, onCreateReport }) {
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-6 py-6 space-y-5">
@@ -7508,7 +7508,8 @@ function Conversation({ messages, loading, onPickFollowup, scrollRef, onAddToDas
              m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup}
                                         onAddToDashboard={onAddToDashboard} activeDashboardId={activeDashboardId}
                                         activeDashboardTitle={activeDashboardTitle} onStartReplace={onStartReplace}
-                                        onSaveWidget={onSaveWidget} onCreateAgent={onCreateAgent} /> :
+                                        onSaveWidget={onSaveWidget} onCreateAgent={onCreateAgent}
+                                        saveToMode myReports={myReports} onSaveToReport={onSaveToReport} onCreateReport={onCreateReport} /> :
              <AISummaryBubble text={m.text} examples={m.examples} onPickFollowup={onPickFollowup} />}
           </div>
         ))}
@@ -9175,7 +9176,7 @@ function Dashboard({ dashboard, dashboardId, extras, replacements, onDrill, onRe
    continues on the right. Both toolbars are removed; a small floating
    Close button in the top-right corner of the canvas exits dashboard mode.
    Empty chat state shows a hint so the user knows they can ask follow-ups. */
-function DualPane({ activeDashboard, messages, loading, onSend, onPickFollowup, onPickPrompt, scrollRef, dashboardExtras, dashboardReplacements, onAddToDashboard, activeDashboardId, activeDashboardTitle, onRemoveWidget, onSaveWidget, onStartReplace, replaceTarget, onPerformReplace, onCancelReplace, dashboardTitleOverride, widgetTitleOverrides, widgetSizeOverrides, widgetOrder, onRenameDashboard, onRenameWidget, onResizeWidget, onReorderWidget, libraryItems, personaId, onSaveToMyDashboards, isSavedToMyDashboards }) {
+function DualPane({ activeDashboard, messages, loading, onSend, onPickFollowup, onPickPrompt, scrollRef, dashboardExtras, dashboardReplacements, onAddToDashboard, activeDashboardId, activeDashboardTitle, onRemoveWidget, onSaveWidget, onStartReplace, replaceTarget, onPerformReplace, onCancelReplace, dashboardTitleOverride, widgetTitleOverrides, widgetSizeOverrides, widgetOrder, onRenameDashboard, onRenameWidget, onResizeWidget, onReorderWidget, libraryItems, personaId, onSaveToMyDashboards, isSavedToMyDashboards, myReports = [], onSaveToReport, onCreateReport }) {
   const dashboard = DASHBOARDS[activeDashboard.dashboardId];
   const containerRef = useRef(null);
   const [chatWidth, setChatWidth] = useState(420);
@@ -9221,7 +9222,8 @@ function DualPane({ activeDashboard, messages, loading, onSend, onPickFollowup, 
         <Conversation messages={messages} loading={loading} onPickFollowup={onPickFollowup}
                       scrollRef={scrollRef} onAddToDashboard={onAddToDashboard}
                       activeDashboardId={activeDashboardId} activeDashboardTitle={activeDashboardTitle}
-                      onStartReplace={onStartReplace} onSaveWidget={onSaveWidget} />
+                      onStartReplace={onStartReplace} onSaveWidget={onSaveWidget}
+                      myReports={myReports} onSaveToReport={onSaveToReport} onCreateReport={onCreateReport} />
       )}
       <PromptInput onSend={onSend} busy={loading} onPickPrompt={onPickPrompt} libraryItems={libraryItems} />
     </div>
@@ -9308,7 +9310,7 @@ function DualPane({ activeDashboard, messages, loading, onSend, onPickFollowup, 
   );
 }
 
-function AgentPane({ agentMessages, followUpMessages, loading, onSend, onPickFollowup, scrollRef, onAddToDashboard, onSaveWidget, onCreateAgent, onPickPrompt, libraryItems }) {
+function AgentPane({ agentMessages, followUpMessages, loading, onSend, onPickFollowup, scrollRef, onAddToDashboard, onSaveWidget, onCreateAgent, onPickPrompt, libraryItems, myReports = [], onSaveToReport, onCreateReport }) {
   const containerRef = useRef(null);
   const [chatWidth, setChatWidth] = useState(360);
   const [chatOpen, setChatOpen] = useState(true);
@@ -9350,7 +9352,8 @@ function AgentPane({ agentMessages, followUpMessages, loading, onSend, onPickFol
       ) : (
         <Conversation messages={followUpMessages} loading={loading} onPickFollowup={onPickFollowup}
                       scrollRef={scrollRef} onAddToDashboard={onAddToDashboard}
-                      onSaveWidget={onSaveWidget} onCreateAgent={onCreateAgent} />
+                      onSaveWidget={onSaveWidget} onCreateAgent={onCreateAgent}
+                      myReports={myReports} onSaveToReport={onSaveToReport} onCreateReport={onCreateReport} />
       )}
       <PromptInput onSend={onSend} busy={loading} onPickPrompt={onPickPrompt} libraryItems={libraryItems} />
     </div>
@@ -9362,7 +9365,8 @@ function AgentPane({ agentMessages, followUpMessages, loading, onSend, onPickFol
       <div className="flex-1 overflow-y-auto">
         <Conversation messages={agentMessages} loading={false} onPickFollowup={onPickFollowup}
                       scrollRef={null} onAddToDashboard={onAddToDashboard}
-                      onSaveWidget={onSaveWidget} onCreateAgent={onCreateAgent} />
+                      onSaveWidget={onSaveWidget} onCreateAgent={onCreateAgent}
+                      myReports={myReports} onSaveToReport={onSaveToReport} onCreateReport={onCreateReport} />
       </div>
 
       {/* Right: collapsible AI assistant */}
@@ -10161,7 +10165,8 @@ const [isAgentView, setIsAgentView] = useState(false);
                         onReorderWidget={reorderWidget}
                         libraryItems={getLibraryFor(personaId)}
                         onSaveToMyDashboards={() => toggleSaveDashboard(activeDashboard)}
-                        isSavedToMyDashboards={isDashboardSaved(activeDashboard.dashboardId)} />
+                        isSavedToMyDashboards={isDashboardSaved(activeDashboard.dashboardId)}
+                        myReports={myDashboards} onSaveToReport={saveResponseToReport} onCreateReport={createReportFromResponse} />
             ) : isAgentView ? (
               <AgentPane
                 agentMessages={messages.slice(messages.findIndex(m => m.response?.chartType === "agent-flow"), messages.findIndex(m => m.response?.chartType === "agent-flow") + 1)}
@@ -10169,13 +10174,15 @@ const [isAgentView, setIsAgentView] = useState(false);
                 loading={loading} onSend={send} onPickFollowup={onFollowup}
                 scrollRef={scrollRef} onAddToDashboard={addToDashboard}
                 onSaveWidget={saveWidget} onCreateAgent={createAgent}
-                onPickPrompt={onPickPrompt} libraryItems={getLibraryFor(personaId)} />
+                onPickPrompt={onPickPrompt} libraryItems={getLibraryFor(personaId)}
+                myReports={myDashboards} onSaveToReport={saveResponseToReport} onCreateReport={createReportFromResponse} />
             ) : (
               <>
                 {isEmpty ? <Landing onPick={onQuickAction} persona={persona} onPickHistory={onPickHistory} /> :
                   <Conversation messages={messages} loading={loading} onPickFollowup={onFollowup}
                                 scrollRef={scrollRef} onAddToDashboard={addToDashboard}
-                                onSaveWidget={saveWidget} onCreateAgent={createAgent} />}
+                                onSaveWidget={saveWidget} onCreateAgent={createAgent}
+                                myReports={myDashboards} onSaveToReport={saveResponseToReport} onCreateReport={createReportFromResponse} />}
                 <PromptInput onSend={send} busy={loading} onPickPrompt={onPickPrompt} libraryItems={getLibraryFor(personaId)} />
               </>
             )}
