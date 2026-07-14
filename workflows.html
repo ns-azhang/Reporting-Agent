@@ -8551,7 +8551,7 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
               <div key={i}>
                 {m.role === "user" ? <UserBubble text={m.text} /> :
                  m.dashboardPreview ? <DashboardPreviewCard item={m.dashboardPreview} onOpen={onPickDashboard} /> :
-                 m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} hideInsight singleChart /> :
+                 m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} singleChart /> :
                  <AISummaryBubble text={m.text} onPickFollowup={onPickFollowup} />}
               </div>
             ))}
