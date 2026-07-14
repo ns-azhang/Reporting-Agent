@@ -7681,10 +7681,6 @@ function DashboardGallery({ onClose, onPickDashboard, onNewDashboard, favoriteDa
             <span className="text-[13px] tracking-wide text-slate-400 font-semibold w-16 flex-shrink-0">Tag</span>
             {allTags.map(t => <FilterChip key={t} label={t} active={tagFilter === t} onClick={() => setTagFilter(t)} />)}
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13px] tracking-wide text-slate-400 font-semibold w-16 flex-shrink-0">Persona</span>
-            {allPersonas.map(p => <FilterChip key={p} label={p} active={roleFilter === p} onClick={() => setRoleFilter(p)} />)}
-          </div>
         </div>
       </div>
 
