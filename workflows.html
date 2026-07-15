@@ -9116,7 +9116,8 @@ function Dashboard({ dashboard, dashboardId, extras, replacements, onDrill, onRe
                 : <>{I.save} Save</>}
             </button>
           )}
-          <ShareDashboardMenu dashboard={dashboard} />
+          {/* Share feature hidden for now — set `false` back to `true` (or remove the guard) to re-enable. */}
+          {false && <ShareDashboardMenu dashboard={dashboard} />}
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: "0.75rem" }}>
