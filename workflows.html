@@ -7987,14 +7987,6 @@ function SpaceGallery({ onPickDashboard, favoriteDashboardIds = [], onToggleFavo
                         <button className="text-left min-w-0 group" onClick={() => onPickDashboard(d)}>
                           <span className="text-[14px] font-semibold text-slate-900 leading-snug group-hover:text-blue-700 transition-colors truncate">{d.title}</span>
                         </button>
-                        {onPinDashboard && (
-                          <button onClick={(e) => { e.stopPropagation(); onPinDashboard(d); }}
-                            title={isPinned ? "Pinned to welcome preview" : "Pin to welcome preview"}
-                            className={`flex-shrink-0 inline-flex items-center gap-1.5 text-[11.5px] font-medium px-2.5 py-1 rounded-lg border transition-all ${isPinned ? "text-blue-700 bg-blue-50 border-blue-200" : "text-slate-500 hover:text-slate-800 border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}>
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4h6M10 4l-.5 6-3 2v2h11v-2l-3-2L14 4M12 16v4"/></svg>
-                            <span>{isPinned ? "Pinned to preview" : "Pin to preview"}</span>
-                          </button>
-                        )}
                         {isFavorite && (
                           <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 flex-shrink-0">Favorite</span>
                         )}
@@ -8012,6 +8004,14 @@ function SpaceGallery({ onPickDashboard, favoriteDashboardIds = [], onToggleFavo
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5"><circle cx="13" cy="3" r="2"/><circle cx="13" cy="13" r="2"/><circle cx="3" cy="8" r="2"/><path d="M5 8h3.5M11 3.8L8.5 7M11 12.2L8.5 9" strokeLinecap="round"/></svg>
                       <span>{levelInfo.label}</span>
                     </button>
+                    )}
+                    {onPinDashboard && (
+                      <button onClick={(e) => { e.stopPropagation(); onPinDashboard(d); }}
+                        title={isPinned ? "Pinned to welcome preview" : "Pin to welcome preview"}
+                        className={`flex-shrink-0 inline-flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg border transition-all ${isPinned ? "text-blue-700 bg-blue-50 border-blue-200" : "text-slate-500 hover:text-slate-800 border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4h6M10 4l-.5 6-3 2v2h11v-2l-3-2L14 4M12 16v4"/></svg>
+                        <span>{isPinned ? "Pinned to preview" : "Pin to preview"}</span>
+                      </button>
                     )}
                     <button onClick={(e) => { e.stopPropagation(); setOpenRecurModal(d.dashboardId); setRecurEmail(""); setRecurFreq("weekly"); setRecurDays(["Mon"]); setRecurTime("09:00"); }}
                       className="flex-shrink-0 inline-flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-slate-800 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-all">
