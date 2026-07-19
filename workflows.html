@@ -473,7 +473,6 @@ const DASHBOARDS = {
     description: "Weekly DLP posture across all data classes. Saturday's spike is the dominant signal — review the trend and the policies driving it.",
     summary: "Here's your DLP incidents overview for the last 7 days. Volume is up 18% week-over-week to 1,284 incidents — driven primarily by a Saturday spike that pushed Critical and High severity counts up 24%. Customer PII (412) and Source Code (318) policies together account for ~58% of the increase. Triage time is steady at 42m, so the team is keeping pace despite the higher load.",
     examplePrompts: [
-      M("What caused the Saturday spike?",        "rca-saturday"),
       M("Show only the Critical incidents",       "critical-only"),
       M("Forecast next 7 days",                   "forecast-7d"),
     ],
@@ -486,7 +485,7 @@ const DASHBOARDS = {
       ]},
       { type: "line", size: "2/3", title: "Daily incidents — last 7 days",
         series: [{ name: "Incidents", color: "#2563eb", values: [142,158,171,165,198,224,226] }],
-        xLabels: DAYS7, anomalies: [{ index: 5, value: 224, label: "Spike", drill: { text: "What caused the Saturday spike?", id: "rca-saturday" } }] },
+        xLabels: DAYS7, anomalies: [{ index: 5, value: 224, label: "Spike" }] },
       { type: "donut", size: "1/3", title: "Severity mix",
         slices: [
           { label: "Critical", value: 64,  color: SEV.Critical, drill: { text: "Show only the Critical incidents", id: "critical-only" } },
@@ -512,7 +511,6 @@ const DASHBOARDS = {
         ] },
     ],
     followUps: [
-      M("What caused the Saturday spike?",            "rca-saturday"),
       M("Show critical and high only",                "critical-only"),
       M("Forecast next 7 days",                       "forecast-7d"),
       M("Export this as a PDF for leadership",        "export-pdf"),
@@ -812,7 +810,6 @@ const DASHBOARDS = {
     description: "Policy violations, top policies, apps and DLP rules for the current week.",
     summary: "This week your environment generated 12,847 security events — an 8% increase week-over-week, driven primarily by a Wednesday–Friday surge in DLP activity and shadow-IT app usage. Critical incidents climbed 15%, with three of them traceable to unsanctioned Generative AI usage (ChatGPT accounted for the most alerts of any single app at 387). DLP remains your top risk category at 31% of incidents, though absolute DLP volume is actually down 5% versus last week. Your highest-risk user, sarah.chen@company.com (Engineering), generated 14 incidents across multiple unsanctioned cloud-storage and GenAI apps and warrants a closer look.",
     examplePrompts: [
-      M("What caused the Wednesday–Friday spike in critical incidents?", "soc-weekly-rca-wedfri"),
       M("Show me all DLP violations involving ChatGPT this week",         "soc-weekly-chatgpt-dlp"),
       M("Who are the top users behind the unsanctioned cloud storage alerts?", "soc-weekly-storage-users"),
     ],
@@ -832,7 +829,7 @@ const DASHBOARDS = {
         ],
         xLabels: ["Mon May 5","Tue May 6","Wed May 7","Thu May 8","Fri May 9","Sat May 10","Sun May 11"],
         anomalies: [
-          { index: 4, value: 2504, label: "Fri peak (2,504)", drill: { text: "What caused the Wed–Fri spike in critical incidents?", id: "soc-weekly-rca-wedfri" } },
+          { index: 4, value: 2504, label: "Fri peak (2,504)" },
         ],
         insight: "Friday was the peak day at 2,504 total incidents — a 44% jump from Monday. Critical severity tripled from Mon to Fri before dropping sharply on the weekend. The Wed–Fri ramp aligns with end-of-week data movement and unsanctioned GenAI activity patterns." },
       { type: "hbar", size: "half", title: "Top policies — this week",
@@ -855,7 +852,6 @@ const DASHBOARDS = {
         insight: "ChatGPT is the #1 alerting app this week at 387 incidents — the only unsanctioned app in the top 5 with no sanctioned alternative. WeTransfer (241) is the second-highest unsanctioned app. Together they account for 47% of all app-level alerts." },
     ],
     followUps: [
-      M("What caused the Wednesday–Friday spike in critical incidents?", "soc-weekly-rca-wedfri"),
       M("Show me all DLP violations involving ChatGPT this week",         "soc-weekly-chatgpt-dlp"),
       M("Who are the top users behind the unsanctioned cloud storage alerts?", "soc-weekly-storage-users"),
       M("Break down incidents by category",                                "soc-weekly-categories"),
@@ -5430,10 +5426,9 @@ const RESPONSES = {
     ],
     series: [{ name: "Incidents", color: "#2563eb", values: [142, 158, 171, 165, 198, 224, 226] }],
     xLabels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
-    anomalies: [{ index: 5, value: 224, label: "Spike", drill: { text: "What caused the Saturday spike?", id: "rca-saturday" } }],
+    anomalies: [{ index: 5, value: 224, label: "Spike" }],
     summary: "DLP incidents climbed 18% week-over-week, driven mostly by a Saturday spike that pushed Critical and High severity counts up 24%. The increase is concentrated in two policies — Confidential — Customer PII and Source Code — Internal Only — which together account for ~58% of new incidents. Triage time improved 9%, suggesting the analyst team is keeping pace despite higher volume.",
     followUps: [
-      M("What caused the Saturday spike?",                       "rca-saturday"),
       M("Break this down by policy",                              "top-policies"),
       M("Show the same chart for last week for comparison",       "compare-week"),
       M("Which users were involved in the Saturday spike?",       "users-saturday"),
@@ -5457,11 +5452,10 @@ const RESPONSES = {
     ],
     xLabels: ["Mon May 5","Tue May 6","Wed May 7","Thu May 8","Fri May 9","Sat May 10","Sun May 11"],
     anomalies: [
-      { index: 4, value: 2504, label: "Fri peak (2,504)", drill: { text: "What caused the Wed–Fri spike in critical incidents?", id: "soc-weekly-rca-wedfri" } },
+      { index: 4, value: 2504, label: "Fri peak (2,504)" },
     ],
     summary: "This week your environment generated 12,847 security events — an 8% increase week-over-week, driven primarily by a Wednesday–Friday surge in DLP activity and shadow-IT app usage. Critical incidents climbed 15%, with three of them traceable to unsanctioned Generative AI usage (ChatGPT accounted for the most alerts of any single app at 387). DLP remains your top risk category at 31% of incidents, though absolute DLP volume is actually down 5% versus last week. Your highest-risk user, sarah.chen@company.com (Engineering), generated 14 incidents across multiple unsanctioned cloud-storage and GenAI apps and warrants a closer look.",
     followUps: [
-      M("What caused the Wednesday–Friday spike in critical incidents?", "soc-weekly-rca-wedfri"),
       M("Show me all DLP violations involving ChatGPT this week",         "soc-weekly-chatgpt-dlp"),
       M("Who are the top users behind the unsanctioned cloud storage alerts?", "soc-weekly-storage-users"),
       M("Break down incidents by category",                                "soc-weekly-categories"),
@@ -5510,28 +5504,6 @@ const RESPONSES = {
     ],
   },
 
-  "soc-weekly-rca-wedfri": {
-    title: "Wednesday–Friday spike · root cause",
-    chartType: "kpi+line",
-    kpis: [
-      { label: "Critical incidents (Wed–Fri)", value: "15", delta: "65% of week", deltaDir: "up", invertColor: true },
-      { label: "Driver",                       value: "GenAI" },
-      { label: "Most active app",              value: "ChatGPT" },
-      { label: "Peak day",                     value: "Fri May 9" },
-    ],
-    series: [
-      { name: "Critical", color: SEV.Critical, values: [2,  3,  5,    4,    6,    2,   1]   },
-      { name: "High",     color: SEV.High,     values: [142,160,221,  189,  243,  87,  75]  },
-    ],
-    xLabels: ["Mon May 5","Tue May 6","Wed May 7","Thu May 8","Fri May 9","Sat May 10","Sun May 11"],
-    summary: "15 of the week's 23 Critical incidents (65%) landed Wed–Fri. The cluster traces back to a surge in unsanctioned Generative AI usage — ChatGPT accounted for 387 alerts and three of the Critical incidents involved sensitive code or customer data being pasted into prompts. Friday May 9 was the peak day (2,504 events, 6 Critical). Weekend volume fell off as expected.",
-    followUps: [
-      M("Show all DLP violations involving ChatGPT this week",  "soc-weekly-chatgpt-dlp"),
-      M("Top users in the Wed–Fri Critical incidents",          "soc-weekly-storage-users"),
-      M("Back to Security Leader",                        "soc-dlp-monitoring"),
-    ],
-  },
-
   "soc-weekly-chatgpt-dlp": {
     title: "ChatGPT DLP violations · this week",
     chartType: "hbar",
@@ -5545,7 +5517,6 @@ const RESPONSES = {
     summary: "ChatGPT generated 387 DLP alerts this week — the single most-alerting app. The dominant trigger is source-code pasting (142 alerts), followed by customer PII (98) and credential exposure (64). Three of these escalated to Critical severity. Engineering and Sales departments account for ~70% of the volume, with sarah.chen@company.com responsible for the largest share.",
     followUps: [
       M("Show the users behind these ChatGPT alerts",  "soc-weekly-risky-users"),
-      M("What caused the Wed–Fri Critical spike?",     "soc-weekly-rca-wedfri"),
       M("Back to Security Leader",               "soc-dlp-monitoring"),
     ],
   },
@@ -6023,12 +5994,11 @@ const RESPONSES = {
     }],
     xLabels: Array.from({length: 30}, (_, i) => i % 5 === 0 ? `Apr ${i+1}` : ""),
     anomalies: [
-      { index: 17, value: 182, label: "Apr 18 spike", drill: { text: "Why did Apr 18 spike?", id: "rca-apr26" } },
-      { index: 26, value: 224, label: "Apr 26 spike", drill: { text: "Why did Apr 26 spike?", id: "rca-apr26" } },
+      { index: 17, value: 182, label: "Apr 18 spike" },
+      { index: 26, value: 224, label: "Apr 26 spike" },
     ],
     summary: "Daily incident volume shows a clear upward drift over the 30-day window — averaging 134/day in week 1 versus 195/day in the most recent week (~46% increase). Two anomalous spikes were detected: Apr 18 and Apr 26. Both correlate with quarterly close activity, when finance teams move large volumes of PCI-classified data.",
     followUps: [
-      M("Why did Apr 26 spike?",                                   "rca-apr26"),
       M("Compare this trend to last month",                        "trend-compare-month"),
       M("Forecast the next 7 days",                                "forecast-7d"),
       M("Show the same chart split by policy",                     "trend-by-policy"),
@@ -6056,26 +6026,6 @@ const RESPONSES = {
     ],
   },
 
-  /* ---------- root cause / drill-down responses ---------- */
-  "rca-saturday": {
-    title: "Root cause — Saturday incident spike",
-    chartType: "hbar",
-    bars: [
-      { label: "Quarterly close — finance team", value: 89, color: "#ef4444" },
-      { label: "Marketing campaign export",       value: 47, color: "#f59e0b" },
-      { label: "Customer Success email batches",  value: 38, color: "#f59e0b" },
-      { label: "Engineering — code review share", value: 21 },
-      { label: "Other / unattributed",            value: 29 },
-    ],
-    summary: "The Saturday spike (224 incidents, +36% vs. weekday average) is concentrated in 4 user cohorts. The finance team's quarterly-close workflow (89 incidents) accounts for the largest share — large PCI-classified datasets being attached to outbound email. This pattern recurs every quarter-end and is mostly a workflow misconfiguration rather than a security event.",
-    followUps: [
-      M("Show the finance team's incident details",                "user-detail-jmorales"),
-      M("Which destinations did the Saturday traffic go to?",      "destinations"),
-      M("Recommend a policy change to reduce false positives",     "block-recommendation"),
-      M("Acknowledge spike as expected quarter-close behavior",    "ack-acknowledged"),
-    ],
-  },
-
   "compare-week": {
     title: "DLP Incidents — This Week vs. Last Week",
     chartType: "kpi+line",
@@ -6093,7 +6043,6 @@ const RESPONSES = {
     anomalies: [{ index: 5, value: 224, label: "+52%" }],
     summary: "Week-over-week, every day is up except Tue/Wed which are flat. Saturday shows the largest delta (+52%), again driven by quarter-close traffic. The base rate (Mon–Fri average) is up 14%, suggesting a real, sustained increase in DLP triggers — not just a one-day anomaly.",
     followUps: [
-      M("What changed Mon–Fri to drive the base rate up?",         "rca-saturday"),
       M("Compare against the 4-week trailing average",             "trend-compare-month"),
       M("Did any new policies go live this week?",                 "policy-compare-quarter"),
       M("Forecast next week",                                      "forecast-7d"),
@@ -6117,30 +6066,6 @@ const RESPONSES = {
       M("Were any of these escalated to Critical?",                "critical-only"),
       M("What policies did these users trigger?",                  "policies-critical"),
       M("Send this user list to the #dlp-triage channel",          "slack-sent"),
-    ],
-  },
-
-  "rca-apr26": {
-    title: "Root cause — Apr 26 incident spike",
-    chartType: "kpi+line",
-    kpis: [
-      { label: "Apr 26 incidents",     value: "224" },
-      { label: "vs. 7-day baseline",   value: "+45%", deltaDir: "up", delta: "+45%", invertColor: true },
-      { label: "Top policy",           value: "PCI" },
-      { label: "Top user cohort",      value: "Finance" },
-    ],
-    series: [{
-      name: "Apr 26 hourly", color: "#ef4444",
-      values: [4, 3, 2, 4, 3, 6, 8, 11, 14, 22, 28, 19, 16, 13, 11, 9, 14, 19, 21, 4, 3, 2, 1, 1],
-    }],
-    xLabels: Array.from({length:24}, (_, i) => i % 4 === 0 ? `${i.toString().padStart(2,"0")}:00` : ""),
-    anomalies: [{ index: 10, value: 28, label: "Peak 10–11am" }],
-    summary: "Apr 26 incidents peaked between 10am–11am UTC (28 in a single hour). The spike traces back to the Finance org's quarterly-close batch, which exported PCI-classified Excel files to a shared Google Drive folder. This is a recurring pattern — the same hour-of-day spike appeared on the prior quarter close.",
-    followUps: [
-      M("Was the same pattern observed last quarter?",             "policy-compare-quarter"),
-      M("Show only the PCI incidents from Apr 26",                 "policy-detail-pii"),
-      M("Recommend a policy adjustment for quarter-close",         "block-recommendation"),
-      M("Acknowledge as expected behavior",                        "ack-acknowledged"),
     ],
   },
 
@@ -6691,7 +6616,6 @@ const RESPONSES = {
     anomalies: [{ index: 26, value: 224, label: "Apr 26" }],
     summary: "Month-over-month, every week is up. The gap is largest in the last 7 days (~25% delta), suggesting growth is accelerating rather than stabilizing. Apr 26's spike has no equivalent on the prior month — last month's quarter-close-equivalent date (Mar 27) was within normal range.",
     followUps: [
-      M("Why is growth accelerating?",                             "rca-saturday"),
       M("Show forecast for next month",                            "forecast-7d"),
       M("Compare top users this month vs. last",                   "users-compare-month"),
       M("Recommend interventions",                                 "block-recommendation"),
@@ -6856,12 +6780,11 @@ const RESPONSES = {
       { label: "Off-hours access",           value: 24 },
       { label: "Unusual data download",      value: 19, color: SEV.High },
       { label: "First-time external share",  value: 16 },
-      { label: "Privilege escalation",       value: 12, color: SEV.Critical, drill: { text: "Investigate privilege-escalation events", id: "rca-saturday" } },
+      { label: "Privilege escalation",       value: 12, color: SEV.Critical },
       { label: "MFA challenge fatigue",      value:  9, color: SEV.High },
     ],
     summary: "28 impossible-travel events flagged in the last 24h — the highest count in 2 weeks. The most concerning cluster is privilege-escalation (12 events, all Critical) tied to 4 user accounts. Off-hours access volume (24) is consistent with normal weekend on-call traffic.",
     followUps: [
-      M("Investigate the privilege-escalation events", "rca-saturday"),
       M("Show the 4 affected user accounts",           "top-users"),
       M("Trend UEBA anomalies over 30 days",           "trend-30d"),
       M("Send the cluster to #threat-intel",           "slack-sent"),
@@ -6879,7 +6802,7 @@ const RESPONSES = {
     ],
     series: [{ name: "Critical+High", color: SEV.Critical, values: [12, 14, 16, 18, 22, 28, 21] }],
     xLabels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
-    anomalies: [{ index: 5, value: 28, label: "Saturday spike", drill: { text: "What caused the Saturday spike?", id: "rca-saturday" } }],
+    anomalies: [{ index: 5, value: 28, label: "Saturday spike" }],
     summary: "Top-line security posture for the week. Total incidents are up 18% week-over-week. Critical SLA compliance has slipped from 94% to 76% — the team is missing the 4-hour resolution target on Critical incidents, concentrated in Saturday's quarter-close traffic. Compliance posture is Amber: PII (412) and PCI (196) violations both elevated.",
     followUps: [
       M("Why is Critical SLA slipping?",          "resolution-time-severity"),
@@ -6900,7 +6823,7 @@ const RESPONSES = {
     ],
     series: [{ name: "Failed logins", color: "#ef4444", values: [4,3,2,4,3,6,8,11,14,22,28,19,16,13,11,9,14,19,21,16,12,8,6,3] }],
     xLabels: Array.from({length:24}, (_, i) => i % 4 === 0 ? `${i.toString().padStart(2,"0")}:00` : ""),
-    anomalies: [{ index: 10, value: 28, label: "Peak", drill: { text: "What caused the 10am peak?", id: "rca-saturday" } }],
+    anomalies: [{ index: 10, value: 28, label: "Peak" }],
     summary: "1,847 failed login attempts in the last 24h, up 42% from yesterday. Peaked between 10–11am UTC at 28 attempts in a single hour. 31 of those targeted MFA bypass — concentrated on 5 accounts. Top source IP (203.0.113.42, AS-Hosting) accounts for 31% of failures and is consistent with a credential-stuffing campaign.",
     followUps: [
       M("Show the 5 MFA-bypass targets",          "top-users"),
@@ -8787,7 +8710,6 @@ function classifyPrompt(text) {
   if (/\b(forecast|predict)\b/.test(t)) return "forecast-7d";
   if (/\b(j\.morales|jmorales|morales)\b/.test(t)) return "user-detail-jmorales";
   if (/\b(k\.tanaka|tanaka)\b/.test(t)) return "user-policies-ktanaka";
-  if (/\b(saturday spike|spike)\b/.test(t)) return "rca-saturday";
   if (/\bblock|recommend|policy update\b/.test(t)) return "block-recommendation";
   if (/\b30[- ]?day|month|trend\b/.test(t)) return "trend-30d";
   if (/\b(week|7[- ]?day|this week)\b/.test(t) && /(overview|summary|incident)/.test(t)) return "weekly-overview";
@@ -9579,11 +9501,12 @@ const [isAgentView, setIsAgentView] = useState(false);
   };
 
   /* Scripted "overall AI security" dashboard-creation workflow. Triggered
-     from the blank New Dashboard when the prompt contains "overall AI
-     security" (case-insensitive). Fully automated — the assistant narrates
-     a series of timed steps, then loads the AI Risk Assessment dashboard
-     into the blank canvas one widget at a time. The Thinking animation
-     stays up (loading=true) for the entire run and stops only at the end. */
+     from the landing chatbox when the prompt contains "overall AI security"
+     (case-insensitive). Fully automated — moves into the dual-pane blank
+     canvas, then the assistant narrates a series of timed steps and loads
+     the AI Risk Assessment dashboard into the canvas one widget at a time.
+     The Thinking animation stays up (loading=true) for the entire run and
+     stops only at the end. */
   const runAISecurityDashboardWorkflow = (text) => {
     const dashId = "new-dashboard";
     const widgets = DASHBOARDS["ai-risk-assessment"].widgets;
@@ -9597,7 +9520,11 @@ const [isAgentView, setIsAgentView] = useState(false);
       "• DLP signal is regulated-data-driven: the 'Detect Credit card / GDPR info' policy alone generated 1,061 alerts (10x the next policy), and automation identities — the 'assistant' and 'appconnector_user' accounts — are the top alert sources, not individual end users.\n\n" +
       "Recommended focus: tighten guardrails on ChatGPT and Google Gemini, close the risk-assessment and compliance-documentation gaps, and review automated/service-account access to sensitive data.";
 
-    // Step 1 — start the run: record the prompt and turn on the Thinking animation.
+    // Step 1 — start the run: move into the dual-pane canvas, record the
+    // prompt, and turn on the Thinking animation.
+    pushHistory();
+    setShowWelcome(false);
+    setActiveDashboard({ dashboardId: dashId, title: "New Dashboard", desc: "" });
     setMessages(m => [...m, { role: "user", text }]);
     setLoading(true);
     // Ensure the canvas starts blank for this run.
@@ -9632,8 +9559,9 @@ const [isAgentView, setIsAgentView] = useState(false);
   };
 
   const send = (text, knownResponseId) => {
-    // "Overall AI security" scripted workflow — only on the blank New Dashboard.
-    if (!knownResponseId && activeDashboard?.dashboardId === "new-dashboard" && /overall ai security/i.test(text)) {
+    // "Overall AI security" scripted workflow — triggered from the landing
+    // chatbox; the workflow itself moves into the dual-pane blank canvas.
+    if (!knownResponseId && showWelcome && /overall ai security/i.test(text)) {
       runAISecurityDashboardWorkflow(text);
       return;
     }
@@ -10108,7 +10036,7 @@ const [isAgentView, setIsAgentView] = useState(false);
         ) : showDashboardGallery ? (
           <DashboardGallery onClose={() => setShowDashboardGallery(false)}
                             onPickDashboard={(d) => { setShowDashboardGallery(false); onPickDashboard(d); }}
-                            onNewDashboard={() => { setShowDashboardGallery(false); onPickDashboard({ dashboardId: "new-dashboard", title: "New Dashboard", desc: "" }); }}
+                            onNewDashboard={() => { setShowDashboardGallery(false); reset(); }}
                             onPinDashboard={pinToPreview} pinnedPreviewId={pinnedPreviewId}
                             favoriteDashboardIds={favoriteDashboardIds} onToggleFavorite={toggleFavoriteDashboard} />
         ) : showWelcome ? (
