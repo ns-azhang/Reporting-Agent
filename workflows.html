@@ -4385,6 +4385,169 @@ function QuickActionCard({ action, onPick }) {
   );
 }
 
+/* ------------------------------- Onboarding ------------------------------- */
+/* Task-based (not role-based) onboarding: role/persona-driven Quick Actions
+   are P2 (Agentic Analytics only) per the Reporting Agent PRD, so letting
+   users self-select what they spend their time on avoids the RBAC
+   dependency while still landing a relevant starting card set. */
+const JOB_TILES = [
+  { id: "investigate", label: "Investigating incidents",          desc: "Triage alerts, drill into users, follow up on anomalies",      icon: "alert" },
+  { id: "report",      label: "Reporting to leadership",          desc: "Executive scorecards, compliance posture, weekly summaries",   icon: "chart" },
+  { id: "adoption",    label: "Tracking app / ZTNA adoption",     desc: "App usage, sanctioned vs unsanctioned, ZTNA session patterns", icon: "cloud" },
+  { id: "tune",        label: "Tuning & monitoring policies",     desc: "Policy effectiveness, false-positive rates, top-firing rules", icon: "shield" },
+  { id: "hunt",        label: "Threat hunting",                   desc: "UEBA anomalies, multi-stage threats, behavioral signals",      icon: "spark" },
+  { id: "access",      label: "Troubleshooting end-user access",  desc: "Login failures, ZTNA session issues, access patterns",         icon: "users" },
+];
+const DEFAULT_JOB = "investigate"; // "Skip for now" default — highest-frequency use case
+
+const ONBOARDING_KEY = "naa:selectedJobs";
+const ONBOARDING_DONE_KEY = "naa:onboardingDone";
+function readSelectedJobs() {
+  try {
+    const raw = localStorage.getItem(ONBOARDING_KEY);
+    if (!raw) return null;
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : null;
+  } catch { return null; }
+}
+function writeSelectedJobs(jobs) {
+  try {
+    localStorage.setItem(ONBOARDING_KEY, JSON.stringify(jobs));
+    localStorage.setItem(ONBOARDING_DONE_KEY, "1");
+  } catch {}
+}
+function readOnboardingDone() {
+  try { return localStorage.getItem(ONBOARDING_DONE_KEY) === "1"; } catch { return false; }
+}
+/* ?reset or ?demo on the URL wipes onboarding state so reviewers can replay
+   the first-run flow without opening devtools. */
+(function maybeResetOnboardingForDemo() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("reset") || params.has("demo")) {
+      localStorage.removeItem(ONBOARDING_KEY);
+      localStorage.removeItem(ONBOARDING_DONE_KEY);
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, "", cleanUrl);
+    }
+  } catch {}
+})();
+
+/* Starter prompts per job. Card 1 of every set is a deterministic
+   responseId (pinned) rather than free-text classification, per the
+   onboarding synthesis doc — first-run prompts get one shot to look good. */
+const QUICK_ACTIONS_BY_JOB = {
+  investigate: [
+    { icon: "trend", title: "DLP incident trend — 30 days",   desc: "Daily DLP incident counts with anomalies highlighted",              prompt: "Show me daily DLP incident counts for the last 30 days",                       responseId: "trend-30d" },
+    { icon: "doc",   title: "Top policies by incident volume",desc: "Which policies are firing the most this week",                      prompt: "Which DLP policies triggered the most incidents this week?",                   responseId: "top-policies" },
+    { icon: "users", title: "Top users by incident count",    desc: "Highest-volume users in the last 7 days",                           prompt: "Show me the top 10 users by DLP incident count in the last 7 days",            responseId: "top-users" },
+    { icon: "history",title:"Incident response times",        desc: "Volume, response times, and resolution status",                     prompt: "Show incident volume, response times, and resolution status for the last 30 days", responseId: "resolution-time-severity" },
+    { icon: "trend", title: "False-positive trend",           desc: "False-positive rate trend by policy over 30 days",                  prompt: "Show the false-positive rate trend by policy over the last 30 days",           responseId: "policy-trend-30d" },
+  ],
+  report: [
+    { icon: "chart", title: "Executive security scorecard",   desc: "Security posture, incident trends, policy effectiveness",           prompt: "Create a summary of security posture, incident trends, and policy effectiveness for the last quarter", responseId: "role-exec-scorecard" },
+    { icon: "history",title:"SLA adherence",                  desc: "Incident resolution time vs. SLA for the quarter",                  prompt: "Show incident resolution time vs. SLA for the last quarter",                   responseId: "resolution-time-severity" },
+    { icon: "shield",title: "Compliance posture",              desc: "Compliance alignment and detection coverage KPIs",                  prompt: "Show compliance alignment and detection coverage KPIs",                        responseId: "policies-critical" },
+    { icon: "spark", title: "Weekly leadership digest",        desc: "This week's incident summary — schedule it to your team",           prompt: "Show this week's incident summary",                                            responseId: "weekly-overview" },
+  ],
+  adoption: [
+    { icon: "cloud", title: "Top private apps by usage",       desc: "Top private apps by usage and availability",                        prompt: "Show top private apps by usage",                                               responseId: "destinations" },
+    { icon: "doc",   title: "New / unmanaged apps",            desc: "New cloud apps discovered recently, with risk scores",              prompt: "Show new cloud apps discovered in the last 30 days with their risk scores",    responseId: "sa-managed-no" },
+    { icon: "trend", title: "Sanctioned vs. unsanctioned trend",desc: "How the split between sanctioned and unsanctioned is shifting",     prompt: "Show the trend of data moving to sanctioned vs. unsanctioned apps",            responseId: "sanctioned-trend" },
+    { icon: "globe", title: "VPN / ZTNA session activity",     desc: "Business units still connecting via legacy access methods",         prompt: "Which business units still have users connecting via VPN instead of ZTNA?",    responseId: null },
+  ],
+  tune: [
+    { icon: "shield",title: "Top-firing rules",                desc: "Which policies fire most, and their false-positive share",          prompt: "Which policies fire most often, and what share are false positives?",          responseId: "soc-top-rules" },
+    { icon: "trend", title: "Policy effectiveness — 30 days",  desc: "Blocked events by policy over the last 30 days",                    prompt: "Show blocked events by policy for the last 30 days",                           responseId: "policy-trend-30d" },
+    { icon: "history",title:"Before / after a policy change",  desc: "This quarter vs. last quarter",                                      prompt: "Show DLP alert volume before and after our last policy change",                responseId: "policy-compare-quarter" },
+    { icon: "users", title: "Coaching policy trend",           desc: "Users coached by DLP policies this quarter",                        prompt: "Show coaching policy effectiveness trend for this quarter",                    responseId: "sa-dact-useralert" },
+  ],
+  hunt: [
+    { icon: "spark", title: "UEBA anomaly clusters — 24h",     desc: "Suspicious behavior patterns detected since yesterday",             prompt: "Show UEBA anomaly clusters detected in the last 24 hours",                     responseId: "role-ueba-anomalies" },
+    { icon: "alert", title: "Spiking file-upload behavior",    desc: "Users with a sudden spike in encrypted file uploads",               prompt: "Show users with a sudden spike in encrypted file uploads",                     responseId: "sa-uba-encrypted28" },
+    { icon: "users", title: "Cross-signal view",               desc: "Users appearing in both UEBA anomalies and DLP incidents",          prompt: "Show users appearing in both UEBA anomalies and DLP incidents this week",      responseId: "soc-user-drilldown" },
+    { icon: "trend", title: "Severity trend — 30 days",        desc: "Critical & High severity trend across the last month",              prompt: "Show the Critical and High severity trend for the last 30 days",               responseId: "severity-trend-30d" },
+  ],
+  access: [
+    { icon: "alert", title: "Failed logins — 24h",             desc: "Authentication failures by user and app",                           prompt: "Show failed login attempts in the last 24 hours by user and app",              responseId: "role-failed-logins" },
+    { icon: "shield",title: "Blocked requests by reason",       desc: "Blocked web requests over the last 24 hours",                       prompt: "Show blocked web requests by reason for the last 24 hours",                    responseId: "block-recommendation" },
+    { icon: "globe", title: "Session anomalies",               desc: "First access from an unrecognized network",                         prompt: "Show ZTNA session anomalies in the last 7 days",                               responseId: "sa-uba-firstip" },
+    { icon: "history",title:"Per-user activity lookup",         desc: "Consolidated recent activity for one user",                         prompt: "Show all activity for j.morales in the last 24 hours",                         responseId: "incident-table-jmorales" },
+  ],
+};
+
+/* Cap the visible set at 6 (REQ-UX-011), round-robining one card per
+   selected job per round so card 1 (the pinned/deterministic one) from
+   every selection is guaranteed a slot before any job's deeper cards. */
+function resolveOnboardingCards(selectedJobs) {
+  const jobs = (selectedJobs && selectedJobs.length) ? selectedJobs : [DEFAULT_JOB];
+  const lists = jobs.map(j => QUICK_ACTIONS_BY_JOB[j] || []);
+  const out = [];
+  for (let round = 0; out.length < 6 && lists.some(l => round < l.length); round++) {
+    for (const list of lists) {
+      if (out.length >= 6) break;
+      if (round < list.length) out.push(list[round]);
+    }
+  }
+  return out;
+}
+
+function OnboardingScreen({ initialSelection = [], onComplete, onSkip, mode = "first-run" }) {
+  const [selected, setSelected] = useState(initialSelection);
+  const toggle = (id) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const title = mode === "first-run" ? "What do you spend most of your time doing?" : "Customize your view";
+  const subtitle = mode === "first-run"
+    ? "Pick one or more — we'll suggest a starting set of shortcuts. You can change this any time."
+    : "Update what you spend most of your time doing. We'll refresh your shortcuts on the home page.";
+  return (
+    <div className="fixed inset-0 z-50 fade-in">
+      <div className="absolute inset-0 bg-slate-900/40" onClick={mode === "first-run" ? undefined : onSkip} />
+      <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div className="relative bg-white rounded-2xl card-shadow w-full max-w-2xl pointer-events-auto flex flex-col max-h-[90vh]">
+          <div className="px-6 py-5 border-b border-slate-200">
+            <div className="text-[17px] font-semibold text-slate-900">{title}</div>
+            <div className="text-[12.5px] text-slate-500 mt-1">{subtitle}</div>
+          </div>
+          <div className="px-6 py-5 overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {JOB_TILES.map(t => {
+                const active = selected.includes(t.id);
+                return (
+                  <button key={t.id} onClick={() => toggle(t.id)}
+                    className={`text-left rounded-xl border-2 p-3 transition-all focus-ring ${active ? "border-blue-500 bg-blue-50/40" : "border-slate-200 bg-white hover:border-slate-300"}`}>
+                    <div className="flex items-start gap-2.5">
+                      <div className={`w-8 h-8 rounded-lg grid place-items-center flex-shrink-0 ${active ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>
+                        {I[t.icon] || I.spark}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`text-[13px] font-semibold ${active ? "text-blue-900" : "text-slate-900"}`}>{t.label}</div>
+                          {active && <span className="text-blue-600 text-[10px]">{I.check}</span>}
+                        </div>
+                        <div className="text-[11.5px] text-slate-500 mt-0.5 leading-snug">{t.desc}</div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/40 rounded-b-2xl">
+            <button onClick={onSkip}
+              className="text-[12.5px] text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-md hover:bg-slate-100 focus-ring">
+              {mode === "first-run" ? "Skip for now" : "Cancel"}
+            </button>
+            <button onClick={() => onComplete(selected)} disabled={selected.length === 0}
+              className="inline-flex items-center gap-1.5 text-[12.5px] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white px-4 py-1.5 rounded-md focus-ring">
+              {mode === "first-run" ? "Continue" : "Save"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------ Prompt History Page ----------------------- */
 function PromptHistoryPage({ onSend, busy, libraryItems }) {
   const [prefill, setPrefill] = useState("");
@@ -8549,37 +8712,16 @@ function PersonaDropdown({ persona, onChangePersona, selectedIds = [], onToggleT
   );
 }
 
-/* Module-level (not component state) so re-mounting WelcomePage — e.g. via the
-   "Back" button — doesn't show the popup again after the user has dismissed it once.
-   Defaults to true so the persona picker is hidden on load; it opens only when the
-   user clicks "Customize view". */
-let welcomePersonaPickerSeen = true;
-
 function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onSetPersonaOnly, onPickDashboard, pinnedPreviewId = "genai-admin", chatMode, messages, onPickFollowup, myReports = [], onSaveToReport, onCreateReport }) {
   const scrollRef = useRef(null);
-  const [personaPickerSeen, setPersonaPickerSeenState] = useState(welcomePersonaPickerSeen);
-  const setPersonaPickerSeen = (v) => { welcomePersonaPickerSeen = v; setPersonaPickerSeenState(v); };
-  const [selectedPersonaIds, setSelectedPersonaIds] = useState([persona.id]);
-  const togglePersona = (id) => setSelectedPersonaIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  const confirmPersonas = () => { if (selectedPersonaIds.length > 0 && onSetPersonaOnly) onSetPersonaOnly(selectedPersonaIds[0]); setPersonaPickerSeen(true); };
+  const [selectedJobs, setSelectedJobs] = useState(() => readSelectedJobs() || []);
+  const [onboardingOpen, setOnboardingOpen] = useState(() => !readOnboardingDone());
+  const [onboardingMode, setOnboardingMode] = useState("first-run");
+  const completeOnboarding = (jobs) => { setSelectedJobs(jobs); writeSelectedJobs(jobs); setOnboardingOpen(false); };
+  const skipOnboarding = () => { writeSelectedJobs([]); setOnboardingOpen(false); };
+  const openCustomize = () => { setOnboardingMode("customize"); setOnboardingOpen(true); };
 
-  const TOPIC_DASHBOARD_MAP = {
-    luke:        "soc-dlp-monitoring",
-    secengineer: "security-engineer",
-    secleader:   "security-analyst",
-    ciso:        "ciso-overview",
-    genaiadmin:  "genai-admin",
-  };
-
-  const suggestedDashboards = React.useMemo(() => {
-    const pinned = selectedPersonaIds
-      .map(id => ALL_DASHBOARD_ITEMS.find(d => d.dashboardId === TOPIC_DASHBOARD_MAP[id]))
-      .filter(Boolean);
-    const pinnedIds = new Set(pinned.map(d => d.dashboardId));
-    const rest = ALL_DASHBOARD_ITEMS.filter(d => !pinnedIds.has(d.dashboardId));
-    const shuffled = [...rest].sort(() => Math.random() - 0.5);
-    return [...pinned, ...shuffled].slice(0, 6);
-  }, [selectedPersonaIds]);
+  const quickActionCards = React.useMemo(() => resolveOnboardingCards(selectedJobs), [selectedJobs]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -8610,47 +8752,12 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
 
   return (
     <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto bg-slate-50 px-6 pt-10 pb-10 relative">
-      {/* Persona picker popup — shown once on first visit */}
-      {!personaPickerSeen && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-8 menu-pop">
-            <h2 className="text-[15px] font-semibold text-slate-900 mb-1">What do you spend most of your time doing?</h2>
-            <p className="text-[12.5px] text-slate-400 mb-4">Select one or more — suggested dashboards will be provided based on your selection. You can change this any time.</p>
-            <div className="flex flex-col gap-1.5 mb-4">
-              {["luke","secengineer","secleader","ciso","genaiadmin"].map(id => {
-                const q = PERSONAS[id]; if (!q) return null;
-                const isSelected = selectedPersonaIds.includes(id);
-                return (
-                  <button key={id} onClick={() => togglePersona(id)}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all border ${isSelected ? "bg-blue-50 border-blue-200" : "border-transparent hover:bg-slate-50 hover:border-slate-200"}`}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-slate-100 text-slate-700">
-                      {PERSONA_ICONS[id]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-[15px] font-semibold ${isSelected ? "text-blue-700" : "text-slate-800"}`}>{PERSONA_TOPICS[id] || q.role}</div>
-                      {PERSONA_TOPIC_SUBTITLES[id] && (
-                        <div className="text-[12px] text-slate-400 leading-snug mt-0.5">{PERSONA_TOPIC_SUBTITLES[id]}</div>
-                      )}
-                    </div>
-                    <div className={`w-4 h-4 rounded flex-shrink-0 border-2 flex items-center justify-center transition-all ${isSelected ? "bg-blue-600 border-blue-600" : "border-slate-300"}`}>
-                      {isSelected && <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={confirmPersonas} disabled={selectedPersonaIds.length === 0}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[13px] font-medium py-2.5 rounded-xl transition-colors">
-                Get started
-              </button>
-              <button onClick={() => setPersonaPickerSeen(true)}
-                className="text-[13px] text-slate-400 hover:text-slate-600 font-medium px-4 py-2.5 rounded-xl hover:bg-slate-100 transition-colors">
-                Skip for now
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Task-based onboarding — shown once on first visit, reopenable via "Customize view" */}
+      {onboardingOpen && (
+        <OnboardingScreen mode={onboardingMode}
+          initialSelection={onboardingMode === "customize" ? selectedJobs : []}
+          onComplete={completeOnboarding}
+          onSkip={onboardingMode === "first-run" ? skipOnboarding : () => setOnboardingOpen(false)} />
       )}
       <div className="w-full max-w-5xl flex flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-2">
@@ -8717,27 +8824,28 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
             </div>
           );
         })()}
-        {/* Hidden for now (kept for future use): "Suggested dashboards" section + "Customize view" button. Change `false` back to `onPickDashboard` to re-enable. */}
-        {false && onPickDashboard && (
-          <div className="w-full" style={{ marginTop: "calc(1.5rem - 0.7cm)" }}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[11.5px] text-slate-400 font-medium uppercase tracking-wide flex items-center gap-1.5">{React.cloneElement(I.spark, { className: "w-3.5 h-3.5" })}Suggested dashboards</p>
-              <button onClick={() => setPersonaPickerSeen(false)}
-                className="inline-flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-slate-800 font-medium transition-colors">
-                {React.cloneElement(I.edit, { className: "w-3.5 h-3.5" })}Customize view
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {suggestedDashboards.map(d => (
-                <button key={d.dashboardId} onClick={() => onPickDashboard(d)}
-                  className="text-left bg-white border border-slate-200 hover:border-blue-400 hover:shadow-sm rounded-xl px-4 py-3.5 transition-all group">
-                  <div className="text-[13px] font-semibold text-slate-800 group-hover:text-blue-700 leading-snug">{d.title}</div>
-                  <div className="text-[11.5px] text-slate-400 leading-snug mt-1">{d.desc}</div>
-                </button>
-              ))}
-            </div>
+        {/* Quick actions — driven by the onboarding task selection */}
+        <div className="w-full" style={{ marginTop: "calc(1.5rem - 0.7cm)" }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11.5px] text-slate-400 font-medium uppercase tracking-wide flex items-center gap-1.5">{React.cloneElement(I.spark, { className: "w-3.5 h-3.5" })}Quick actions</p>
+            <button onClick={openCustomize}
+              className="inline-flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-slate-800 font-medium transition-colors">
+              {React.cloneElement(I.edit, { className: "w-3.5 h-3.5" })}Customize view
+            </button>
           </div>
-        )}
+          <div className="grid grid-cols-3 gap-4">
+            {quickActionCards.map((card, i) => (
+              <button key={i} onClick={() => onSend(card.prompt, card.responseId || undefined)}
+                className="text-left bg-white border border-slate-200 hover:border-blue-400 hover:shadow-sm rounded-xl px-4 py-3.5 transition-all group">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 grid place-items-center mb-2 group-hover:bg-blue-100">
+                  {I[card.icon] || I.spark}
+                </div>
+                <div className="text-[13px] font-semibold text-slate-800 group-hover:text-blue-700 leading-snug">{card.title}</div>
+                <div className="text-[11.5px] text-slate-400 leading-snug mt-1">{card.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
         {busy && (
           <div className="w-full flex justify-start">
             <TypingBubble />
