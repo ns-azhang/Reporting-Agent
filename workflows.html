@@ -212,7 +212,7 @@ const I = {
   plus:    <Icon d={<><path d="M12 5v14M5 12h14"/></>} />,
   history: <Icon d={<><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></>} />,
   book:    <Icon d={<><path d="M4 4h10a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4V4z"/><path d="M4 16a4 4 0 0 1 4-4h10"/></>} />,
-  more:    <Icon d={<><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></>} />,
+  more:    <Icon d={<><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></>} />,
   download:<Icon d={<><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></>} />,
   save:    <Icon d={<><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h7V4"/><path d="M8 14h8v6H8z"/></>} />,
   copy:    <Icon d={<><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></>} />,
@@ -7751,9 +7751,6 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
               {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           )}
-          {!isAction && (
-            <button onClick={handleExport} className="p-1.5 rounded text-slate-500 hover:bg-slate-100 focus-ring" title="Export">{I.download}</button>
-          )}
           <div className="relative" ref={moreRef}>
             <button onClick={() => setMoreOpen(o => !o)}
               className="p-1.5 rounded text-slate-500 hover:bg-slate-100 focus-ring" title="More">{I.more}</button>
@@ -7851,6 +7848,20 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
                       );
                     })()}
                   </>
+                ) : menuView === "download" ? (
+                  <>
+                    <button onClick={() => setMenuView("main")} className="w-full text-left px-3 py-1.5 text-[11.5px] text-slate-500 hover:bg-slate-50 flex items-center gap-1 focus-ring">‹ Back</button>
+                    <div className="h-px bg-slate-100 my-1" />
+                    <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400 font-semibold">Download as</div>
+                    <button onClick={() => { closeMenu(); handleExport(); }}
+                      className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">
+                      {I.doc} CSV
+                    </button>
+                    <button onClick={() => { closeMenu(); onPickFollowup("Export this as a PDF", "export-pdf"); }}
+                      className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">
+                      {I.doc} PDF
+                    </button>
+                  </>
                 ) : saveToMode ? (
                   <>
                     {widgetReady ? (
@@ -7861,11 +7872,23 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
                     ) : (
                       <div className="px-3 py-1.5 text-[12px] text-slate-400">Nothing to save from this card.</div>
                     )}
+                    {!isAction && (
+                      <button onClick={() => setMenuView("download")} className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">
+                        {I.download} <span className="flex-1">Download</span>
+                        <span className="text-slate-400">›</span>
+                      </button>
+                    )}
                   </>
                 ) : menuView === "main" ? (
                   <>
                     <button onClick={() => { closeMenu(); handleShare(); }} className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">{I.share} Share conversation</button>
                     <button onClick={() => { closeMenu(); handleCopy(); }} className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">{I.copy} Copy insight</button>
+                    {!isAction && (
+                      <button onClick={() => setMenuView("download")} className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">
+                        {I.download} <span className="flex-1">Download</span>
+                        <span className="text-slate-400">›</span>
+                      </button>
+                    )}
                     {widgetReady && (
                       <button onClick={() => { closeMenu(); if (onSaveWidget) onSaveWidget(response); else toast(`Saved as widget — "${response.title}"`); }}
                         className="w-full text-left px-3 py-1.5 text-[12.5px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 focus-ring">{I.save} Save as widget</button>
