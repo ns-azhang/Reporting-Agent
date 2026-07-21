@@ -447,6 +447,9 @@ const DASHBOARD_ITEMS = [
     { dashboardId: "security-analyst", title: "Cloud Risk Assessment", desc: "Cloud app discovery, DLP, threats, UBA · last 90 days",   personas: ["Security Analyst"] },
   ]},
   { folder: "GenAI Admin", items: [
+    /* ai-risk-assessment sits before genai-admin so "ai risk" prompts match
+       it ahead of the broader "ai" keyword below. */
+    { dashboardId: "ai-risk-assessment", title: "AI Risk Assessment", desc: "Risky AI app usage, CCL ratings, policies, DLP alerts, top users", personas: ["GenAI Admin", "Security Analyst"], keywords: ["ai risk", "risk assessment", "ai security", "risky ai"] },
     { dashboardId: "genai-admin", title: "AI Usage", desc: "Users, top AI apps, activities, and controls · last 7 days",                personas: ["GenAI Admin"], keywords: ["genai", "ai", "artificial intelligence", "llm", "copilot"] },
   ]},
   { folder: "Insider Threat", items: [
@@ -10219,45 +10222,41 @@ function responseToWidget(r) {
   return null;
 }
 
-/* Scripted "AI risk" dashboard-creation wizard, triggered from the welcome
-   page input box when the prompt contains "ai risk" (case-insensitive).
-   Claude-Code-style clarification: the assistant announces how many
-   questions it needs answered, then asks them one at a time (1/3, 2/3, …)
-   with recommended options the user can click — or they can type any
-   free-text answer, which is accepted as "the answer" without going
-   through classifyPrompt. */
-const AI_RISK_WIZARD = {
-  intro: "Happy to build that — your ask spans a few possible directions, so there are 3 questions to clarify before we move on. Pick an option or type your own answer.",
+/* Claude-Code-style clarification wizard for complex prompts. Triggered
+   from the welcome chatbox when one prompt bundles multiple questions AND
+   no existing report corresponds to it (prompts that match a report open
+   that report directly instead). The assistant announces how many things
+   it needs answered, then asks them one at a time (1/3, 2/3, …) with
+   recommended options the user can click — or they can type any free-text
+   answer, which is accepted as "the answer" identically. Question 1's
+   options are the user's own questions ("which should I tackle first?");
+   the chosen one is classified into a real widget at the end, which then
+   feeds the normal iterate loop (chart type, download, save to reports). */
+const CLARIFY_WIZARD = {
+  intro: (n) => `That prompt bundles ${n} separate questions, so there are 3 things to clarify before we move on. Pick an option or type your own answer.`,
+  q1: "Which question should I tackle first? I'll generate its widget now, and we can add the others right after.",
+  ackTopic: "Got it — I'll build the first widget around that.",
   steps: [
     {
-      question: "What type of AI risk are you most interested in? Based on your answer, I will select appropriate data collections for the report.",
-      ack: "Got it. Based on your answer, Application Events and Alerts are the best options. I will create the report from these two data collections.",
+      question: "What time range should the widget cover?",
+      ack: "Noted — I'll scope it to that window.",
       options: [
-        { label: "Risky AI app usage",             desc: "Which GenAI apps are in use and how risky they are (CCL ratings)", recommended: true },
-        { label: "Sensitive data uploads to GenAI", desc: "DLP violations on prompts and file uploads" },
-        { label: "AI policy violations",            desc: "Blocked and coached AI activities across your policies" },
+        { label: "Last 7 days",   desc: "The default window for most Netskope Library reports", recommended: true },
+        { label: "Last 30 days",  desc: "A broader window for trend context" },
+        { label: "This quarter",  desc: "Quarter-to-date, for leadership reporting" },
       ],
     },
     {
-      question: "Who is the target audience? Based on your answer, I will determine the key metrics of the report.",
-      ack: "Got it. Based on your answer, I will create the report with a focus on risky AI app usage overview, CCL breakdown, and DLP policy violations.",
+      question: "How should it be broken down?",
+      ack: "Great — generating the widget now.",
       options: [
-        { label: "Security leader / CISO", desc: "Posture-level metrics, trends, and exposure summaries", recommended: true },
-        { label: "IT security analyst",    desc: "Triage-ready detail: users, apps, and per-policy alerts" },
-        { label: "GenAI platform admin",   desc: "App inventory, sanctioned vs unsanctioned, and controls" },
-      ],
-    },
-    {
-      question: "While I am finalizing the report, do you have any additional requirements?",
-      ack: "Got it. AI risk attribution can help you understand why your AI usage is risky. I will add this to the report.",
-      options: [
-        { label: "Add AI risk attribution",   desc: "Explain what makes each app or activity risky", recommended: true },
-        { label: "Limit to the last 7 days",  desc: "Narrow every widget to the past week" },
-        { label: "No — looks good",           desc: "Proceed with the report as scoped" },
+        { label: "Overall trend",  desc: "One series over time, anomalies flagged", recommended: true },
+        { label: "By user",        desc: "Ranked by the users generating the events" },
+        { label: "By policy",      desc: "Ranked by the policies firing the most" },
       ],
     },
   ],
-  done: "I have created this AI Risk Assessment Dashboard for your use case. Please review.",
+  done: "Here's the first widget. Save it to a report from its ⋮ menu (Save to), then ask the next question and keep building.",
 };
 
 function App() {
@@ -10358,7 +10357,8 @@ function App() {
   const [showGroupGallery, setShowGroupGallery] = useState(false);
   const [showSharedGallery, setShowSharedGallery] = useState(false);
   const [welcomeChatMode, setWelcomeChatMode] = useState(false);
-  const [aiRiskWizardStep, setAiRiskWizardStep] = useState(0); // 0 = inactive, 1/2/3 = waiting for answer to Qn
+  const [aiRiskWizardStep, setAiRiskWizardStep] = useState(0); // 0 = inactive, n = waiting for answer to clarify question n
+  const clarifyTopicRef = useRef(null); // the question the user chose to tackle first
 const [isAgentView, setIsAgentView] = useState(false);
   const [navHistory, setNavHistory] = useState([]);
   const pushHistory = () => {
@@ -10527,54 +10527,52 @@ const [isAgentView, setIsAgentView] = useState(false);
       runAISecurityDashboardWorkflow(text);
       return;
     }
-    // AI risk dashboard-creation wizard: once triggered, every subsequent
-    // message is treated as "the answer" to the current step, bypassing
-    // normal intent classification entirely.
+    // Clarification wizard in progress: every subsequent message is "the
+    // answer" to the current step, bypassing normal intent classification.
     if (aiRiskWizardStep > 0) {
       setMessages(m => [...m, { role: "user", text }]);
       setLoading(true);
       setTimeout(() => {
-        const stepIdx = aiRiskWizardStep - 1;         // step just answered
-        const answered = AI_RISK_WIZARD.steps[stepIdx];
-        const next = AI_RISK_WIZARD.steps[stepIdx + 1];
-        if (next) {
+        const total = 1 + CLARIFY_WIZARD.steps.length;
+        if (aiRiskWizardStep === 1) {
+          // Answer to "which question first" — remember it for classification.
+          clarifyTopicRef.current = text;
+          setMessages(m => [...m, { role: "ai", clarify: {
+            lead: CLARIFY_WIZARD.ackTopic,
+            step: 2, total,
+            question: CLARIFY_WIZARD.steps[0].question, options: CLARIFY_WIZARD.steps[0].options,
+          } }]);
+          setLoading(false);
+          setAiRiskWizardStep(2);
+        } else if (aiRiskWizardStep - 1 < CLARIFY_WIZARD.steps.length) {
+          const answered = CLARIFY_WIZARD.steps[aiRiskWizardStep - 2];
+          const next = CLARIFY_WIZARD.steps[aiRiskWizardStep - 1];
           setMessages(m => [...m, { role: "ai", clarify: {
             lead: answered.ack,
-            step: stepIdx + 2, total: AI_RISK_WIZARD.steps.length,
+            step: aiRiskWizardStep + 1, total,
             question: next.question, options: next.options,
           } }]);
           setLoading(false);
           setAiRiskWizardStep(aiRiskWizardStep + 1);
         } else {
+          // Final answer — generate the widget for the chosen question.
+          const answered = CLARIFY_WIZARD.steps[CLARIFY_WIZARD.steps.length - 1];
           setMessages(m => [...m, { role: "ai", text: answered.ack }]);
           setLoading(false);
           setAiRiskWizardStep(0);
           setTimeout(() => {
             setLoading(true);
             setTimeout(() => {
-              setMessages(m => [...m, { role: "ai", text: AI_RISK_WIZARD.done }]);
+              const id = classifyPrompt(clarifyTopicRef.current || text);
+              const response = RESPONSES[id] || RESPONSES.freeform;
+              setMessages(m => [...m,
+                { role: "ai", response },
+                { role: "ai", text: CLARIFY_WIZARD.done },
+              ]);
               setLoading(false);
-              setTimeout(() => {
-                setMessages(m => [...m, { role: "ai", dashboardPreview: { dashboardId: "ai-risk-assessment", title: "AI Risk Assessment", desc: "Risky AI app usage, CCL ratings, policies, DLP alerts, top users" } }]);
-              }, 500);
-            }, 800);
+            }, 900);
           }, 400);
         }
-      }, 800);
-      return;
-    }
-    if (!knownResponseId && showWelcome && /ai risk/i.test(text)) {
-      setMessages(m => [...m, { role: "user", text }]);
-      setLoading(true);
-      setWelcomeChatMode(true);
-      setTimeout(() => {
-        setMessages(m => [...m, { role: "ai", clarify: {
-          intro: AI_RISK_WIZARD.intro,
-          step: 1, total: AI_RISK_WIZARD.steps.length,
-          question: AI_RISK_WIZARD.steps[0].question, options: AI_RISK_WIZARD.steps[0].options,
-        } }]);
-        setLoading(false);
-        setAiRiskWizardStep(1);
       }, 800);
       return;
     }
@@ -10605,22 +10603,26 @@ const [isAgentView, setIsAgentView] = useState(false);
       }, 800);
       return;
     }
-    // Welcome page: if the user entered multiple questions in one submission,
-    // create exactly one widget per question (single questions fall through to
-    // the normal keyword-routing / chat path below, which yields one widget).
-    if (showWelcome && !knownResponseId) {
+    // Welcome page: a prompt bundling multiple questions starts the
+    // Claude-Code-style clarification wizard — unless the prompt as a whole
+    // corresponds to an existing report, in which case that report opens
+    // directly (handled by the keyword-routing block below).
+    if (showWelcome && !knownResponseId && !matchDashboardByKeyword(text)) {
       const questions = splitQuestions(text);
       if (questions.length > 1) {
         setMessages(m => [...m, { role: "user", text }]);
         setLoading(true);
         setWelcomeChatMode(true);
+        clarifyTopicRef.current = null;
         setTimeout(() => {
-          const responses = questions.map(q => {
-            const id = classifyPrompt(q);
-            return { role: "ai", response: RESPONSES[id] || RESPONSES.freeform };
-          });
-          setMessages(m => [...m, ...responses]);
+          setMessages(m => [...m, { role: "ai", clarify: {
+            intro: CLARIFY_WIZARD.intro(questions.length),
+            step: 1, total: 1 + CLARIFY_WIZARD.steps.length,
+            question: CLARIFY_WIZARD.q1,
+            options: questions.map((q, i) => ({ label: q, recommended: i === 0 })),
+          } }]);
           setLoading(false);
+          setAiRiskWizardStep(1);
         }, 800);
         return;
       }
