@@ -8056,6 +8056,47 @@ function AISummaryBubble({ text, examples, onPickFollowup }) {
   );
 }
 
+/* Claude-Code-style clarifying question card: "Question n of N" progress,
+   the question, clickable options (one flagged Recommended), and a hint
+   that free-text answers work too. Options are disabled once the
+   conversation has moved past this card. */
+function ClarifyCard({ clarify, onPick, active = true }) {
+  const { intro, lead, step, total, question, options = [] } = clarify;
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3.5 card-shadow fade-in">
+      {(lead || intro) && (
+        <p className="text-[13px] text-slate-700 leading-relaxed mb-3 whitespace-pre-line">{lead || intro}</p>
+      )}
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="inline-flex items-center gap-1 text-[10.5px] uppercase tracking-wide font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
+          Question {step} of {total}
+        </span>
+      </div>
+      <p className="text-[13.5px] font-medium text-slate-900 leading-relaxed">{question}</p>
+      <div className="mt-2.5 flex flex-col gap-1.5">
+        {options.map(o => (
+          <button key={o.label} disabled={!active}
+            onClick={() => active && onPick && onPick(o.label)}
+            className={`w-full text-left px-3 py-2 rounded-lg border transition-colors focus-ring ${
+              active
+                ? "border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 cursor-pointer"
+                : "border-slate-100 bg-slate-50 opacity-60 cursor-default"
+            }`}>
+            <span className="flex items-center gap-2">
+              <span className={`text-[12.5px] font-medium ${active ? "text-slate-800" : "text-slate-500"}`}>{o.label}</span>
+              {o.recommended && (
+                <span className="text-[9.5px] uppercase tracking-wide font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex-shrink-0">Recommended</span>
+              )}
+            </span>
+            {o.desc && <span className="block text-[11.5px] text-slate-500 mt-0.5 leading-snug">{o.desc}</span>}
+          </button>
+        ))}
+      </div>
+      {active && <p className="mt-2.5 text-[11.5px] text-slate-400">Pick an option, or type your own answer below.</p>}
+    </div>
+  );
+}
+
 /* Small clickable dashboard preview shown in chat — e.g. at the end of the
    AI risk wizard. Clicking it expands into the full dashboard via onOpen
    (same handler used when picking a dashboard from a gallery). */
@@ -8099,6 +8140,7 @@ function Conversation({ messages, loading, onPickFollowup, scrollRef, onAddToDas
         {messages.map((m, i) => (
           <div key={i}>
             {m.role === "user" ? <UserBubble text={m.text} /> :
+             m.clarify ? <ClarifyCard clarify={m.clarify} onPick={(t) => onPickFollowup(t)} active={i === messages.length - 1} /> :
              m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup}
                                         onAddToDashboard={onAddToDashboard} activeDashboardId={activeDashboardId}
                                         activeDashboardTitle={activeDashboardTitle} onStartReplace={onStartReplace}
@@ -9355,6 +9397,7 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
               <div key={i}>
                 {m.role === "user" ? <UserBubble text={m.text} /> :
                  m.dashboardPreview ? <DashboardPreviewCard item={m.dashboardPreview} onOpen={onPickDashboard} /> :
+                 m.clarify ? <ClarifyCard clarify={m.clarify} onPick={(t) => onPickFollowup(t)} active={i === messages.length - 1} /> :
                  m.response ? <ResponseCard response={m.response} onPickFollowup={onPickFollowup} singleChart
                                  saveToMode myReports={myReports} onSaveToReport={onSaveToReport} onCreateReport={onCreateReport} /> :
                  <AISummaryBubble text={m.text} onPickFollowup={onPickFollowup} />}
@@ -10178,15 +10221,42 @@ function responseToWidget(r) {
 
 /* Scripted "AI risk" dashboard-creation wizard, triggered from the welcome
    page input box when the prompt contains "ai risk" (case-insensitive).
-   Every step's copy is fixed; whatever the user types in response is
-   accepted as "the answer" without going through classifyPrompt. */
+   Claude-Code-style clarification: the assistant announces how many
+   questions it needs answered, then asks them one at a time (1/3, 2/3, …)
+   with recommended options the user can click — or they can type any
+   free-text answer, which is accepted as "the answer" without going
+   through classifyPrompt. */
 const AI_RISK_WIZARD = {
-  q1: "What type of AI risk are you interested in? For example, risky AI app usage, risky data uploads, policy violations, etc. Based on your answer, I will select appropriate data collections for the dashboard.",
-  a1: "Got it. Based on your answer, Application Events and Alerts are the best options. I will create the dashboard based on these two data collections.",
-  q2: "Who is the target audience? For example, IT analyst, security leader, CISO, etc. Based on your answer, I will determine the key metrics of the dashboard.",
-  a2: "Got it. Based on your answer, I will create the dashboard with a focus on risky AI app usage overview, CCL breakdown, and DLP policy violations.",
-  q3: "While I am finalizing the dashboard, do you have any additional requirements?",
-  a3: "Got it. AI risk attribute can help you understand why your AI usage is risky. I will add this to the dashboard.",
+  intro: "Happy to build that — your ask spans a few possible directions, so there are 3 questions to clarify before we move on. Pick an option or type your own answer.",
+  steps: [
+    {
+      question: "What type of AI risk are you most interested in? Based on your answer, I will select appropriate data collections for the report.",
+      ack: "Got it. Based on your answer, Application Events and Alerts are the best options. I will create the report from these two data collections.",
+      options: [
+        { label: "Risky AI app usage",             desc: "Which GenAI apps are in use and how risky they are (CCL ratings)", recommended: true },
+        { label: "Sensitive data uploads to GenAI", desc: "DLP violations on prompts and file uploads" },
+        { label: "AI policy violations",            desc: "Blocked and coached AI activities across your policies" },
+      ],
+    },
+    {
+      question: "Who is the target audience? Based on your answer, I will determine the key metrics of the report.",
+      ack: "Got it. Based on your answer, I will create the report with a focus on risky AI app usage overview, CCL breakdown, and DLP policy violations.",
+      options: [
+        { label: "Security leader / CISO", desc: "Posture-level metrics, trends, and exposure summaries", recommended: true },
+        { label: "IT security analyst",    desc: "Triage-ready detail: users, apps, and per-policy alerts" },
+        { label: "GenAI platform admin",   desc: "App inventory, sanctioned vs unsanctioned, and controls" },
+      ],
+    },
+    {
+      question: "While I am finalizing the report, do you have any additional requirements?",
+      ack: "Got it. AI risk attribution can help you understand why your AI usage is risky. I will add this to the report.",
+      options: [
+        { label: "Add AI risk attribution",   desc: "Explain what makes each app or activity risky", recommended: true },
+        { label: "Limit to the last 7 days",  desc: "Narrow every widget to the past week" },
+        { label: "No — looks good",           desc: "Proceed with the report as scoped" },
+      ],
+    },
+  ],
   done: "I have created this AI Risk Assessment Dashboard for your use case. Please review.",
 };
 
@@ -10464,16 +10534,19 @@ const [isAgentView, setIsAgentView] = useState(false);
       setMessages(m => [...m, { role: "user", text }]);
       setLoading(true);
       setTimeout(() => {
-        if (aiRiskWizardStep === 1) {
-          setMessages(m => [...m, { role: "ai", text: `${AI_RISK_WIZARD.a1}\n\n${AI_RISK_WIZARD.q2}` }]);
+        const stepIdx = aiRiskWizardStep - 1;         // step just answered
+        const answered = AI_RISK_WIZARD.steps[stepIdx];
+        const next = AI_RISK_WIZARD.steps[stepIdx + 1];
+        if (next) {
+          setMessages(m => [...m, { role: "ai", clarify: {
+            lead: answered.ack,
+            step: stepIdx + 2, total: AI_RISK_WIZARD.steps.length,
+            question: next.question, options: next.options,
+          } }]);
           setLoading(false);
-          setAiRiskWizardStep(2);
-        } else if (aiRiskWizardStep === 2) {
-          setMessages(m => [...m, { role: "ai", text: `${AI_RISK_WIZARD.a2}\n\n${AI_RISK_WIZARD.q3}` }]);
-          setLoading(false);
-          setAiRiskWizardStep(3);
-        } else if (aiRiskWizardStep === 3) {
-          setMessages(m => [...m, { role: "ai", text: AI_RISK_WIZARD.a3 }]);
+          setAiRiskWizardStep(aiRiskWizardStep + 1);
+        } else {
+          setMessages(m => [...m, { role: "ai", text: answered.ack }]);
           setLoading(false);
           setAiRiskWizardStep(0);
           setTimeout(() => {
@@ -10495,7 +10568,11 @@ const [isAgentView, setIsAgentView] = useState(false);
       setLoading(true);
       setWelcomeChatMode(true);
       setTimeout(() => {
-        setMessages(m => [...m, { role: "ai", text: AI_RISK_WIZARD.q1 }]);
+        setMessages(m => [...m, { role: "ai", clarify: {
+          intro: AI_RISK_WIZARD.intro,
+          step: 1, total: AI_RISK_WIZARD.steps.length,
+          question: AI_RISK_WIZARD.steps[0].question, options: AI_RISK_WIZARD.steps[0].options,
+        } }]);
         setLoading(false);
         setAiRiskWizardStep(1);
       }, 800);
