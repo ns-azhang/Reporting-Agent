@@ -747,7 +747,6 @@ const DASHBOARDS = {
     followUps: [
       M("Block recommendation for top destinations", "block-recommendation"),
       M("Top users uploading to risky destinations", "users-wetransfer"),
-      M("Schedule a weekly digest",                  "schedule-confirmed"),
       M("Compare to last week",                      "compare-week"),
     ],
   },
@@ -962,7 +961,6 @@ const DASHBOARDS = {
     followUps: [
       M("Forecast assuming the recommended PII block", "block-recommendation"),
       M("Compare forecast vs. last week's projection", "compare-week"),
-      M("Schedule a weekly forecast email",            "schedule-confirmed"),
       M("Drill into forecasted Critical incidents",    "critical-only"),
     ],
   },
@@ -1779,7 +1777,6 @@ const DASHBOARDS = {
       M("Show the DLP alert trend in AI usage",                "ai-risk-dlp-trend"),
       M("What are users doing with the risky AI apps?",        "ai-risk-user-activities"),
       M("Which cloud apps have the poorest CCL rating?",       "destinations"),
-      M("Schedule a weekly AI risk digest",                    "schedule-confirmed"),
     ],
   },
 
@@ -6758,7 +6755,6 @@ const RESPONSES = {
     followUps: [
       M("Show the destinations j.morales used",                    "destinations"),
       M("View full incident timeline",                             "incident-table-jmorales"),
-      M("Open a ticket for the user's manager",                    "schedule-confirmed"),
       M("Compare j.morales vs. team baseline",                     "users-compare-month"),
     ],
   },
@@ -6780,7 +6776,6 @@ const RESPONSES = {
     },
     summary: "Across recent UEBA alerts, the consistent pattern is end-of-day bulk uploads to personal Google Drive on Fridays. 5 of 7 were Allowed by current policy with a coaching banner. Two were Blocked. No alerts have been formally escalated.",
     followUps: [
-      M("Escalate Apr 25 Critical incident",                       "schedule-confirmed"),
       M("Show all of j.morales's blocked uploads",                 "user-detail-jmorales"),
       M("Open the user's manager workflow",                        "slack-sent"),
       M("Recommend a coaching action",                             "block-recommendation"),
@@ -6805,7 +6800,6 @@ const RESPONSES = {
       M("Show the Source Code incidents in detail",                "apps-source-code"),
       M("Compare k.tanaka vs. j.morales",                          "user-detail-jmorales"),
       M("Send a coaching message via Slack",                       "slack-sent"),
-      M("Schedule a weekly digest for this user",                  "schedule-confirmed"),
     ],
   },
 
@@ -7014,7 +7008,6 @@ const RESPONSES = {
       M("Which apps drove the crossover?",                         "destinations"),
       M("Recommend block actions for top unsanctioned apps",       "block-recommendation"),
       M("Top users moving data to unsanctioned destinations",      "users-wetransfer"),
-      M("Schedule weekly digest of this trend",                    "schedule-confirmed"),
     ],
   },
 
@@ -7034,7 +7027,6 @@ const RESPONSES = {
     summary: "Four recommended changes, ordered by impact-per-friction. Drafting a policy from any of these creates a proposal in your existing review workflow — no automatic enforcement.",
     followUps: [
       M("Show me the affected users for recommendation 1",         "users-wetransfer"),
-      M("Schedule a weekly review of recommendations",             "schedule-confirmed"),
       M("Send the recommendations to security architecture",       "slack-sent"),
       M("Compare PCI false-positive rate before vs. after",        "resolution-time-severity"),
     ],
@@ -7148,7 +7140,6 @@ const RESPONSES = {
     followUps: [
       M("Show forecast assuming the recommended PII block",        "block-recommendation"),
       M("Compare forecast accuracy vs. last week's projection",    "compare-week"),
-      M("Schedule a weekly forecast email",                        "schedule-confirmed"),
       M("Drill into forecasted Critical incidents",                "critical-only"),
     ],
   },
@@ -7247,7 +7238,6 @@ const RESPONSES = {
       M("Drill into Customer Success",                             "user-detail-jmorales"),
       M("Show Finance's PCI incidents",                            "policy-detail-pii"),
       M("Compare departments to last month",                       "users-compare-month"),
-      M("Send a per-department digest",                            "schedule-confirmed"),
     ],
   },
 
@@ -7283,7 +7273,6 @@ const RESPONSES = {
     },
     summary: "Generated an executive-friendly PDF (5 pages, 1,284 rows summarized into charts). It includes the KPI scorecard, the severity donut, top-10 policies and users, and an anomaly callout for the Saturday spike. Designed to be readable on tablet and print without losing data fidelity.",
     followUps: [
-      M("Schedule the PDF weekly to leadership",                   "schedule-confirmed"),
       M("Send to the #dlp-triage Slack channel",                   "slack-sent"),
       M("Switch back to CSV format",                               "action-export"),
       M("Filter to Critical/High before exporting",                "filter-critical-export"),
@@ -7305,7 +7294,6 @@ const RESPONSES = {
     followUps: [
       M("Show the 16 SLA-breach rows in detail",                   "incident-table-jmorales"),
       M("Send to the #dlp-triage Slack channel",                   "slack-sent"),
-      M("Schedule this filtered export weekly",                    "schedule-confirmed"),
       M("Switch to full CSV (1,284 rows)",                         "action-export"),
     ],
   },
@@ -7347,7 +7335,6 @@ const RESPONSES = {
     summary: "Drafted a Slack message for #dlp-triage with the week's key DLP metrics and the CSV attached. Review the preview below — you can edit the message text or change the channel before sending.",
     followUps: [
       M("Send to a different channel",                             "slack-sent"),
-      M("Schedule this digest weekly",                             "schedule-confirmed"),
       M("Switch to PDF attachment",                                "export-pdf"),
       M("Cancel",                                                  "ack-cancelled"),
     ],
@@ -7425,7 +7412,6 @@ const RESPONSES = {
     followUps: [
       M("Show me the underlying chart again",                      "weekly-overview"),
       M("View other recent anomalies",                             "trend-30d"),
-      M("Change my anomaly thresholds",                            "schedule-confirmed"),
       M("Acknowledge similar future quarter-close spikes",         "ack-acknowledged"),
     ],
   },
@@ -9520,7 +9506,6 @@ function classifyPrompt(text) {
   if (/\b(export|download|csv|xlsx|excel|spreadsheet)\b/.test(t)) return "action-export";
   if (/\b(pdf)\b/.test(t)) return "export-pdf";
   if (/\b(slack|channel|#dlp)\b/.test(t)) return "slack-sent";
-  if (/\b(schedule|recurring|weekly|every monday)\b/.test(t)) return "schedule-confirmed";
   if (/\b(forecast|predict|next 7 days|next week)\b/.test(t)) return "forecast-7d";
   if (/\b(split|break.?down|group(ed)?)\s+(it\s+)?by\s+(severity|risk)/.test(t)) return "severity";
   if (/\b(split|break.?down|group(ed)?)\s+(it\s+)?by\s+(polic(y|ies))/.test(t)) return "top-policies";
