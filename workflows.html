@@ -7968,7 +7968,7 @@ function ResponseCard({ response, onPickFollowup, onAddToDashboard, activeDashbo
           <span className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold w-full mb-0.5">Suggested follow-ups</span>
           {response.followUps.map(q => (
             <button key={q.text} onClick={() => onPickFollowup(q.text, q.id)}
-              className="text-[12.5px] px-2.5 py-1.5 rounded-full border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 text-slate-600 transition-colors focus-ring">
+              className="text-[12.5px] text-left px-2.5 py-1.5 rounded-full border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 text-slate-600 transition-colors focus-ring">
               {q.text}
             </button>
           ))}
