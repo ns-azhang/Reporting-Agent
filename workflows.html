@@ -10218,7 +10218,10 @@ function responseToWidget(r) {
    the chosen one is classified into a real widget at the end, which then
    feeds the normal iterate loop (chart type, download, save to reports). */
 const CLARIFY_WIZARD = {
-  intro: (n) => `That prompt bundles ${n} separate questions — I'll build a widget for each. First, a couple things to clarify. Pick an option or type your own answer.`,
+  /* n = bundled questions in the user's prompt (one widget each); stepCount =
+     clarifying questions we're about to ask (unrelated number — keep them in
+     separate sentences so they're never misread as the same count). */
+  intro: (n, stepCount) => `That prompt bundles ${n} separate questions — I'll build a widget for each. First I have ${stepCount} quick clarifying question${stepCount === 1 ? "" : "s"} for you. Pick an option below, or type your own answer.`,
   steps: [
     {
       question: "What time range should they cover?",
@@ -10587,7 +10590,7 @@ const [isAgentView, setIsAgentView] = useState(false);
         clarifyQuestionsRef.current = questions;
         setTimeout(() => {
           setMessages(m => [...m, { role: "ai", clarify: {
-            intro: CLARIFY_WIZARD.intro(questions.length),
+            intro: CLARIFY_WIZARD.intro(questions.length, CLARIFY_WIZARD.steps.length),
             step: 1, total: CLARIFY_WIZARD.steps.length,
             question: CLARIFY_WIZARD.steps[0].question, options: CLARIFY_WIZARD.steps[0].options,
           } }]);
