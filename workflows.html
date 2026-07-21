@@ -10753,9 +10753,8 @@ const [isAgentView, setIsAgentView] = useState(false);
       examplePrompts: [],
       widgets: [],
     };
-    setMyDashboards(prev => [...prev, {
-      dashboardId: newId, title, desc: "Created from the AI assistant", personas: [], folder: "Custom",
-    }]);
+    const item = { dashboardId: newId, title, desc: "Created from the AI assistant", personas: [], folder: "Custom" };
+    setMyDashboards(prev => [...prev, item]);
     setDashboardExtras(prev => ({
       ...prev,
       [newId]: [...(prev[newId] || []), widget],
@@ -10763,6 +10762,16 @@ const [isAgentView, setIsAgentView] = useState(false);
     logEdit(newId, "Created report from the AI assistant");
     logEdit(newId, `Added widget "${response.title}" from a prompt`);
     toast(`Created report "${title}" in My Reports`);
+    /* Land the user inside their new report (dual-pane) with the current
+       conversation carried along, so they keep iterating by chat — each new
+       chart can be saved here via Save to → "Currently open". */
+    pushHistory();
+    clearGalleries();
+    setActiveDashboard(item);
+    setMessages(m => [...m, {
+      role: "ai",
+      text: `I've created "${title}" and added "${response.title}" to it. Keep asking questions here — save any chart you like into this report from its ⋮ menu (Save to → ${title}), or ask me to refine what's already on the canvas.`,
+    }]);
   };
 
   const removeSavedWidget = (id) => {
