@@ -10233,10 +10233,7 @@ function responseToWidget(r) {
    the chosen one is classified into a real widget at the end, which then
    feeds the normal iterate loop (chart type, download, save to reports). */
 const CLARIFY_WIZARD = {
-  intro: (n) => `That prompt bundles ${n} separate questions, so there are 3 things to clarify before we move on. Pick an option or type your own answer.`,
-  q1: "Which of these should I build widgets for?",
-  allLabel: "All of them — one widget per question",
-  ackTopic: "Got it.",
+  intro: (n) => `That prompt bundles ${n} separate questions — I'll build a widget for each. First, a couple things to clarify. Pick an option or type your own answer.`,
   steps: [
     {
       question: "What time range should they cover?",
@@ -10358,7 +10355,6 @@ function App() {
   const [showSharedGallery, setShowSharedGallery] = useState(false);
   const [welcomeChatMode, setWelcomeChatMode] = useState(false);
   const [aiRiskWizardStep, setAiRiskWizardStep] = useState(0); // 0 = inactive, n = waiting for answer to clarify question n
-  const clarifyTopicRef = useRef(null);     // which question(s) the user chose to build
   const clarifyQuestionsRef = useRef([]);   // the questions parsed from the original prompt
 const [isAgentView, setIsAgentView] = useState(false);
   const [navHistory, setNavHistory] = useState([]);
@@ -10530,24 +10526,16 @@ const [isAgentView, setIsAgentView] = useState(false);
     }
     // Clarification wizard in progress: every subsequent message is "the
     // answer" to the current step, bypassing normal intent classification.
+    // Building a widget per bundled question is a confirmed action, not
+    // something to ask about — only the scope questions below need input.
     if (aiRiskWizardStep > 0) {
       setMessages(m => [...m, { role: "user", text }]);
       setLoading(true);
       setTimeout(() => {
-        const total = 1 + CLARIFY_WIZARD.steps.length;
-        if (aiRiskWizardStep === 1) {
-          // Answer to "which question first" — remember it for classification.
-          clarifyTopicRef.current = text;
-          setMessages(m => [...m, { role: "ai", clarify: {
-            lead: CLARIFY_WIZARD.ackTopic,
-            step: 2, total,
-            question: CLARIFY_WIZARD.steps[0].question, options: CLARIFY_WIZARD.steps[0].options,
-          } }]);
-          setLoading(false);
-          setAiRiskWizardStep(2);
-        } else if (aiRiskWizardStep - 1 < CLARIFY_WIZARD.steps.length) {
-          const answered = CLARIFY_WIZARD.steps[aiRiskWizardStep - 2];
-          const next = CLARIFY_WIZARD.steps[aiRiskWizardStep - 1];
+        const total = CLARIFY_WIZARD.steps.length;
+        const next = CLARIFY_WIZARD.steps[aiRiskWizardStep];
+        if (next) {
+          const answered = CLARIFY_WIZARD.steps[aiRiskWizardStep - 1];
           setMessages(m => [...m, { role: "ai", clarify: {
             lead: answered.ack,
             step: aiRiskWizardStep + 1, total,
@@ -10556,8 +10544,7 @@ const [isAgentView, setIsAgentView] = useState(false);
           setLoading(false);
           setAiRiskWizardStep(aiRiskWizardStep + 1);
         } else {
-          // Final answer — generate the widget(s): one per bundled question
-          // when the user chose "All of them", otherwise just the chosen one.
+          // Final answer — generate one widget per bundled question.
           const answered = CLARIFY_WIZARD.steps[CLARIFY_WIZARD.steps.length - 1];
           setMessages(m => [...m, { role: "ai", text: answered.ack }]);
           setLoading(false);
@@ -10565,10 +10552,7 @@ const [isAgentView, setIsAgentView] = useState(false);
           setTimeout(() => {
             setLoading(true);
             setTimeout(() => {
-              const topic = clarifyTopicRef.current;
-              const targets = (!topic || topic === CLARIFY_WIZARD.allLabel)
-                ? (clarifyQuestionsRef.current.length ? clarifyQuestionsRef.current : [text])
-                : [topic];
+              const targets = clarifyQuestionsRef.current.length ? clarifyQuestionsRef.current : [text];
               const widgets = targets.map(q => ({ role: "ai", response: RESPONSES[classifyPrompt(q)] || RESPONSES.freeform }));
               setMessages(m => [...m, ...widgets]);
               setLoading(false);
@@ -10615,17 +10599,12 @@ const [isAgentView, setIsAgentView] = useState(false);
         setMessages(m => [...m, { role: "user", text }]);
         setLoading(true);
         setWelcomeChatMode(true);
-        clarifyTopicRef.current = null;
         clarifyQuestionsRef.current = questions;
         setTimeout(() => {
           setMessages(m => [...m, { role: "ai", clarify: {
             intro: CLARIFY_WIZARD.intro(questions.length),
-            step: 1, total: 1 + CLARIFY_WIZARD.steps.length,
-            question: CLARIFY_WIZARD.q1,
-            options: [
-              { label: CLARIFY_WIZARD.allLabel, desc: `Build ${questions.length} widgets in one go`, recommended: true },
-              ...questions.map(q => ({ label: q })),
-            ],
+            step: 1, total: CLARIFY_WIZARD.steps.length,
+            question: CLARIFY_WIZARD.steps[0].question, options: CLARIFY_WIZARD.steps[0].options,
           } }]);
           setLoading(false);
           setAiRiskWizardStep(1);
