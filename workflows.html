@@ -8499,7 +8499,14 @@ const REPORT_ABOUT = {
   },
 };
 
-const PERSONAL_DASHBOARDS = ["dlp-overview","security-engineer","severity-sla","forecast","ciso-overview","ai-risk-assessment"].map(id => ALL_DASHBOARD_ITEMS.find(d => d.dashboardId === id));
+/* Only reports the user actually owns or has edit access to belong here —
+   dlp-overview and security-engineer are pre-seeded because SHARED_REPORT_ACCESS
+   and EDIT_LOG_SEED already establish them as shared-with-edit-access /
+   previously-edited. A pristine, never-touched Netskope Library template
+   should never appear in My Reports just because it exists in the library —
+   see SpaceGallery for how favoriting a library report surfaces it here
+   without implying ownership. */
+const PERSONAL_DASHBOARDS = ["dlp-overview","security-engineer"].map(id => ALL_DASHBOARD_ITEMS.find(d => d.dashboardId === id));
 const GROUP_DASHBOARDS    = ["dlp-policies","soc-dlp-monitoring","security-analyst","genai-admin","forecast"].map(id => ALL_DASHBOARD_ITEMS.find(d => d.dashboardId === id));
 const SHARED_DASHBOARDS   = [
   { ...ALL_DASHBOARD_ITEMS.find(d => d.dashboardId === "security-engineer"), recipients: ["Sarah Kim", "James Liu", "Priya Nair"] },
@@ -8536,7 +8543,13 @@ const EDIT_LOG_SEED = {
 };
 
 function SpaceGallery({ onPickDashboard, favoriteDashboardIds = [], onToggleFavorite, dashboards = [] }) {
-  const myDashboards = dashboards;
+  /* My Reports = reports you own/have edit access to (`dashboards`), plus
+     any Netskope Library report you've favorited for quick access — a
+     favorite is just a bookmark, not a copy, so it's flagged with a
+     "Netskope Library" badge rather than folded into your owned reports. */
+  const ownedIds = new Set(dashboards.map(d => d.dashboardId));
+  const favoritedLibraryItems = ALL_DASHBOARD_ITEMS.filter(d => favoriteDashboardIds.includes(d.dashboardId) && !ownedIds.has(d.dashboardId));
+  const myDashboards = [...dashboards, ...favoritedLibraryItems];
   const [accessState, setAccessState] = React.useState(() => {
     const defaults = Object.fromEntries(myDashboards.map(d => [d.dashboardId, { level: "only-me", role: "View", people: [] }]));
     defaults["security-engineer"] = { level: "netskope", role: "View", people: [] };
@@ -8689,9 +8702,10 @@ function SpaceGallery({ onPickDashboard, favoriteDashboardIds = [], onToggleFavo
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="flex flex-col gap-2">
           {filteredDashboards.map(d => {
-            const acc = accessState[d.dashboardId];
+            const acc = accessState[d.dashboardId] || { level: "only-me", role: "View", people: [] };
             const levelInfo = ACCESS_LEVELS.find(l => l.id === acc.level);
             const isFavorite = favoriteDashboardIds.includes(d.dashboardId);
+            const isLibraryOnly = !ownedIds.has(d.dashboardId);
             return (
               <div key={d.dashboardId} className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition-all px-5 py-4">
                 <div className="flex items-center justify-between gap-4">
@@ -8706,6 +8720,13 @@ function SpaceGallery({ onPickDashboard, favoriteDashboardIds = [], onToggleFavo
                         <button className="text-left min-w-0 group" onClick={() => onPickDashboard(d)}>
                           <span className="text-[14px] font-semibold text-slate-900 leading-snug group-hover:text-blue-700 transition-colors truncate">{d.title}</span>
                         </button>
+                        {isLibraryOnly && (
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0"
+                                title="Favorited from the Netskope Library — opening it won't affect the original template until you edit it">
+                            {React.cloneElement(I.book, { className: "w-3 h-3" })}
+                            Netskope Library
+                          </span>
+                        )}
                         {isFavorite && (
                           <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 flex-shrink-0">Favorite</span>
                         )}
