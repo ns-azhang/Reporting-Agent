@@ -4682,6 +4682,12 @@ const JOB_TILES = [
   { id: "hunt",        label: "Threat hunting",                   desc: "UEBA anomalies, multi-stage threats, behavioral signals",      icon: "spark" },
   { id: "access",      label: "Troubleshooting end-user access",  desc: "Login failures, ZTNA session issues, access patterns",         icon: "users" },
 ];
+/* Onboarding job-picker paused per team decision — the team reviewed the
+   prototype and decided to pull this experience for now, with the option
+   to bring it back later. Everything below (data, component, resolver,
+   localStorage helpers, ?reset param) stays intact; flip this back to
+   true to fully re-enable with no other changes needed. */
+const ONBOARDING_ENABLED = false;
 const ONBOARDING_KEY = "naa:selectedJobs";
 const ONBOARDING_DONE_KEY = "naa:onboardingDone";
 function readSelectedJobs() {
@@ -9365,7 +9371,7 @@ function PersonaDropdown({ persona, onChangePersona, selectedIds = [], onToggleT
 function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onSetPersonaOnly, onPickDashboard, chatMode, messages, onPickFollowup, myReports = [], onSaveToReport, onCreateReport }) {
   const scrollRef = useRef(null);
   const [selectedJobs, setSelectedJobs] = useState(() => readSelectedJobs() || []);
-  const [onboardingOpen, setOnboardingOpen] = useState(() => !readOnboardingDone());
+  const [onboardingOpen, setOnboardingOpen] = useState(() => ONBOARDING_ENABLED && !readOnboardingDone());
   const [onboardingMode, setOnboardingMode] = useState("first-run");
   const completeOnboarding = (jobs) => { setSelectedJobs(jobs); writeSelectedJobs(jobs); setOnboardingOpen(false); };
   const skipOnboarding = () => { writeSelectedJobs([]); setOnboardingOpen(false); };
@@ -9456,10 +9462,12 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
               {selectedJobs.length === 0 ? "Popular reports" : "Suggested reports from Netskope Library"}
             </p>
+            {ONBOARDING_ENABLED && (
             <button onClick={openCustomize}
               className="inline-flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-slate-800 font-medium transition-colors">
               {React.cloneElement(I.edit, { className: "w-3.5 h-3.5" })}Make these yours
             </button>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-4">
             {quickActionCards.map((card) => (
