@@ -8227,10 +8227,10 @@ function PromptInput({ onSend, busy, onPickPrompt, libraryItems = [], hideTokenC
                       </div>
                       <div className="py-1 max-h-72 overflow-y-auto">
                         {suggestItems.map((p, i) => (
-                          <button key={i} onClick={() => { setVal(p); setSuggestOpen(false); taRef.current?.focus(); }}
+                          <button key={i} onClick={() => { setVal(p.text); setSuggestOpen(false); taRef.current?.focus(); }}
                             className="w-full text-left px-3 py-2 text-[12.5px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-start gap-2">
-                            <span className="text-slate-300 mt-0.5 flex-shrink-0">{I.spark}</span>
-                            <span>{p}</span>
+                            <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 mt-0.5 flex-shrink-0">{p.tag}</span>
+                            <span>{p.text}</span>
                           </button>
                         ))}
                       </div>
@@ -9426,29 +9426,29 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
           <PromptInput onSend={onSend} busy={busy} hideTokenCount hideSearch bare minHeight="200px"
             placeholder={'Try a specific question, like "risky users this week"'}
             suggestedPrompts={[
-              "Show me top DLP incidents this week",
-              "Which users have the most policy violations?",
-              "What are the riskiest cloud apps in use?",
-              "Show malware detections over the last 30 days",
-              "Who are the top data exfiltrators this month?",
-              "Give me a CISO-level security overview",
-              "Show the severity breakdown of recent incidents",
-              "Which policies are triggered most frequently?",
-              "Show sanctioned vs. unsanctioned app usage",
-              "What is the 30-day DLP trend?",
-              "Show GenAI app usage across the organization",
-              "Which destinations are receiving the most sensitive data?",
-              "Show risky user behaviors from the last week",
-              "Give me a forecast for the next 7 days",
-              "Show incidents by severity level",
-              "Which users uploaded files to personal cloud storage recently?",
-              "What is the current threat landscape?",
-              "Show critical incidents only",
-              "How has the security posture changed this quarter?",
-              "Which cloud apps are generating the most alerts?",
-              "Show me the top users by UEBA alert count",
-              "What percentage of traffic is blocked vs. allowed?",
-              "Show file type breakdown for data going to unsanctioned apps",
+              { tag: "DLP", text: "Show me top DLP incidents this week" },
+              { tag: "Users", text: "Which users have the most policy violations?" },
+              { tag: "Apps", text: "What are the riskiest cloud apps in use?" },
+              { tag: "Threats", text: "Show malware detections over the last 30 days" },
+              { tag: "Users", text: "Who are the top data exfiltrators this month?" },
+              { tag: "Executive", text: "Give me a CISO-level security overview" },
+              { tag: "Severity", text: "Show the severity breakdown of recent incidents" },
+              { tag: "Policies", text: "Which policies are triggered most frequently?" },
+              { tag: "Apps", text: "Show sanctioned vs. unsanctioned app usage" },
+              { tag: "DLP", text: "What is the 30-day DLP trend?" },
+              { tag: "GenAI", text: "Show GenAI app usage across the organization" },
+              { tag: "DLP", text: "Which destinations are receiving the most sensitive data?" },
+              { tag: "Users", text: "Show risky user behaviors from the last week" },
+              { tag: "Forecast", text: "Give me a forecast for the next 7 days" },
+              { tag: "Severity", text: "Show incidents by severity level" },
+              { tag: "Users", text: "Which users uploaded files to personal cloud storage recently?" },
+              { tag: "Threats", text: "What is the current threat landscape?" },
+              { tag: "Severity", text: "Show critical incidents only" },
+              { tag: "Executive", text: "How has the security posture changed this quarter?" },
+              { tag: "Apps", text: "Which cloud apps are generating the most alerts?" },
+              { tag: "Users", text: "Show me the top users by UEBA alert count" },
+              { tag: "Policies", text: "What percentage of traffic is blocked vs. allowed?" },
+              { tag: "DLP", text: "Show file type breakdown for data going to unsanctioned apps" },
             ]}
           />
         </div>
