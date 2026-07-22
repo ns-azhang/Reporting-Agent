@@ -4811,8 +4811,7 @@ function OnboardingScreen({ initialSelection = [], onComplete, onSkip, mode = "f
 }
 
 /* ------------------------------ Prompt History Page ----------------------- */
-function PromptHistoryPage({ onSend, busy, libraryItems, sessions = HISTORY_ITEMS }) {
-  const [prefill, setPrefill] = useState("");
+function PromptHistoryPage({ onPickSession, sessions = HISTORY_ITEMS }) {
   const allPrompts = sessions.flatMap(h =>
     h.messages.filter(m => m.role === "user").map(m => ({ prompt: m.text, session: h }))
   );
@@ -4821,11 +4820,11 @@ function PromptHistoryPage({ onSend, busy, libraryItems, sessions = HISTORY_ITEM
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-6 py-8">
           <h2 className="text-xl font-semibold text-slate-900 mb-1">Session History</h2>
-          <p className="text-[13px] text-slate-500 mb-6">Click any prompt to load it into the assistant below.</p>
+          <p className="text-[13px] text-slate-500 mb-6">Click any prompt to pick up that conversation where you left off.</p>
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
             {allPrompts.map(({ prompt, session }, idx) => (
               <button key={idx}
-                onClick={() => setPrefill(prompt)}
+                onClick={() => onPickSession(session)}
                 className={`w-full text-left px-5 py-3.5 flex items-center gap-4 hover:bg-blue-50/60 focus-ring group transition-colors
                   ${idx < allPrompts.length - 1 ? "border-b border-slate-100" : ""}`}>
                 <span className="text-slate-300 group-hover:text-blue-400 flex-shrink-0">{I.history}</span>
@@ -4839,7 +4838,6 @@ function PromptHistoryPage({ onSend, busy, libraryItems, sessions = HISTORY_ITEM
           </div>
         </div>
       </div>
-      <PromptInput onSend={onSend} busy={busy} libraryItems={libraryItems} prefillValue={prefill} />
     </div>
   );
 }
@@ -11099,10 +11097,8 @@ const [isAgentView, setIsAgentView] = useState(false);
                          hideRightExtras={showWelcome} />
         {showHistoryPage ? (
           <PromptHistoryPage
-            onSend={(text) => { setShowHistoryPage(false); send(text); }}
-            busy={loading}
-            sessions={[...liveSessions, ...HISTORY_ITEMS]}
-            libraryItems={getLibraryFor(personaId)} />
+            onPickSession={(item) => { setShowHistoryPage(false); onPickHistory(item); }}
+            sessions={[...liveSessions, ...HISTORY_ITEMS]} />
         ) : showAgentGallery ? (
           <AgentGallery onClose={() => setShowAgentGallery(false)}
                         allAgents={[...AGENTS, ...userAgents]}
