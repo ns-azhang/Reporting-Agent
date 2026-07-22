@@ -8217,7 +8217,12 @@ function PromptInput({ onSend, busy, onPickPrompt, libraryItems = [], hideTokenC
 
   const tokens = estimateTokens(val);
 
-  const innerBox = (
+  /* Composers that offer Suggested Prompts (the tall welcome-page box) keep
+     the original textarea-on-top / toolbar-below layout, since that dropdown
+     needs its own row. Every other composer (the ones that show the search
+     icon) uses a single-line bar: search icon, growing textarea, Send —
+     all inline, like a normal chat input. */
+  const innerBox = suggestedPrompts ? (
         <div className={`border border-slate-300 rounded-xl bg-white card-shadow focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all flex flex-col${fullHeight ? " flex-1" : ""}`} style={minHeight ? { minHeight } : {}}>
           <div className="flex-1 flex flex-col cursor-text" onClick={() => taRef.current?.focus()}>
             <textarea
@@ -8234,38 +8239,36 @@ function PromptInput({ onSend, busy, onPickPrompt, libraryItems = [], hideTokenC
           <div className="border-t border-slate-100" />
           <div className="flex items-center justify-between px-3 pb-2.5 pt-2">
             <div className="flex items-center gap-1">
-              {suggestedPrompts && (
-                <div className="relative" ref={suggestRef}>
-                  {suggestOpen && (
-                    <div className="menu-pop absolute top-full left-0 mt-1.5 w-72 bg-white border border-slate-200 rounded-xl card-shadow z-30 overflow-hidden">
-                      <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
-                        <span className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Suggested Prompts</span>
-                        <button onClick={openSuggest} className="text-[11px] text-blue-500 hover:text-blue-700 font-medium">Refresh</button>
-                      </div>
-                      <div className="py-1 max-h-72 overflow-y-auto">
-                        {suggestItems.map((p, i) => (
-                          <button key={i} onClick={() => { setVal(p.text); setSuggestOpen(false); taRef.current?.focus(); }}
-                            className="w-full text-left px-3 py-2 text-[12.5px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-start gap-2">
-                            <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 mt-0.5 flex-shrink-0">{p.tag}</span>
-                            <span>{p.text}</span>
-                          </button>
-                        ))}
-                      </div>
+              <div className="relative" ref={suggestRef}>
+                {suggestOpen && (
+                  <div className="menu-pop absolute top-full left-0 mt-1.5 w-72 bg-white border border-slate-200 rounded-xl card-shadow z-30 overflow-hidden">
+                    <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Suggested Prompts</span>
+                      <button onClick={openSuggest} className="text-[11px] text-blue-500 hover:text-blue-700 font-medium">Refresh</button>
                     </div>
-                  )}
-                  <button onClick={openSuggest}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-all ${suggestOpen ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}>
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                      style={{color:"#f59e0b",filter:"drop-shadow(0 0 4px rgba(251,191,36,0.85))"}}>
-                      <path d="M9 21h6M12 3a6 6 0 0 1 6 6c0 2.22-1.21 4.16-3 5.2V17a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1v-2.8C7.21 13.16 6 11.22 6 9a6 6 0 0 1 6-6z"/>
-                    </svg>
-                    Suggested Prompts
-                    <svg className={`w-3 h-3 transition-transform ${suggestOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </button>
-                </div>
-              )}
+                    <div className="py-1 max-h-72 overflow-y-auto">
+                      {suggestItems.map((p, i) => (
+                        <button key={i} onClick={() => { setVal(p.text); setSuggestOpen(false); taRef.current?.focus(); }}
+                          className="w-full text-left px-3 py-2 text-[12.5px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-start gap-2">
+                          <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 mt-0.5 flex-shrink-0">{p.tag}</span>
+                          <span>{p.text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <button onClick={openSuggest}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-all ${suggestOpen ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}>
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    style={{color:"#f59e0b",filter:"drop-shadow(0 0 4px rgba(251,191,36,0.85))"}}>
+                    <path d="M9 21h6M12 3a6 6 0 0 1 6 6c0 2.22-1.21 4.16-3 5.2V17a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1v-2.8C7.21 13.16 6 11.22 6 9a6 6 0 0 1 6-6z"/>
+                  </svg>
+                  Suggested Prompts
+                  <svg className={`w-3 h-3 transition-transform ${suggestOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+              </div>
               <div className="relative" ref={libRef}>
                 {libOpen && (
                   <div className="menu-pop absolute bottom-full left-0 mb-1 w-80 bg-white border border-slate-200 rounded-xl card-shadow z-30 overflow-hidden">
@@ -8294,6 +8297,29 @@ function PromptInput({ onSend, busy, onPickPrompt, libraryItems = [], hideTokenC
               onClick={submit}
               disabled={!val.trim() || busy}
               className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[13px] font-medium px-3 py-1.5 rounded-lg transition-colors focus-ring">
+              {busy ? <>{I.refresh} Working…</> : <>Send {I.send}</>}
+            </button>
+          </div>
+          {bottomSlot && <div className="border-t border-slate-100">{bottomSlot}</div>}
+        </div>
+  ) : (
+        <div className={`border border-slate-300 rounded-xl bg-white card-shadow focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all flex flex-col${fullHeight ? " flex-1" : ""}`} style={minHeight ? { minHeight } : {}}>
+          <div className="flex items-center gap-2 px-3 py-2 cursor-text" onClick={() => taRef.current?.focus()}>
+            {!hideSearch && <button onClick={e => { e.stopPropagation(); toast("Data search is read-only in this prototype", { kind: "info" }); }}
+              className="p-1.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-ring flex-shrink-0" title="Search data">{I.search}</button>}
+            <textarea
+              ref={taRef}
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              onKeyDown={onKey}
+              rows={1}
+              placeholder={placeholder}
+              className="flex-1 resize-none bg-transparent text-[14px] text-slate-900 placeholder:text-slate-400 focus:outline-none py-1"
+            />
+            <button
+              onClick={e => { e.stopPropagation(); submit(); }}
+              disabled={!val.trim() || busy}
+              className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[13px] font-medium px-3 py-1.5 rounded-lg transition-colors focus-ring flex-shrink-0">
               {busy ? <>{I.refresh} Working…</> : <>Send {I.send}</>}
             </button>
           </div>
