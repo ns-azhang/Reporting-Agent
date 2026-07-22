@@ -9411,7 +9411,7 @@ function PersonaDropdown({ persona, onChangePersona, selectedIds = [], onToggleT
   );
 }
 
-function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onSetPersonaOnly, onPickDashboard, chatMode, messages, onPickFollowup, myReports = [], onSaveToReport, onCreateReport }) {
+function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onSetPersonaOnly, onPickDashboard, chatMode, messages, onPickFollowup, myReports = [], onSaveToReport, onCreateReport, favoriteDashboardIds = [] }) {
   const scrollRef = useRef(null);
   const [selectedJobs, setSelectedJobs] = useState(() => readSelectedJobs() || []);
   const [onboardingOpen, setOnboardingOpen] = useState(() => ONBOARDING_ENABLED && !readOnboardingDone());
@@ -9423,6 +9423,14 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
   const openCustomize = () => { setOnboardingMode(selectedJobs.length === 0 ? "first-run" : "customize"); setOnboardingOpen(true); };
 
   const quickActionCards = React.useMemo(() => resolveOnboardingCards(selectedJobs), [selectedJobs]);
+  /* Pinned reports (favorited in Report Library or My Reports) take over the
+     homepage grid when there are any; Popular Reports is just the fallback
+     for users who haven't pinned anything yet. */
+  const pinnedReports = React.useMemo(() =>
+    favoriteDashboardIds
+      .map(id => ALL_DASHBOARD_ITEMS.find(d => d.dashboardId === id) || myReports.find(d => d.dashboardId === id))
+      .filter(Boolean),
+    [favoriteDashboardIds, myReports]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -9495,17 +9503,17 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
             ]}
           />
         </div>
-        {/* Quick actions — driven by the onboarding task selection. When the
-            user skipped onboarding (no tasks selected) the section reads
-            "Popular reports" and the "Make these yours" link reopens the
-            picker — one click away. */}
+        {/* Quick actions — pinned (favorited) reports take over this section
+            whenever there are any; otherwise it falls back to the onboarding
+            task selection, or "Popular reports" when onboarding was skipped.
+            The "Make these yours" link reopens the picker — one click away. */}
         <div className="w-full" style={{ marginTop: "calc(1.5rem - 0.7cm)" }}>
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11.5px] text-slate-400 font-medium uppercase tracking-wide flex items-center gap-1.5">
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
-              {selectedJobs.length === 0 ? "Popular reports" : "Suggested reports from Netskope Library"}
+              {pinnedReports.length > 0 ? "Pinned reports" : selectedJobs.length === 0 ? "Popular reports" : "Suggested reports from Netskope Library"}
             </p>
-            {ONBOARDING_ENABLED && (
+            {ONBOARDING_ENABLED && pinnedReports.length === 0 && (
             <button onClick={openCustomize}
               className="inline-flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-slate-800 font-medium transition-colors">
               {React.cloneElement(I.edit, { className: "w-3.5 h-3.5" })}Make these yours
@@ -9513,7 +9521,7 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
             )}
           </div>
           <div className="grid grid-cols-3 gap-4">
-            {quickActionCards.map((card) => (
+            {(pinnedReports.length > 0 ? pinnedReports : quickActionCards).map((card) => (
               <button key={card.dashboardId} onClick={() => onPickDashboard && onPickDashboard(card)}
                 className="text-left bg-white border border-slate-200 hover:border-blue-400 hover:shadow-sm rounded-xl px-4 py-3.5 transition-all group">
                 <div className="text-[13px] font-semibold text-slate-800 group-hover:text-blue-700 leading-snug">{card.title}</div>
@@ -11171,6 +11179,7 @@ const [isAgentView, setIsAgentView] = useState(false);
                        onPickDashboard={onPickDashboard}
                        chatMode={welcomeChatMode} messages={messages} onPickFollowup={onFollowup}
                        myReports={myDashboards} onSaveToReport={saveResponseToReport} onCreateReport={createReportFromResponse}
+                       favoriteDashboardIds={favoriteDashboardIds}
                        />
         ) : (
           <>
