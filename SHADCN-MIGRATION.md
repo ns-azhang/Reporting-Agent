@@ -9,6 +9,7 @@ All work happens in `workflow-v5.html`, so the two can be compared side by side:
 |---|---|
 | current | `http://localhost:8743/workflows.html` |
 | restyled | `http://localhost:8745/workflow-v5.html` |
+| primitives kitchen sink | `http://localhost:8745/workflow-v5.html?styleguide` |
 
 ## Why they didn't look alike
 
@@ -61,10 +62,12 @@ Baseline: **1057**
       *Purely additive — renders identically.* Verified: `bg-primary` → `oklch(0 0 0)`,
       `bg-primary/80` → `oklch(0 0 0 / 0.8)`, `border-border` → `oklch(0.922 0 0)`.
       Radius scale deliberately **not** remapped here, to keep this step visually inert.
-- [ ] **Phase 2 — Primitives + kitchen sink.** `cn()` helper; `Button` (6 variants × 5 sizes),
-      `Input`, `Badge`, `Card` family, `Separator`, menu item, `Tabs`, `Table`, `Skeleton`
-      built from shadcn's verbatim recipes. Rendered on a `?styleguide` screen so
-      discrepancies get fixed there — cheaply — before touching real screens.
+- [x] **Phase 2 — Primitives + kitchen sink.** `cn()` helper plus `Button` (6 variants ×
+      7 sizes), `Input`, `Badge`, `Card` family, `Separator`, `Skeleton`, `MenuItem`,
+      `MenuLabel` — ported from `style-vega.css` (the style the docs' registry imports
+      first, and the one with the familiar `h-9` / `rounded-md` geometry; `nova` uses
+      `h-8` / `rounded-lg`). Rendered at `?styleguide`. Main app verified unaffected.
+      `Tabs` and `Table` deferred to Phase 4, when a screen actually needs them.
 - [ ] **Phase 3 — Systematic token swap.** One commit per mapping so each is revertable:
   - [ ] 3a `text-slate-400/500` → `text-muted-foreground` (~203)
   - [ ] 3b `text-slate-700/900` → `text-foreground` (~124)
