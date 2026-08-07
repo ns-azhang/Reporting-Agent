@@ -11,23 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { ChevronDown, LayoutGrid, Lightbulb, Send } from "lucide-react"
-
-/** Matches the range selector on the sibling agent pages (AISecOps, AICC). */
-const TIME_RANGES = [
-  "Last 24 hours",
-  "Last 7 days",
-  "Last 30 days",
-  "Last 90 days",
-] as const
 
 /** The 6 cards shown when nothing is pinned — mirrors POPULAR_REPORTS. */
 const POPULAR_REPORTS = [
@@ -95,32 +79,14 @@ export function WelcomePage() {
       {/* No top bar — all navigation lives in the left sidebar. */}
       <main className="flex w-full flex-1 flex-col gap-6 px-8 py-8">
         {/* Page header — matches the sibling agent pages (AISecOps, AI Command
-            Center): title left, range selector right, no greeting. The title
-            is the active nav entry, which is the convention those pages follow
+            Center): title left, no greeting. The title is the active nav
+            entry, which is the convention those pages follow
             (nav "Overview" -> title "Overview"). */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              New Session
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Ask a question about your security data.
-            </p>
-          </div>
-          <Select defaultValue="Last 7 days">
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Last 7 days" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {TIME_RANGES.map((range) => (
-                  <SelectItem key={range} value={range}>
-                    {range}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">New Session</h1>
+          <p className="text-sm text-muted-foreground">
+            Ask a question about your security data.
+          </p>
         </div>
 
         {/* Composer. Mirrors the prototype: tall textarea, toolbar row beneath. */}
@@ -134,7 +100,9 @@ export function WelcomePage() {
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={'Try a specific question, like "risky users this week"'}
-              className="min-h-0 flex-1 resize-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
+              /* px-4 pt-3.5 = 16px / 14px, overriding the Textarea's stock
+                 px-2.5 py-2 so the prompt doesn't crowd the box edges. */
+              className="min-h-0 flex-1 resize-none border-0 bg-transparent px-4 pt-3.5 shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
             />
           </div>
 
