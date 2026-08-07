@@ -1,0 +1,132 @@
+import * as React from "react"
+import {
+  ArrowLeft,
+  EllipsisVertical,
+  History,
+  LibraryBig,
+  User,
+} from "lucide-react"
+
+import { cn } from "@/lib/utils"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar"
+import netskopeLogo from "@/assets/netskope-logo.svg"
+
+/**
+ * Left navigation — ported from Figma `Nav` (node 84:895).
+ *
+ * The Figma component is itself built on shadcn's Sidebar (its component docs
+ * link to ui.shadcn.com/docs/components/sidebar), so this maps onto the real
+ * primitives rather than re-implementing the layout.
+ *
+ * Icons: the Figma layers are named after their lucide glyphs
+ * (Icon / FileSearch2, Icon / FileBarChart2, Icon / BotMessageSquare,
+ * Icon / ArrowLeft, Icon / EllipsisVertical), and the project already uses
+ * lucide — so these are the same glyphs, not lookalikes. The Netskope mark is
+ * brand art and is committed as an asset instead.
+ */
+
+const NAV_ITEMS = [
+  { title: "Session History", icon: History },
+  { title: "Report Library", icon: LibraryBig },
+  { title: "My Reports", icon: User },
+] as const
+
+const USER = {
+  name: "Kevin Flyn",
+  email: "kflyn@encom.com",
+  initials: "KF",
+}
+
+export function AppSidebar({
+  className,
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
+  // Nothing is active on the prompt page — these are destinations and the
+  // prompt page isn't one of them. Selecting one applies the #E5E5E5
+  // sidebar-accent fill.
+  const [activeItem, setActiveItem] = React.useState<string | null>(null)
+
+  return (
+    // No divider between nav and content (the Figma nav has none). The stock
+    // border is applied as `group-data-[side=left]:border-r`, so the override
+    // must carry the same variant — a bare `border-r-0` is a different variant
+    // group to tailwind-merge and would not conflict with it.
+    <Sidebar
+      className={cn("group-data-[side=left]:border-r-0", className)}
+      {...props}
+    >
+      <SidebarContent>
+        <SidebarHeader className="gap-2 px-2 pb-2 pt-3">
+          {/* Netskope mark */}
+          <div className="flex w-full items-center rounded-md pr-2">
+            <div className="size-10 shrink-0 p-[4px]">
+              <img
+                src={netskopeLogo}
+                alt="Netskope"
+                className="block size-full object-contain"
+              />
+            </div>
+          </div>
+
+          {/* Back + section title */}
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton className="h-8">
+                <ArrowLeft />
+                <span className="truncate text-lg font-bold">Reporting</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+
+        <SidebarGroup>
+          <SidebarMenu>
+            {NAV_ITEMS.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  isActive={activeItem === item.title}
+                  onClick={() => setActiveItem(item.title)}
+                  tooltip={item.title}
+                  className="h-8"
+                >
+                  <item.icon />
+                  <span className="truncate">{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton className="h-auto gap-2 p-2">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-300 text-sm text-foreground">
+                {USER.initials}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+                <span className="truncate text-sm font-semibold">
+                  {USER.name}
+                </span>
+                <span className="truncate text-xs">{USER.email}</span>
+              </span>
+              <EllipsisVertical className="shrink-0" />
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
+
+export default AppSidebar

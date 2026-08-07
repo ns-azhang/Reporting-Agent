@@ -1,20 +1,38 @@
-import { Button } from "@/components/ui/button"
+import type { CSSProperties } from "react"
 
+import { AppSidebar } from "@/components/app-sidebar"
+import { StyleGuide } from "@/components/style-guide"
+import { WelcomePage } from "@/components/welcome-page"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
+
+/**
+ * ?styleguide -> primitives kitchen sink (for comparing against the docs)
+ * otherwise   -> the ported Reporting Agent homepage, inside the left nav
+ */
 export function App() {
+  const showStyleGuide = new URLSearchParams(window.location.search).has(
+    "styleguide"
+  )
+
+  if (showStyleGuide) {
+    return <StyleGuide />
+  }
+
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
-    </div>
+    // TooltipProvider is required by SidebarMenuButton's `tooltip` prop, which
+    // is what labels the items once the sidebar collapses to icons.
+    <TooltipProvider>
+      {/* 180px matches the Figma nav frame; shadcn's default is 16rem. */}
+      <SidebarProvider
+        style={{ "--sidebar-width": "180px" } as CSSProperties}
+      >
+        <AppSidebar />
+        <SidebarInset>
+          <WelcomePage />
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 }
 
