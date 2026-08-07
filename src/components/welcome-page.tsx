@@ -110,7 +110,7 @@ export function WelcomePage() {
             <DropdownMenu>
               {/* Base UI (not Radix) — custom triggers use `render`, not `asChild`. */}
               <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>
-                <Lightbulb className="text-amber-500" />
+                <Lightbulb />
                 Suggested Prompts
                 <ChevronDown />
               </DropdownMenuTrigger>
