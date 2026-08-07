@@ -11,7 +11,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ChevronDown, LayoutGrid, Lightbulb, Send } from "lucide-react"
+
+/** Matches the range selector on the sibling agent pages (AISecOps, AICC). */
+const TIME_RANGES = [
+  "Last 24 hours",
+  "Last 7 days",
+  "Last 30 days",
+  "Last 90 days",
+] as const
 
 /** The 6 cards shown when nothing is pinned — mirrors POPULAR_REPORTS. */
 const POPULAR_REPORTS = [
@@ -77,10 +93,35 @@ export function WelcomePage() {
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       {/* No top bar — all navigation lives in the left sidebar. */}
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
-        <h1 className="text-center text-3xl font-semibold tracking-tight">
-          Hello Aaron!
-        </h1>
+      <main className="flex w-full flex-1 flex-col gap-6 px-8 py-8">
+        {/* Page header — matches the sibling agent pages (AISecOps, AI Command
+            Center): title left, range selector right, no greeting. The title
+            is the active nav entry, which is the convention those pages follow
+            (nav "Overview" -> title "Overview"). */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              New Session
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Ask a question about your security data.
+            </p>
+          </div>
+          <Select defaultValue="Last 7 days">
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Last 7 days" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {TIME_RANGES.map((range) => (
+                  <SelectItem key={range} value={range}>
+                    {range}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Composer. Mirrors the prototype: tall textarea, toolbar row beneath. */}
         <div className="flex min-h-[200px] flex-col rounded-md border border-input bg-background shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-3">
@@ -131,12 +172,19 @@ export function WelcomePage() {
           </div>
         </div>
 
-        {/* Popular reports */}
-        <section className="flex flex-col gap-2">
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            <LayoutGrid className="size-3.5" />
-            Popular reports
-          </p>
+        {/* Popular reports. Section heading + description line, matching how
+            the sibling pages label sections ("Cases - last 3 days" over
+            "Cases by status and risk level"). */}
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight">
+              <LayoutGrid className="size-4 text-muted-foreground" />
+              Popular reports
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Start from a prebuilt report, or ask your own question above.
+            </p>
+          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {POPULAR_REPORTS.map((report) => (
               <button

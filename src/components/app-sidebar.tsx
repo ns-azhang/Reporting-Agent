@@ -4,6 +4,7 @@ import {
   EllipsisVertical,
   History,
   LibraryBig,
+  Plus,
   User,
 } from "lucide-react"
 
@@ -27,11 +28,14 @@ import netskopeLogo from "@/assets/netskope-logo.svg"
  * link to ui.shadcn.com/docs/components/sidebar), so this maps onto the real
  * primitives rather than re-implementing the layout.
  *
- * Icons: the Figma layers are named after their lucide glyphs
- * (Icon / FileSearch2, Icon / FileBarChart2, Icon / BotMessageSquare,
- * Icon / ArrowLeft, Icon / EllipsisVertical), and the project already uses
- * lucide — so these are the same glyphs, not lookalikes. The Netskope mark is
+ * Icons: the Figma layers are named after their lucide glyphs (Icon /
+ * ArrowLeft, Icon / EllipsisVertical, ...) and the project already uses lucide,
+ * so these are the same glyphs rather than lookalikes. The Netskope mark is
  * brand art and is committed as an asset instead.
+ *
+ * The entries diverge from the Figma frame per review: the product is now
+ * "Reporting", the destinations are the app's own screens, and New Session
+ * leads the list as an action (no active state — it resets the thread).
  */
 
 const NAV_ITEMS = [
@@ -48,10 +52,11 @@ const USER = {
 
 export function AppSidebar({
   className,
+  onNewSession,
   ...props
-}: React.ComponentProps<typeof Sidebar>) {
-  // Nothing is active on the prompt page — these are destinations and the
-  // prompt page isn't one of them. Selecting one applies the #E5E5E5
+}: React.ComponentProps<typeof Sidebar> & { onNewSession?: () => void }) {
+  // Only the destinations below take the active state. New Session is an
+  // action — it resets the thread — so it never shows the #E5E5E5
   // sidebar-accent fill.
   const [activeItem, setActiveItem] = React.useState<string | null>(null)
 
@@ -90,6 +95,19 @@ export function AppSidebar({
 
         <SidebarGroup>
           <SidebarMenu>
+            {/* Top option. Renders as a normal nav row but is an action, not a
+                destination — so it takes no active state. */}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={onNewSession}
+                tooltip="New Session"
+                className="h-8"
+              >
+                <Plus />
+                <span className="truncate">New Session</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
             {NAV_ITEMS.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton

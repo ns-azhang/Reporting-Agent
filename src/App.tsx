@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react"
+import { useState, type CSSProperties } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { StyleGuide } from "@/components/style-guide"
@@ -15,6 +15,10 @@ export function App() {
     "styleguide"
   )
 
+  // Bumping this remounts WelcomePage, which clears the composer — so
+  // New Session actually resets the thread rather than being decorative.
+  const [sessionKey, setSessionKey] = useState(0)
+
   if (showStyleGuide) {
     return <StyleGuide />
   }
@@ -27,9 +31,9 @@ export function App() {
       <SidebarProvider
         style={{ "--sidebar-width": "180px" } as CSSProperties}
       >
-        <AppSidebar />
+        <AppSidebar onNewSession={() => setSessionKey((k) => k + 1)} />
         <SidebarInset>
-          <WelcomePage />
+          <WelcomePage key={sessionKey} />
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
