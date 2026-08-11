@@ -53,8 +53,10 @@ export function SessionHistoryPage({ onPickSession }: SessionHistoryPageProps) {
       {/* Narrower than the dashboard pages on purpose: this is a list of text
           rows, and a full-width column strands the timestamp and chevron far
           from the prompt they belong to. */}
-      {/* div, not <main> — SidebarInset already renders the page's <main>. */}
-      <div className="flex w-full max-w-4xl flex-1 flex-col gap-6 px-8 py-8">
+      {/* div, not <main> — SidebarInset already renders the page's <main>.
+          mx-auto centres the column: full width strands the timestamp and
+          chevron away from the prompt they describe. */}
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-8 py-8">
         {/* Title matches the active nav entry, per the sibling agent pages. */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
