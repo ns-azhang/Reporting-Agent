@@ -97,8 +97,9 @@ export function MyReportsPage({
 
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
-      {/* Same centred 896px column as the other pages. */}
-      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-8 py-8">
+      {/* Wider than Session History: card grids want columns; a list of rows
+            wants a narrow measure. */}
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-8 py-8">
         {/* Title matches the active nav entry, per the sibling agent pages. */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">My Reports</h1>
@@ -159,7 +160,7 @@ export function MyReportsPage({
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {results.map((report) => {
               const isFavorite = favorites.includes(report.id)
               const sharedWith = SHARED_ACCESS[report.id]
