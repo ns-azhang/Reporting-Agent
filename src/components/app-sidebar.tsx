@@ -38,11 +38,18 @@ import netskopeLogo from "@/assets/netskope-logo.svg"
  * leads the list as an action (no active state — it resets the thread).
  */
 
+/** Pages the nav can reach. "new-session" is the prompt page. */
+export type Page =
+  | "new-session"
+  | "session-history"
+  | "report-library"
+  | "my-reports"
+
 const NAV_ITEMS = [
-  { title: "Session History", icon: History },
-  { title: "Report Library", icon: LibraryBig },
-  { title: "My Reports", icon: User },
-] as const
+  { page: "session-history", title: "Session History", icon: History },
+  { page: "report-library", title: "Report Library", icon: LibraryBig },
+  { page: "my-reports", title: "My Reports", icon: User },
+] as const satisfies readonly { page: Page; title: string; icon: unknown }[]
 
 const USER = {
   name: "Kevin Flyn",
@@ -50,16 +57,19 @@ const USER = {
   initials: "KF",
 }
 
+type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  page: Page
+  onNavigate: (page: Page) => void
+  onNewSession?: () => void
+}
+
 export function AppSidebar({
   className,
+  page,
+  onNavigate,
   onNewSession,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { onNewSession?: () => void }) {
-  // Only the destinations below take the active state. New Session is an
-  // action — it resets the thread — so it never shows the #E5E5E5
-  // sidebar-accent fill.
-  const [activeItem, setActiveItem] = React.useState<string | null>(null)
-
+}: AppSidebarProps) {
   return (
     // No divider between nav and content (the Figma nav has none). The stock
     // border is applied as `group-data-[side=left]:border-r`, so the override
@@ -109,10 +119,10 @@ export function AppSidebar({
             </SidebarMenuItem>
 
             {NAV_ITEMS.map((item) => (
-              <SidebarMenuItem key={item.title}>
+              <SidebarMenuItem key={item.page}>
                 <SidebarMenuButton
-                  isActive={activeItem === item.title}
-                  onClick={() => setActiveItem(item.title)}
+                  isActive={page === item.page}
+                  onClick={() => onNavigate(item.page)}
                   tooltip={item.title}
                   className="h-8"
                 >
