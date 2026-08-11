@@ -55,6 +55,7 @@ export function ReportLibraryPage({ onOpenReport }: ReportLibraryPageProps) {
   }, [])
 
   const q = query.trim().toLowerCase()
+  const isFiltering = q.length > 0 || tags.length > 0
   const results = REPORTS.filter((report) => {
     const matchesQuery =
       !q ||
@@ -79,19 +80,16 @@ export function ReportLibraryPage({ onOpenReport }: ReportLibraryPageProps) {
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       {/* Same centred 896px column as the other pages. */}
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-8 py-8">
-        {/* Title matches the active nav entry, per the sibling agent pages. */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Report Library
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Prebuilt reports from the Netskope library.
-            </p>
-          </div>
-          <span className="shrink-0 pt-1 text-sm text-muted-foreground">
-            {results.length} of {REPORTS.length}
-          </span>
+        {/* Title matches the active nav entry, per the sibling agent pages.
+            The total lives in the subtitle, where it reads as description
+            rather than as a stat stranded at the far right of the header. */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Report Library
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {REPORTS.length} prebuilt reports from the Netskope library.
+          </p>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -145,6 +143,14 @@ export function ReportLibraryPage({ onOpenReport }: ReportLibraryPageProps) {
             )}
           </div>
         </div>
+
+        {/* Result count sits with the results, and only while a filter is
+            actually narrowing them — "11 of 11" says nothing. */}
+        {isFiltering && results.length > 0 && (
+          <p className="-mb-2 text-sm text-muted-foreground">
+            Showing {results.length} of {REPORTS.length}
+          </p>
+        )}
 
         {results.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-card py-16 text-muted-foreground ring-1 ring-foreground/10">
