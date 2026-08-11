@@ -1,7 +1,8 @@
 import * as React from "react"
-import { LayoutGrid, Search, Star } from "lucide-react"
+import { LayoutGrid, Search, Star, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   InputGroup,
   InputGroupAddon,
@@ -12,6 +13,21 @@ import { cn } from "@/lib/utils"
 import { REPORTS, REPORT_TAGS, type Report } from "@/data/reports"
 
 const FAVORITE_TAG = "Favorite"
+
+/**
+ * Filter chip styling, matching the Aurora product's pattern:
+ * unselected is a flat grey fill with muted text and no border; selected is a
+ * solid dark fill with light text. The stock Toggle only shifts to bg-muted
+ * when pressed, which reads as barely-changed next to Aurora's chips.
+ *
+ * Base UI drives this off `aria-pressed` — the `data-[state=on]` selector in
+ * toggle-group.tsx is dead Radix leftover and never matches.
+ */
+const CHIP =
+  "rounded-md border-0 bg-muted px-3 text-muted-foreground shadow-none " +
+  "hover:bg-muted/70 hover:text-foreground " +
+  "aria-pressed:bg-primary aria-pressed:text-primary-foreground " +
+  "aria-pressed:hover:bg-primary/90"
 
 type ReportLibraryPageProps = {
   onOpenReport?: (report: Report) => void
@@ -26,6 +42,17 @@ export function ReportLibraryPage({ onOpenReport }: ReportLibraryPageProps) {
     setFavorites((prev) =>
       prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
     )
+
+  // Absolute counts per chip, like Aurora's "4 Crit + high". Deliberately not
+  // narrowed by the other active filters, so the numbers stay stable as you
+  // toggle chips rather than shifting under the cursor.
+  const tagCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const report of REPORTS) {
+      counts[report.folder] = (counts[report.folder] ?? 0) + 1
+    }
+    return counts
+  }, [])
 
   const q = query.trim().toLowerCase()
   const results = REPORTS.filter((report) => {
@@ -80,26 +107,43 @@ export function ReportLibraryPage({ onOpenReport }: ReportLibraryPageProps) {
           </InputGroup>
 
           {/* ToggleGroup rather than looped buttons with manual active state —
-              this is a multi-select option set. */}
-          {/* Base UI uses `multiple`, not Radix's type="multiple". */}
-          <ToggleGroup
-            multiple
-            variant="outline"
-            size="sm"
-            value={tags}
-            onValueChange={(value) => setTags(value)}
-            className="flex-wrap justify-start"
-          >
-            <ToggleGroupItem value={FAVORITE_TAG}>
-              <Star className="size-3.5" />
-              Favorite
-            </ToggleGroupItem>
-            {REPORT_TAGS.map((tag) => (
-              <ToggleGroupItem key={tag} value={tag}>
-                {tag}
+              this is a multi-select option set.
+              Base UI uses `multiple`, not Radix's type="multiple". */}
+          <div className="flex flex-wrap items-center gap-2">
+            <ToggleGroup
+              multiple
+              size="sm"
+              value={tags}
+              onValueChange={(value) => setTags(value)}
+              className="flex-wrap justify-start"
+            >
+              <ToggleGroupItem value={FAVORITE_TAG} className={CHIP}>
+                <Star className="size-3.5" />
+                <span className="font-semibold">{favorites.length}</span>
+                Favorite
               </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+              {REPORT_TAGS.map((tag) => (
+                <ToggleGroupItem key={tag} value={tag} className={CHIP}>
+                  <span className="font-semibold">{tagCounts[tag] ?? 0}</span>
+                  {tag}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+
+            {/* Only offered when there's something to clear, so it isn't a
+                permanently dead control. */}
+            {tags.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTags([])}
+                className="text-muted-foreground"
+              >
+                <X />
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
 
         {results.length === 0 ? (
