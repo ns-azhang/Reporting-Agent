@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react"
 
 import { AppSidebar, type Page } from "@/components/app-sidebar"
+import { ReportLibraryPage } from "@/components/report-library-page"
 import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
 import { WelcomePage } from "@/components/welcome-page"
@@ -66,7 +67,9 @@ export function App() {
             // itself isn't restored yet — that needs the conversation view.
             <SessionHistoryPage onPickSession={newSession} />
           ) : page === "report-library" ? (
-            <ComingSoon title="Report Library" />
+            // Opening a report lands on the prompt page for now; the report
+            // canvas itself isn't ported yet.
+            <ReportLibraryPage onOpenReport={newSession} />
           ) : (
             <ComingSoon title="My Reports" />
           )}
