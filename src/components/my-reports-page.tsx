@@ -97,8 +97,7 @@ export function MyReportsPage({
 
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
-      {/* Wider than Session History: card grids want columns; a list of rows
-            wants a narrow measure. */}
+      {/* Same centred max-w-6xl column as every other page. */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-8 py-8">
         {/* Title matches the active nav entry, per the sibling agent pages. */}
         <div className="flex flex-col gap-1">

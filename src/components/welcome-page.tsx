@@ -78,8 +78,7 @@ export function WelcomePage() {
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       {/* No top bar — all navigation lives in the left sidebar. */}
       {/* div, not <main> — SidebarInset already renders the page's <main>.
-          Wider than Session History: this page is card grids, which want
-          columns, whereas a list wants a narrow measure. */}
+          Same centred max-w-6xl column as every other page. */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-8 py-8">
         {/* Page header — matches the sibling agent pages (AISecOps, AI Command
             Center): title left, no greeting. The title is the active nav
