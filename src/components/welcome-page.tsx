@@ -77,8 +77,10 @@ export function WelcomePage() {
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       {/* No top bar — all navigation lives in the left sidebar. */}
-      {/* div, not <main> — SidebarInset already renders the page's <main>. */}
-      <div className="flex w-full flex-1 flex-col gap-6 px-8 py-8">
+      {/* div, not <main> — SidebarInset already renders the page's <main>.
+          Same centred 896px column as Session History, so the two pages sit
+          in the same measure. */}
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-8 py-8">
         {/* Page header — matches the sibling agent pages (AISecOps, AI Command
             Center): title left, no greeting. The title is the active nav
             entry, which is the convention those pages follow
