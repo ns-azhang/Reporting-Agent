@@ -1,5 +1,5 @@
 import * as React from "react"
-import { LayoutGrid, Search, Star } from "lucide-react"
+import { FolderOpen, Search, Star, Users } from "lucide-react"
 
 import { FilterChips } from "@/components/filter-chips"
 import { Badge } from "@/components/ui/badge"
@@ -9,47 +9,81 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"
-import { REPORTS, REPORT_TAGS, type Report } from "@/data/reports"
+import {
+  OWNED_REPORTS,
+  REPORTS,
+  SHARED_ACCESS,
+  getReport,
+  type Report,
+} from "@/data/reports"
 
 const FAVORITE_TAG = "Favorite"
 
-type ReportLibraryPageProps = {
+/** An entry in My Reports: either created by the user, or a favourited template. */
+type MyReport = Report & {
+  owned: boolean
+  createdAt?: string
+}
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+
+type MyReportsPageProps = {
   onOpenReport?: (report: Report) => void
-  /** Favourites live in App — My Reports lists whatever is favourited here. */
   favorites: string[]
   onToggleFavorite: (id: string) => void
 }
 
-export function ReportLibraryPage({
+export function MyReportsPage({
   onOpenReport,
   favorites,
   onToggleFavorite,
-}: ReportLibraryPageProps) {
+}: MyReportsPageProps) {
   const [query, setQuery] = React.useState("")
   const [tags, setTags] = React.useState<string[]>([])
 
-  // Absolute counts per chip, like Aurora's "4 Crit + high". Deliberately not
-  // narrowed by the other active filters, so the numbers stay stable as you
-  // toggle chips rather than shifting under the cursor.
-  const tagCounts = React.useMemo(() => {
+  /**
+   * Owned reports first, then library reports the user favourited but doesn't
+   * own — mirroring the prototype, where starring a template surfaces it here.
+   */
+  const myReports = React.useMemo<MyReport[]>(() => {
+    const owned = OWNED_REPORTS.flatMap(({ id, createdAt }) => {
+      const report = getReport(id)
+      return report ? [{ ...report, owned: true, createdAt }] : []
+    })
+    const ownedIds = new Set(owned.map((r) => r.id))
+    const favourited = REPORTS.filter(
+      (r) => favorites.includes(r.id) && !ownedIds.has(r.id)
+    ).map((r) => ({ ...r, owned: false }))
+    return [...owned, ...favourited]
+  }, [favorites])
+
+  const folderCounts = React.useMemo(() => {
     const counts: Record<string, number> = {}
-    for (const report of REPORTS) {
+    for (const report of myReports) {
       counts[report.folder] = (counts[report.folder] ?? 0) + 1
     }
     return counts
-  }, [])
+  }, [myReports])
+
+  const folders = React.useMemo(
+    () => [...new Set(myReports.map((r) => r.folder))],
+    [myReports]
+  )
 
   const q = query.trim().toLowerCase()
   const isFiltering = q.length > 0 || tags.length > 0
-  const results = REPORTS.filter((report) => {
+  const results = myReports.filter((report) => {
     const matchesQuery =
       !q ||
       report.title.toLowerCase().includes(q) ||
       report.desc.toLowerCase().includes(q) ||
       report.folder.toLowerCase().includes(q)
 
-    // No tags selected means "all" — the conventional filter default, so there
-    // is no explicit All chip to keep in sync.
     const matchesTags =
       tags.length === 0 ||
       tags.some((tag) =>
@@ -65,15 +99,11 @@ export function ReportLibraryPage({
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       {/* Same centred 896px column as the other pages. */}
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-8 py-8">
-        {/* Title matches the active nav entry, per the sibling agent pages.
-            The total lives in the subtitle, where it reads as description
-            rather than as a stat stranded at the far right of the header. */}
+        {/* Title matches the active nav entry, per the sibling agent pages. */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Report Library
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">My Reports</h1>
           <p className="text-sm text-muted-foreground">
-            {REPORTS.length} prebuilt reports from the Netskope library.
+            Reports you created, plus library reports you’ve favorited.
           </p>
         </div>
 
@@ -85,7 +115,7 @@ export function ReportLibraryPage({
             <InputGroupInput
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search reports…"
+              placeholder="Search my reports…"
             />
           </InputGroup>
 
@@ -96,50 +126,57 @@ export function ReportLibraryPage({
               {
                 value: FAVORITE_TAG,
                 label: "Favorite",
-                count: favorites.length,
+                count: myReports.filter((r) => favorites.includes(r.id)).length,
                 icon: <Star className="size-3.5" />,
               },
-              ...REPORT_TAGS.map((tag) => ({
-                value: tag,
-                label: tag,
-                count: tagCounts[tag] ?? 0,
+              ...folders.map((folder) => ({
+                value: folder,
+                label: folder,
+                count: folderCounts[folder] ?? 0,
               })),
             ]}
           />
         </div>
 
-        {/* Result count sits with the results, and only while a filter is
-            actually narrowing them — "11 of 11" says nothing. */}
         {isFiltering && results.length > 0 && (
           <p className="-mb-2 text-sm text-muted-foreground">
-            Showing {results.length} of {REPORTS.length}
+            Showing {results.length} of {myReports.length}
           </p>
         )}
 
         {results.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-card py-16 text-muted-foreground ring-1 ring-foreground/10">
-            <LayoutGrid className="size-8 opacity-40" />
-            <p className="text-sm">No reports match your filters</p>
+          <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-card py-16 text-center text-muted-foreground ring-1 ring-foreground/10">
+            <FolderOpen className="size-8 opacity-40" />
+            {/* Empty because nothing matched vs. empty because there is nothing
+                here yet are different problems, so they get different copy. */}
+            {isFiltering ? (
+              <p className="text-sm">No reports match your filters</p>
+            ) : (
+              <p className="max-w-xs text-sm">
+                Nothing here yet. Favorite a report in the Report Library and it
+                will show up here.
+              </p>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {results.map((report) => {
               const isFavorite = favorites.includes(report.id)
+              const sharedWith = SHARED_ACCESS[report.id]
               return (
                 <div
                   key={report.id}
                   className="group relative flex flex-col gap-2 rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10 transition-all focus-within:ring-ring hover:ring-ring"
                 >
-                  {/* Favourite sits outside the open-report button so the two
-                      actions don't nest — a button inside a button is invalid
-                      and the star would trigger navigation. */}
+                  {/* Sibling of the open button, not nested — a button inside a
+                      button is invalid and the star would navigate. */}
                   <button
                     onClick={() => onToggleFavorite(report.id)}
                     aria-label={
                       isFavorite ? "Remove from favorites" : "Add to favorites"
                     }
                     aria-pressed={isFavorite}
-                    className="absolute top-3 right-3 rounded-sm p-1 outline-none transition-colors focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-3"
+                    className="absolute top-3 right-3 rounded-sm p-1 outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
                     <Star
                       className={cn(
@@ -164,10 +201,23 @@ export function ReportLibraryPage({
                   </button>
 
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant="secondary">Netskope Library</Badge>
+                    <Badge variant={report.owned ? "secondary" : "outline"}>
+                      {report.owned ? "Created by you" : "Netskope Library"}
+                    </Badge>
                     <Badge variant="outline">{report.folder}</Badge>
-                    {isFavorite && <Badge variant="outline">Favorite</Badge>}
+                    {sharedWith && (
+                      <Badge variant="outline" title={`Shared with ${sharedWith}`}>
+                        <Users className="size-3" />
+                        Shared
+                      </Badge>
+                    )}
                   </div>
+
+                  {report.createdAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Created {formatDate(report.createdAt)}
+                    </p>
+                  )}
                 </div>
               )
             })}
@@ -178,4 +228,4 @@ export function ReportLibraryPage({
   )
 }
 
-export default ReportLibraryPage
+export default MyReportsPage

@@ -91,3 +91,20 @@ export const REPORT_TAGS = [
     REPORTS.map((r) => r.folder).filter((f) => !EXCLUDED_FROM_TAGS.includes(f))
   ),
 ]
+
+/**
+ * Reports the user owns, i.e. created themselves. My Reports shows these plus
+ * any library report they've favourited.
+ */
+export const OWNED_REPORTS: { id: string; createdAt: string }[] = [
+  { id: "dlp-overview", createdAt: "2026-07-17" },
+  { id: "security-engineer", createdAt: "2026-07-16" },
+]
+
+/** Who a report is shared with, where it is shared at all. */
+export const SHARED_ACCESS: Record<string, string> = {
+  "security-engineer": "Everyone at my organization",
+  "dlp-overview": "Specific people (aarondemo, maydemo, jamesdemo)",
+}
+
+export const getReport = (id: string) => REPORTS.find((r) => r.id === id)

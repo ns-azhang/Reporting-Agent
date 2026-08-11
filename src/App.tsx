@@ -1,26 +1,13 @@
 import { useState, type CSSProperties } from "react"
 
 import { AppSidebar, type Page } from "@/components/app-sidebar"
+import { MyReportsPage } from "@/components/my-reports-page"
 import { ReportLibraryPage } from "@/components/report-library-page"
 import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
 import { WelcomePage } from "@/components/welcome-page"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-
-/** Placeholder for destinations that haven't been ported yet. */
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <main className="flex w-full flex-1 flex-col gap-6 px-8 py-8">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="text-sm text-muted-foreground">
-          Not ported yet — coming next.
-        </p>
-      </main>
-    </div>
-  )
-}
 
 /**
  * ?styleguide -> primitives kitchen sink (for comparing against the docs)
@@ -43,6 +30,14 @@ export function App() {
     setPage("new-session")
     setSessionKey((k) => k + 1)
   }
+
+  // Favourites live here rather than in a page, because starring a report in
+  // the Report Library is what surfaces it in My Reports.
+  const [favorites, setFavorites] = useState<string[]>([])
+  const toggleFavorite = (id: string) =>
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    )
 
   if (showStyleGuide) {
     return <StyleGuide />
@@ -69,9 +64,17 @@ export function App() {
           ) : page === "report-library" ? (
             // Opening a report lands on the prompt page for now; the report
             // canvas itself isn't ported yet.
-            <ReportLibraryPage onOpenReport={newSession} />
+            <ReportLibraryPage
+              onOpenReport={newSession}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+            />
           ) : (
-            <ComingSoon title="My Reports" />
+            <MyReportsPage
+              onOpenReport={newSession}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+            />
           )}
         </SidebarInset>
       </SidebarProvider>
