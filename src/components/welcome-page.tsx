@@ -65,7 +65,11 @@ const SUGGESTED_PROMPTS = [
 
 /* All navigation now lives in the left sidebar — this page has no top bar. */
 
-export function WelcomePage() {
+type WelcomePageProps = {
+  onOpenReport?: (id: string) => void
+}
+
+export function WelcomePage({ onOpenReport }: WelcomePageProps) {
   const [value, setValue] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
 
@@ -159,6 +163,7 @@ export function WelcomePage() {
             {POPULAR_REPORTS.map((report) => (
               <button
                 key={report.id}
+                onClick={() => onOpenReport?.(report.id)}
                 className="group flex flex-col gap-1 rounded-xl bg-card px-4 py-3.5 text-left text-card-foreground shadow-xs ring-1 ring-foreground/10 transition-all outline-none hover:ring-ring focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-3"
               >
                 <span className="text-sm font-semibold leading-snug">

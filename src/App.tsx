@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from "react"
 
 import { AppSidebar, type Page } from "@/components/app-sidebar"
 import { MyReportsPage } from "@/components/my-reports-page"
+import { ReportDetailPage } from "@/components/report-detail-page"
 import { ReportLibraryPage } from "@/components/report-library-page"
 import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
@@ -26,9 +27,21 @@ export function App() {
   // New Session actually resets the thread rather than being decorative.
   const [sessionKey, setSessionKey] = useState(0)
 
+  /**
+   * An open report is tracked alongside `page` rather than as another Page
+   * value, so closing it returns you to whichever list you came from.
+   */
+  const [openReportId, setOpenReportId] = useState<string | null>(null)
+
   const newSession = () => {
+    setOpenReportId(null)
     setPage("new-session")
     setSessionKey((k) => k + 1)
+  }
+
+  const navigate = (next: Page) => {
+    setOpenReportId(null)
+    setPage(next)
   }
 
   // Favourites live here rather than in a page, because starring a report in
@@ -51,27 +64,35 @@ export function App() {
       <SidebarProvider style={{ "--sidebar-width": "180px" } as CSSProperties}>
         <AppSidebar
           page={page}
-          onNavigate={setPage}
+          onNavigate={navigate}
           onNewSession={newSession}
         />
         <SidebarInset>
-          {page === "new-session" ? (
-            <WelcomePage key={sessionKey} />
+          {openReportId ? (
+            // An open report takes over the inset regardless of which list
+            // opened it; Back returns to that list.
+            <ReportDetailPage
+              reportId={openReportId}
+              onBack={() => setOpenReportId(null)}
+            />
+          ) : page === "new-session" ? (
+            <WelcomePage
+              key={sessionKey}
+              onOpenReport={(id) => setOpenReportId(id)}
+            />
           ) : page === "session-history" ? (
             // Resuming a session lands you back on the prompt page. The thread
             // itself isn't restored yet — that needs the conversation view.
             <SessionHistoryPage onPickSession={newSession} />
           ) : page === "report-library" ? (
-            // Opening a report lands on the prompt page for now; the report
-            // canvas itself isn't ported yet.
             <ReportLibraryPage
-              onOpenReport={newSession}
+              onOpenReport={(report) => setOpenReportId(report.id)}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
             />
           ) : (
             <MyReportsPage
-              onOpenReport={newSession}
+              onOpenReport={(report) => setOpenReportId(report.id)}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
             />
