@@ -1,5 +1,12 @@
 import * as React from "react"
-import { Download, FileText, MoreVertical, Save, Users } from "lucide-react"
+import {
+  Download,
+  FileText,
+  Link2,
+  MoreVertical,
+  Save,
+  Users,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,6 +33,15 @@ import { Input } from "@/components/ui/input"
  * Save to needs a chart to save, and Download has nothing to export from a
  * prepared action, so each hides when it has nothing to act on rather than
  * offering a dead item.
+ *
+ * Every item here completes its action outright. Download used to send "Export
+ * this as a CSV" into the chat, which answered with an export card offering
+ * CSV, PDF and a share link all over again — asking the same question twice.
+ * The formats live here, so the answer does too, and the share link joins them
+ * as its own item rather than hiding under "Download as".
+ *
+ * Confirmation lands in the thread via `onNote`, since there is no toaster.
+ * The copy lives here so all of this menu's wording sits in one place.
  */
 
 export type SavableReport = {
@@ -35,36 +51,39 @@ export type SavableReport = {
   sharedWith?: string
 }
 
+/** "DLP Incident Trend — Last 30 Days" -> "DLP_Incident_Trend_Last_30_Days" */
+const filenameFor = (title: string, extension: string) =>
+  `${title.replace(/[^\w]+/g, "_").replace(/^_+|_+$/g, "")}.${extension}`
+
 export function CardMenu({
   reports,
   hasChart,
   isAction,
-  defaultReportName,
-  onDownload,
-  onSaveToReport,
-  onCreateReport,
+  title,
+  onNote,
 }: {
   reports: SavableReport[]
   /** False on a card with nothing chart-shaped to save. */
   hasChart: boolean
   /** True for prepared actions and acknowledgements. */
   isAction: boolean
-  /** Placeholder for the new-report field — the card's own title. */
-  defaultReportName: string
-  onDownload: (format: "CSV" | "PDF") => void
-  onSaveToReport: (report: SavableReport) => void
-  onCreateReport: (name: string) => void
+  /** The card's own title — names the download and the new report. */
+  title: string
+  /** Record a finished action in the thread. */
+  onNote: (text: string) => void
 }) {
   const [name, setName] = React.useState("")
   // Controlled, because Create is a plain button rather than a menu item —
   // menu items dismiss on select, an arbitrary button inside the popup doesn't.
   const [open, setOpen] = React.useState(false)
 
-  const create = () => {
-    onCreateReport(name.trim() || defaultReportName)
+  const act = (note: string) => {
+    onNote(note)
     setName("")
     setOpen(false)
   }
+  const create = () =>
+    act(`Created “${name.trim() || title}” with this chart.`)
 
   const owned = reports.filter((r) => !r.sharedWith)
   const shared = reports.filter((r) => r.sharedWith)
@@ -106,7 +125,7 @@ export function CardMenu({
                       <Input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder={defaultReportName}
+                        placeholder={title}
                         className="h-7 min-w-0 flex-1 text-xs"
                       />
                       <Button size="sm" className="h-7" onClick={create}>
@@ -132,7 +151,7 @@ export function CardMenu({
                           {owned.map((report) => (
                             <DropdownMenuItem
                               key={report.id}
-                              onClick={() => onSaveToReport(report)}
+                              onClick={() => act(`Added “${title}” to ${report.title}.`)}
                             >
                               <span className="truncate">{report.title}</span>
                             </DropdownMenuItem>
@@ -150,7 +169,7 @@ export function CardMenu({
                               <DropdownMenuItem
                                 key={report.id}
                                 title={`Shared with ${report.sharedWith}`}
-                                onClick={() => onSaveToReport(report)}
+                                onClick={() => act(`Added “${title}” to ${report.title}.`)}
                               >
                                 <Users className="text-muted-foreground" />
                                 <span className="truncate">{report.title}</span>
@@ -175,18 +194,30 @@ export function CardMenu({
               <DropdownMenuSubContent className="w-40">
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Download as</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => onDownload("CSV")}>
-                    <FileText />
-                    CSV
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDownload("PDF")}>
-                    <FileText />
-                    PDF
-                  </DropdownMenuItem>
+                  {(["csv", "pdf"] as const).map((extension) => (
+                    <DropdownMenuItem
+                      key={extension}
+                      onClick={() =>
+                        act(`Downloaded ${filenameFor(title, extension)}.`)
+                      }
+                    >
+                      <FileText />
+                      {extension.toUpperCase()}
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuGroup>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           )}
+
+          {/* Its own item, not a third entry under "Download as" — a link is
+              not a file format. */}
+          <DropdownMenuItem
+            onClick={() => act(`Copied a share link to “${title}”.`)}
+          >
+            <Link2 />
+            Copy share link
+          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

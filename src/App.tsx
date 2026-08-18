@@ -135,12 +135,7 @@ export function App() {
               thinking={reportChat.thinking}
               onSend={reportChat.send}
               savableReports={savableReports}
-              onSaveToReport={(response, report) =>
-                reportChat.note(`Added “${response.title}” to ${report.title}.`)
-              }
-              onCreateReport={(_response, name) =>
-                reportChat.note(`Created “${name}” with this chart.`)
-              }
+              onNote={reportChat.note}
             />
           ) : page === "new-session" ? (
             <WelcomePage
@@ -151,18 +146,10 @@ export function App() {
               onSend={chat.send}
               onOpenReport={openReport}
               savableReports={savableReports}
-              /* Saving lands as a line in the thread rather than a toast, so
-                 there is still a record of it once the toast would have gone.
-                 Neither actually writes into the report yet. */
-              onSaveToReport={(response, report) =>
-                chat.note(`Added “${response.title}” to ${report.title}.`)
-              }
-              /* "with this chart" rather than naming it again — the new report
-                 usually takes the chart's own title, and repeating it reads as
-                 a mistake. */
-              onCreateReport={(_response, name) =>
-                chat.note(`Created “${name}” with this chart.`)
-              }
+              /* A ⋮ action lands as a line in the thread rather than a toast, so
+                 there is still a record of it once a toast would have gone.
+                 Saving does not yet write into the target report. */
+              onNote={chat.note}
             />
           ) : page === "session-history" ? (
             <SessionHistoryPage onPickSession={resumeSession} />

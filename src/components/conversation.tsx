@@ -302,14 +302,12 @@ function ResponseCard({
   response,
   onPickFollowUp,
   savableReports = [],
-  onSaveToReport,
-  onCreateReport,
+  onNote,
 }: {
   response: Response
   onPickFollowUp?: (text: string, responseId?: string) => void
   savableReports?: SavableReport[]
-  onSaveToReport?: (response: Response, report: SavableReport) => void
-  onCreateReport?: (response: Response, name: string) => void
+  onNote?: (text: string) => void
 }) {
   const widgets = responseWidgets(response)
   const isAction =
@@ -338,16 +336,8 @@ function ResponseCard({
           reports={savableReports}
           hasChart={widgets.length > 0}
           isAction={isAction}
-          defaultReportName={response.title}
-          /* Downloading is a question the assistant answers, same as typing it —
-             it lands in the thread as an export card you can act on. */
-          onDownload={(format) =>
-            format === "CSV"
-              ? onPickFollowUp?.("Export this as a CSV", "action-export")
-              : onPickFollowUp?.("Export this as a PDF", "export-pdf")
-          }
-          onSaveToReport={(report) => onSaveToReport?.(response, report)}
-          onCreateReport={(name) => onCreateReport?.(response, name)}
+          title={response.title}
+          onNote={(note) => onNote?.(note)}
         />
       </div>
 
@@ -425,8 +415,7 @@ export function Conversation({
   onPickFollowUp,
   onAnswerClarify,
   savableReports,
-  onSaveToReport,
-  onCreateReport,
+  onNote,
 }: {
   turns: ChatTurn[]
   thinking?: boolean
@@ -434,8 +423,8 @@ export function Conversation({
   onAnswerClarify?: (label: string) => void
   /** Reports the ⋮ menu can save a chart into. */
   savableReports?: SavableReport[]
-  onSaveToReport?: (response: Response, report: SavableReport) => void
-  onCreateReport?: (response: Response, name: string) => void
+  /** Record a finished ⋮ action in the thread. */
+  onNote?: (text: string) => void
 }) {
   return (
     <div className="flex flex-col gap-5">
@@ -466,8 +455,7 @@ export function Conversation({
             response={response}
             onPickFollowUp={onPickFollowUp}
             savableReports={savableReports}
-            onSaveToReport={onSaveToReport}
-            onCreateReport={onCreateReport}
+            onNote={onNote}
           />
         )
       })}

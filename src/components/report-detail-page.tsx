@@ -13,7 +13,6 @@ import { Conversation } from "@/components/conversation"
 import { ReportWidget } from "@/components/report-widgets"
 import type { SavableReport } from "@/components/card-menu"
 import type { ChatTurn } from "@/lib/use-chat"
-import type { Response } from "@/data/responses"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,8 +37,8 @@ type ReportDetailPageProps = {
   thinking: boolean
   onSend: (text: string, responseId?: string) => void
   savableReports?: SavableReport[]
-  onSaveToReport?: (response: Response, report: SavableReport) => void
-  onCreateReport?: (response: Response, name: string) => void
+  /** Record a finished ⋮ action in the thread. */
+  onNote?: (text: string) => void
 }
 
 export function ReportDetailPage({
@@ -49,8 +48,7 @@ export function ReportDetailPage({
   thinking,
   onSend,
   savableReports,
-  onSaveToReport,
-  onCreateReport,
+  onNote,
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
   const [chatOpen, setChatOpen] = React.useState(true)
@@ -220,8 +218,7 @@ export function ReportDetailPage({
                 onPickFollowUp={onSend}
                 onAnswerClarify={(label) => onSend(label)}
                 savableReports={savableReports}
-                onSaveToReport={onSaveToReport}
-                onCreateReport={onCreateReport}
+                onNote={onNote}
               />
             )}
 

@@ -16,7 +16,6 @@ import { ChevronDown, LayoutGrid, Lightbulb, Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ChatTurn } from "@/lib/use-chat"
 import type { SavableReport } from "@/components/card-menu"
-import type { Response } from "@/data/responses"
 import type { Session } from "@/data/sessions"
 
 /** The 6 cards shown when nothing is pinned — mirrors POPULAR_REPORTS. */
@@ -81,8 +80,8 @@ type WelcomePageProps = {
   onSend: (text: string, responseId?: string) => void
   /** Reports a card's ⋮ menu can save a chart into. */
   savableReports?: SavableReport[]
-  onSaveToReport?: (response: Response, report: SavableReport) => void
-  onCreateReport?: (response: Response, name: string) => void
+  /** Record a finished ⋮ action in the thread. */
+  onNote?: (text: string) => void
 }
 
 export function WelcomePage({
@@ -92,8 +91,7 @@ export function WelcomePage({
   thinking,
   onSend,
   savableReports,
-  onSaveToReport,
-  onCreateReport,
+  onNote,
 }: WelcomePageProps) {
   const [value, setValue] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
@@ -165,13 +163,11 @@ export function WelcomePage({
             turns={turns}
             thinking={thinking}
             onPickFollowUp={followUp}
-            onOpenReport={onOpenReport}
             /* Picking an option is the same as typing that answer — the
                wizard reads the next message either way. */
             onAnswerClarify={(label) => onSend(label)}
             savableReports={savableReports}
-            onSaveToReport={onSaveToReport}
-            onCreateReport={onCreateReport}
+            onNote={onNote}
           />
         )}
 
