@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react"
+import { useMemo, useState, type CSSProperties } from "react"
 
 import { AppSidebar, type Page } from "@/components/app-sidebar"
 import { MyReportsPage } from "@/components/my-reports-page"
@@ -7,6 +7,7 @@ import { ReportLibraryPage } from "@/components/report-library-page"
 import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
 import { WelcomePage } from "@/components/welcome-page"
+import { OWNED_REPORTS, SHARED_ACCESS, getReport } from "@/data/reports"
 import type { Session } from "@/data/sessions"
 import { useChat } from "@/lib/use-chat"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -77,6 +78,22 @@ export function App() {
       prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
     )
 
+  /**
+   * What a card's ⋮ "Save to" can write into: the same set My Reports lists —
+   * reports you own, plus library reports you favourited — so "my reports"
+   * means one thing across the app.
+   */
+  const savableReports = useMemo(() => {
+    const ownedIds = OWNED_REPORTS.map((r) => r.id)
+    const ids = [...ownedIds, ...favorites.filter((f) => !ownedIds.includes(f))]
+    return ids.flatMap((id) => {
+      const report = getReport(id)
+      return report
+        ? [{ id, title: report.title, sharedWith: SHARED_ACCESS[id] }]
+        : []
+    })
+  }, [favorites])
+
   if (showStyleGuide) {
     return <StyleGuide />
   }
@@ -108,6 +125,19 @@ export function App() {
               thinking={chat.thinking}
               onSend={chat.send}
               onOpenReport={(id) => setOpenReportId(id)}
+              savableReports={savableReports}
+              /* Saving lands as a line in the thread rather than a toast, so
+                 there is still a record of it once the toast would have gone.
+                 Neither actually writes into the report yet. */
+              onSaveToReport={(response, report) =>
+                chat.note(`Added “${response.title}” to ${report.title}.`)
+              }
+              /* "with this chart" rather than naming it again — the new report
+                 usually takes the chart's own title, and repeating it reads as
+                 a mistake. */
+              onCreateReport={(_response, name) =>
+                chat.note(`Created “${name}” with this chart.`)
+              }
             />
           ) : page === "session-history" ? (
             <SessionHistoryPage onPickSession={resumeSession} />

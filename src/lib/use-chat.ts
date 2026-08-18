@@ -141,6 +141,13 @@ export function useChat(onOpenReport?: (reportId: string) => void) {
     })
   }
 
+  /**
+   * Record something that happened outside the question/answer loop — saving a
+   * chart to a report, say. It lands in the thread rather than in a toast, so
+   * there is a trace of it after the fact.
+   */
+  const note = (text: string) => push({ role: "note", text })
+
   /** Start over, or drop into a session restored from history. */
   const reset = (seed: ChatTurn[] = []) => {
     clearTimers()
@@ -150,5 +157,5 @@ export function useChat(onOpenReport?: (reportId: string) => void) {
     setTurns(seed)
   }
 
-  return { turns, thinking, send, reset }
+  return { turns, thinking, send, note, reset }
 }

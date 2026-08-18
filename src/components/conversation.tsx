@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 
 import { ActionPanel } from "@/components/action-panel"
+import { CardMenu, type SavableReport } from "@/components/card-menu"
 import { ReportWidget } from "@/components/report-widgets"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -332,9 +333,15 @@ function FeedbackRow({ summary }: { summary: string }) {
 function ResponseCard({
   response,
   onPickFollowUp,
+  savableReports = [],
+  onSaveToReport,
+  onCreateReport,
 }: {
   response: Response
   onPickFollowUp?: (text: string, responseId?: string) => void
+  savableReports?: SavableReport[]
+  onSaveToReport?: (response: Response, report: SavableReport) => void
+  onCreateReport?: (response: Response, name: string) => void
 }) {
   const widgets = responseWidgets(response)
   const isAction =
@@ -359,6 +366,21 @@ function ResponseCard({
           </p>
         </div>
         {isAction && <Badge variant="secondary">Action</Badge>}
+        <CardMenu
+          reports={savableReports}
+          hasChart={widgets.length > 0}
+          isAction={isAction}
+          defaultReportName={response.title}
+          /* Downloading is a question the assistant answers, same as typing it —
+             it lands in the thread as an export card you can act on. */
+          onDownload={(format) =>
+            format === "CSV"
+              ? onPickFollowUp?.("Export this as a CSV", "action-export")
+              : onPickFollowUp?.("Export this as a PDF", "export-pdf")
+          }
+          onSaveToReport={(report) => onSaveToReport?.(response, report)}
+          onCreateReport={(name) => onCreateReport?.(response, name)}
+        />
       </div>
 
       {response.action && <ActionPanel action={response.action} />}
@@ -428,12 +450,19 @@ export function Conversation({
   onPickFollowUp,
   onOpenReport,
   onAnswerClarify,
+  savableReports,
+  onSaveToReport,
+  onCreateReport,
 }: {
   turns: ChatTurn[]
   thinking?: boolean
   onPickFollowUp?: (text: string, responseId?: string) => void
   onOpenReport?: (reportId: string) => void
   onAnswerClarify?: (label: string) => void
+  /** Reports the ⋮ menu can save a chart into. */
+  savableReports?: SavableReport[]
+  onSaveToReport?: (response: Response, report: SavableReport) => void
+  onCreateReport?: (response: Response, name: string) => void
 }) {
   return (
     <div className="flex flex-col gap-5">
@@ -472,6 +501,9 @@ export function Conversation({
             key={i}
             response={response}
             onPickFollowUp={onPickFollowUp}
+            savableReports={savableReports}
+            onSaveToReport={onSaveToReport}
+            onCreateReport={onCreateReport}
           />
         )
       })}
