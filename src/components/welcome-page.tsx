@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 import type { ChatTurn } from "@/lib/use-chat"
 import type { SavableReport } from "@/components/card-menu"
 import type { Session } from "@/data/sessions"
+import type { Widget } from "@/data/report-details"
 
 /** The 6 cards shown when nothing is pinned — mirrors POPULAR_REPORTS. */
 const POPULAR_REPORTS = [
@@ -81,7 +82,9 @@ type WelcomePageProps = {
   /** Reports a card's ⋮ menu can save a chart into. */
   savableReports?: SavableReport[]
   /** Record a finished ⋮ action in the thread. */
-  onNote?: (text: string) => void
+  onNote?: (text: string, link?: { reportId: string; label: string }) => void
+  /** Add a chart to a report, so the note's link tells the truth. */
+  onSaveWidget?: (reportId: string, widgets: Widget[]) => void
 }
 
 export function WelcomePage({
@@ -92,6 +95,7 @@ export function WelcomePage({
   onSend,
   savableReports,
   onNote,
+  onSaveWidget,
 }: WelcomePageProps) {
   const [value, setValue] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
@@ -168,6 +172,8 @@ export function WelcomePage({
             onAnswerClarify={(label) => onSend(label)}
             savableReports={savableReports}
             onNote={onNote}
+            onSaveWidget={onSaveWidget}
+            onOpenReport={onOpenReport}
           />
         )}
 

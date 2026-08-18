@@ -80,7 +80,13 @@ export type Response = {
   summary: string
   followUps: FollowUp[]
   kpis?: ResponseKpi[]
-  series?: { name: string; color: string; values: number[] }[]
+  /** `dashed` marks a comparison series, e.g. the prior period. */
+  series?: {
+    name: string
+    color: string
+    values: number[]
+    dashed?: boolean
+  }[]
   xLabels?: string[]
   /** Points called out on the line chart. `drill` makes the marker clickable,
    *  asking that question the way a follow-up chip does. */

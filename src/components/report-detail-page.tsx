@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
-import { getReportDetail } from "@/data/report-details"
+import { getReportDetail, type Widget } from "@/data/report-details"
 
 type ReportDetailPageProps = {
   reportId: string
@@ -37,8 +37,14 @@ type ReportDetailPageProps = {
   thinking: boolean
   onSend: (text: string, responseId?: string) => void
   savableReports?: SavableReport[]
+  /** Charts saved into this report from a chat card, appended to its own. */
+  extraWidgets?: Widget[]
+  /** Follow a report link in a note. */
+  onOpenReport?: (reportId: string) => void
   /** Record a finished ⋮ action in the thread. */
-  onNote?: (text: string) => void
+  onNote?: (text: string, link?: { reportId: string; label: string }) => void
+  /** Add a chart to a report, so the note's link tells the truth. */
+  onSaveWidget?: (reportId: string, widgets: Widget[]) => void
 }
 
 export function ReportDetailPage({
@@ -48,7 +54,10 @@ export function ReportDetailPage({
   thinking,
   onSend,
   savableReports,
+  extraWidgets = [],
+  onOpenReport,
   onNote,
+  onSaveWidget,
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
   const [chatOpen, setChatOpen] = React.useState(true)
@@ -170,9 +179,10 @@ export function ReportDetailPage({
             )}
           </div>
 
-          {/* KPI row spans both columns; the rest sit half-width, as in v5. */}
+          {/* KPI row spans both columns; the rest sit half-width, as in v5.
+              Charts saved here from a chat card come after the built-ins. */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {report.widgets.map((widget, i) => (
+            {[...report.widgets, ...extraWidgets].map((widget, i) => (
               <div
                 key={i}
                 className={widget.size === "full" ? "sm:col-span-2" : undefined}
@@ -219,6 +229,8 @@ export function ReportDetailPage({
                 onAnswerClarify={(label) => onSend(label)}
                 savableReports={savableReports}
                 onNote={onNote}
+                onSaveWidget={onSaveWidget}
+                onOpenReport={onOpenReport}
               />
             )}
 

@@ -8,6 +8,7 @@ import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
 import { WelcomePage } from "@/components/welcome-page"
 import { OWNED_REPORTS, SHARED_ACCESS, getReport } from "@/data/reports"
+import type { Widget } from "@/data/report-details"
 import type { Session } from "@/data/sessions"
 import { useChat } from "@/lib/use-chat"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -93,6 +94,18 @@ export function App() {
     )
 
   /**
+   * Charts saved into a report from a chat card, keyed by report id. They render
+   * after the report's built-in widgets, so the link in "Added X to <report>"
+   * leads somewhere the chart actually is.
+   */
+  const [savedWidgets, setSavedWidgets] = useState<Record<string, Widget[]>>({})
+  const saveWidgets = (reportId: string, widgets: Widget[]) =>
+    setSavedWidgets((prev) => ({
+      ...prev,
+      [reportId]: [...(prev[reportId] ?? []), ...widgets],
+    }))
+
+  /**
    * What a card's ⋮ "Save to" can write into: the same set My Reports lists —
    * reports you own, plus library reports you favourited — so "my reports"
    * means one thing across the app.
@@ -134,8 +147,11 @@ export function App() {
               turns={reportChat.turns}
               thinking={reportChat.thinking}
               onSend={reportChat.send}
+              extraWidgets={savedWidgets[openReportId] ?? []}
               savableReports={savableReports}
               onNote={reportChat.note}
+              onSaveWidget={saveWidgets}
+              onOpenReport={openReport}
             />
           ) : page === "new-session" ? (
             <WelcomePage
@@ -147,9 +163,9 @@ export function App() {
               onOpenReport={openReport}
               savableReports={savableReports}
               /* A ⋮ action lands as a line in the thread rather than a toast, so
-                 there is still a record of it once a toast would have gone.
-                 Saving does not yet write into the target report. */
+                 there is still a record of it once a toast would have gone. */
               onNote={chat.note}
+              onSaveWidget={saveWidgets}
             />
           ) : page === "session-history" ? (
             <SessionHistoryPage onPickSession={resumeSession} />

@@ -20,8 +20,17 @@ export type ChatTurn =
       /** The intro on step 1, or the previous step's ack after that. */
       lead: string
     }
-  /** A plain assistant line, e.g. the wizard's closing ack. */
-  | { role: "note"; text: string }
+  /**
+   * A plain assistant line — the wizard's closing ack, or a record of a ⋮
+   * action. `link` makes a report named at the end of the sentence clickable,
+   * so "Added X to <report>" is a way into the report, not just a claim about
+   * it. When it is set, `text` carries no trailing full stop.
+   */
+  | {
+      role: "note"
+      text: string
+      link?: { reportId: string; label: string }
+    }
 
 /** The prototype's "Thinking…" beat before an answer lands. */
 const THINKING_MS = 800
@@ -157,7 +166,8 @@ export function useChat(
    * chart to a report, say. It lands in the thread rather than in a toast, so
    * there is a trace of it after the fact.
    */
-  const note = (text: string) => push({ role: "note", text })
+  const note = (text: string, link?: { reportId: string; label: string }) =>
+    push({ role: "note", text, link })
 
   /** Start over, or drop into a session restored from history. */
   const reset = (seed: ChatTurn[] = []) => {

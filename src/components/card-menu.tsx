@@ -61,6 +61,7 @@ export function CardMenu({
   isAction,
   title,
   onNote,
+  onSaveTo,
 }: {
   reports: SavableReport[]
   /** False on a card with nothing chart-shaped to save. */
@@ -70,17 +71,29 @@ export function CardMenu({
   /** The card's own title — names the download and the new report. */
   title: string
   /** Record a finished action in the thread. */
-  onNote: (text: string) => void
+  onNote?: (text: string, link?: { reportId: string; label: string }) => void
+  /**
+   * Which report was picked. Saving lives with the caller because only it holds
+   * the response the widgets come from — this menu just knows the target.
+   */
+  onSaveTo?: (report: SavableReport) => void
 }) {
   const [name, setName] = React.useState("")
   // Controlled, because Create is a plain button rather than a menu item —
   // menu items dismiss on select, an arbitrary button inside the popup doesn't.
   const [open, setOpen] = React.useState(false)
 
-  const act = (note: string) => {
-    onNote(note)
+  const dismiss = () => {
     setName("")
     setOpen(false)
+  }
+  const act = (note: string) => {
+    onNote?.(note)
+    dismiss()
+  }
+  const saveTo = (report: SavableReport) => {
+    onSaveTo?.(report)
+    dismiss()
   }
   const create = () =>
     act(`Created “${name.trim() || title}” with this chart.`)
@@ -151,7 +164,7 @@ export function CardMenu({
                           {owned.map((report) => (
                             <DropdownMenuItem
                               key={report.id}
-                              onClick={() => act(`Added “${title}” to ${report.title}.`)}
+                              onClick={() => saveTo(report)}
                             >
                               <span className="truncate">{report.title}</span>
                             </DropdownMenuItem>
@@ -169,7 +182,7 @@ export function CardMenu({
                               <DropdownMenuItem
                                 key={report.id}
                                 title={`Shared with ${report.sharedWith}`}
-                                onClick={() => act(`Added “${title}” to ${report.title}.`)}
+                                onClick={() => saveTo(report)}
                               >
                                 <Users className="text-muted-foreground" />
                                 <span className="truncate">{report.title}</span>

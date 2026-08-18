@@ -79,6 +79,21 @@ function responseWidgets(response: Response): Widget[] {
   return widgets
 }
 
+/**
+ * The one widget to save when a card goes into a report.
+ *
+ * The chat card strips widget titles and insights — its own header and Insight
+ * block carry those. A report canvas has neither, so a saved widget has to
+ * carry them itself or it lands anonymous among the report's own charts. And
+ * only one goes: a response's KPI row is context for its chart, not a second
+ * chart, so saving both would put two untitled things on the canvas.
+ */
+function widgetToSave(response: Response, widgets: Widget[]): Widget | undefined {
+  const primary = widgets.find((w) => w.type !== "kpi") ?? widgets[0]
+  if (!primary) return undefined
+  return { ...primary, title: response.title, insight: response.summary }
+}
+
 function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
@@ -178,12 +193,38 @@ function ClarifyCard({
   )
 }
 
-/** A plain assistant line — the wizard's closing acknowledgement. */
-function NoteCard({ text }: { text: string }) {
+/**
+ * A plain assistant line — the wizard's closing acknowledgement, or a record of
+ * a ⋮ action. When the line ends by naming a report, that name is the link into
+ * it: saving a chart somewhere is only useful if you can go and see it there.
+ */
+function NoteCard({
+  text,
+  link,
+  onOpenReport,
+}: {
+  text: string
+  link?: { reportId: string; label: string }
+  onOpenReport?: (reportId: string) => void
+}) {
   return (
     <div className="flex items-start gap-2.5 rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10">
       <Sparkles className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <p className="text-sm leading-relaxed">{text}</p>
+      <p className="text-sm leading-relaxed">
+        {text}
+        {link && (
+          <>
+            {" "}
+            <button
+              onClick={() => onOpenReport?.(link.reportId)}
+              className="font-medium underline decoration-muted-foreground/40 underline-offset-2 outline-none hover:decoration-current focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {link.label}
+            </button>
+            .
+          </>
+        )}
+      </p>
     </div>
   )
 }
@@ -303,11 +344,13 @@ function ResponseCard({
   onPickFollowUp,
   savableReports = [],
   onNote,
+  onSaveWidget,
 }: {
   response: Response
   onPickFollowUp?: (text: string, responseId?: string) => void
   savableReports?: SavableReport[]
-  onNote?: (text: string) => void
+  onNote?: (text: string, link?: { reportId: string; label: string }) => void
+  onSaveWidget?: (reportId: string, widgets: Widget[]) => void
 }) {
   const widgets = responseWidgets(response)
   const isAction =
@@ -337,7 +380,18 @@ function ResponseCard({
           hasChart={widgets.length > 0}
           isAction={isAction}
           title={response.title}
-          onNote={(note) => onNote?.(note)}
+          onNote={onNote}
+          /* The card owns saving because only it holds the response the widgets
+             come from; the menu just says which report was picked. */
+          onSaveTo={(report) => {
+            const widget = widgetToSave(response, widgets)
+            if (!widget) return
+            onSaveWidget?.(report.id, [widget])
+            onNote?.(`Added “${response.title}” to`, {
+              reportId: report.id,
+              label: report.title,
+            })
+          }}
         />
       </div>
 
@@ -416,6 +470,8 @@ export function Conversation({
   onAnswerClarify,
   savableReports,
   onNote,
+  onSaveWidget,
+  onOpenReport,
 }: {
   turns: ChatTurn[]
   thinking?: boolean
@@ -424,7 +480,11 @@ export function Conversation({
   /** Reports the ⋮ menu can save a chart into. */
   savableReports?: SavableReport[]
   /** Record a finished ⋮ action in the thread. */
-  onNote?: (text: string) => void
+  onNote?: (text: string, link?: { reportId: string; label: string }) => void
+  /** Actually add a chart to a report, so the note's link tells the truth. */
+  onSaveWidget?: (reportId: string, widgets: Widget[]) => void
+  /** Follow the report link in a note. */
+  onOpenReport?: (reportId: string) => void
 }) {
   return (
     <div className="flex flex-col gap-5">
@@ -445,7 +505,14 @@ export function Conversation({
           )
         }
         if (turn.role === "note") {
-          return <NoteCard key={i} text={turn.text} />
+          return (
+            <NoteCard
+              key={i}
+              text={turn.text}
+              link={turn.link}
+              onOpenReport={onOpenReport}
+            />
+          )
         }
         const response = getResponse(turn.responseId)
         if (!response) return null
@@ -456,6 +523,7 @@ export function Conversation({
             onPickFollowUp={onPickFollowUp}
             savableReports={savableReports}
             onNote={onNote}
+            onSaveWidget={onSaveWidget}
           />
         )
       })}
