@@ -8,6 +8,7 @@ import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
 import { WelcomePage } from "@/components/welcome-page"
 import type { Session } from "@/data/sessions"
+import { useChat } from "@/lib/use-chat"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -37,9 +38,17 @@ export function App() {
   /** Session restored from history, rendered as a thread on the prompt page. */
   const [resumed, setResumed] = useState<Session | null>(null)
 
+  /**
+   * The conversation lives here, not in WelcomePage: a prompt naming a report
+   * opens it, which swaps the page out, and the thread has to still be there
+   * when you come back.
+   */
+  const chat = useChat((reportId) => setOpenReportId(reportId))
+
   const newSession = () => {
     setOpenReportId(null)
     setResumed(null)
+    chat.reset()
     setPage("new-session")
     setSessionKey((k) => k + 1)
   }
@@ -49,6 +58,7 @@ export function App() {
   const resumeSession = (session: Session) => {
     setOpenReportId(null)
     setResumed(session)
+    chat.reset(session.turns)
     setPage("new-session")
     setSessionKey((k) => k + 1)
   }
@@ -94,6 +104,9 @@ export function App() {
             <WelcomePage
               key={sessionKey}
               resumed={resumed}
+              turns={chat.turns}
+              thinking={chat.thinking}
+              onSend={chat.send}
               onOpenReport={(id) => setOpenReportId(id)}
             />
           ) : page === "session-history" ? (

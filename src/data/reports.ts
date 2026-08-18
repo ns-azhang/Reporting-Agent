@@ -108,3 +108,18 @@ export const SHARED_ACCESS: Record<string, string> = {
 }
 
 export const getReport = (id: string) => REPORTS.find((r) => r.id === id)
+
+/**
+ * Extra phrases that should open a report, beyond its title, folder and id —
+ * carried over from the prototype's per-dashboard `keywords`. Only the reports
+ * whose names people don't type verbatim need an entry.
+ *
+ * "security engineer" comes from the prototype's `personas` rather than its
+ * keywords: the report sits in the DLP folder, so nothing else would match it.
+ */
+export const REPORT_KEYWORDS: Record<string, string[]> = {
+  "ai-risk-assessment": ["ai risk", "risk assessment", "ai security", "risky ai"],
+  "genai-admin": ["genai", "ai", "artificial intelligence", "llm", "copilot"],
+  "insider-threat": ["insider", "risky user", "uba", "watchlist"],
+  "security-engineer": ["security engineer", "posture", "dspm"],
+}
