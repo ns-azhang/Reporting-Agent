@@ -12,7 +12,6 @@ import {
   RadialBar,
   RadialBarChart,
   ReferenceDot,
-  ReferenceLine,
   XAxis,
   YAxis,
 } from "recharts"
@@ -163,54 +162,77 @@ function DataTable({ widget, bare }: { widget: TableWidget; bare?: boolean }) {
   )
 }
 
-/** Red used for called-out points, matching the prototype's anomaly markers. */
-const ANOMALY = "#ef4444"
-const ANOMALY_FILL = "#fee2e2"
-
 /**
- * One anomaly marker: a ring on the point, a dashed line dropping to the axis,
- * and the label above it. A drillable marker is filled and gets a "↗", so it
- * reads as clickable rather than as decoration.
+ * One called-out point: a dot on the line and a label above it.
+ *
+ * The dot is *filled in the series' own colour* with a 2px ring in the surface
+ * colour — the standard end-dot treatment, so it reads as "this point on this
+ * line" rather than as a foreign ring pasted over the curve. No stroke beyond
+ * the ring: an outline is data-weight ink that isn't data.
+ *
+ * The label wears muted ink, not the series colour. Identity comes from the
+ * coloured dot beside it; colouring the text as well says nothing extra and
+ * makes small text harder to read. It sits on a surface-coloured plate so it
+ * survives crossing a gridline.
+ *
+ * There is deliberately no dropped line to the axis. It duplicated the
+ * gridlines, and on a multi-series chart it crossed the other series on the way
+ * down, implying something about values it had nothing to do with.
  */
 function AnomalyMarker({
   cx,
   cy,
   label,
+  color,
   drillable,
   onClick,
 }: {
   cx: number
   cy: number
   label: string
+  color: string
   drillable: boolean
   onClick?: () => void
 }) {
+  const text = drillable ? `${label} ↗` : label
+  // SVG can't measure text before it paints, so the plate is sized from the
+  // character count. The padding absorbs the error either way.
+  const plateWidth = text.length * 5.4 + 10
+  const baseline = cy - 14
+
   return (
     <g
       onClick={drillable ? onClick : undefined}
       style={drillable ? { cursor: "pointer" } : undefined}
     >
-      {/* Oversized transparent hit target — a 7px ring is a hard click. */}
-      {drillable && <circle cx={cx} cy={cy} r={14} fill="transparent" />}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={7}
-        fill={drillable ? ANOMALY_FILL : "none"}
-        stroke={ANOMALY}
-        strokeWidth={1.5}
+      {/* Oversized transparent hit target — an 10px dot is a hard click. */}
+      {drillable && <circle cx={cx} cy={cy} r={16} fill="transparent" />}
+      <rect
+        x={cx - plateWidth / 2}
+        y={baseline - 9}
+        width={plateWidth}
+        height={13}
+        rx={3}
+        fill="var(--card)"
       />
       <text
         x={cx}
-        y={cy - 12}
+        y={baseline}
         textAnchor="middle"
         fontSize={10}
-        fontWeight={600}
-        fill={ANOMALY}
+        fontWeight={500}
+        fill="var(--muted-foreground)"
       >
-        {label}
-        {drillable ? " ↗" : ""}
+        {text}
       </text>
+      <circle
+        cx={cx}
+        cy={cy}
+        r={5}
+        fill={color}
+        stroke="var(--card)"
+        strokeWidth={2}
+      />
     </g>
   )
 }
@@ -239,6 +261,15 @@ function TrendChart({
   const anomalies = widget.anomalies ?? []
 
   /**
+   * Which line does a called-out point sit on? The data records the index and
+   * the value but not the series, so match on the value at that index — the dot
+   * has to be the colour of the line it lands on, or it reads as a stray mark.
+   */
+  const seriesColorAt = (index: number, value: number) =>
+    (widget.series.find((s) => s.values[index] === value) ?? widget.series[0])
+      .color
+
+  /**
    * Most of the prototype's xLabels are sparse — every fifth entry is named and
    * the rest are "". It draws them by index, so blanks cost it nothing; a
    * category axis keyed on the label instead folds all 24 blanks into one
@@ -265,7 +296,9 @@ function TrendChart({
       {/* Extra headroom so a marker's label isn't clipped by the plot edge. */}
       <ChartContainer config={config} className="h-[220px] w-full">
         <LineChart data={data} margin={{ left: 4, right: 8, top: anomalies.length ? 24 : 8 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" />
+          {/* Solid hairline, not dashed: a dashed grid adds texture that
+              competes with the data for attention. Recessive is the job. */}
+          <CartesianGrid vertical={false} />
           <XAxis
             dataKey="index"
             type="number"
@@ -301,32 +334,21 @@ function TrendChart({
             const x = anomaly.index
             if (x < 0 || x >= data.length) return null
             const drillable = !!(anomaly.drill && onDrill)
-            return [
-              // `segment` keeps the drop-line under the point instead of
-              // spanning the full plot height, as the prototype draws it.
-              <ReferenceLine
-                key={`line-${anomaly.index}`}
-                segment={[
-                  { x, y: 0 },
-                  { x, y: anomaly.value },
-                ]}
-                stroke={ANOMALY}
-                strokeDasharray="3 3"
-                strokeWidth={1}
-                ifOverflow="visible"
-              />,
+            return (
               <ReferenceDot
                 key={`dot-${anomaly.index}`}
                 x={x}
                 y={anomaly.value}
-                // A `shape` gets the label, the hit target and the ring drawn as
-                // one group; ReferenceDot's own `label` can't carry a click.
+                // A `shape` draws the label, the plate, the hit target and the
+                // dot as one group; ReferenceDot's own `label` can't carry a
+                // click, and the pieces have to move together.
                 shape={({ cx, cy }: { cx?: number; cy?: number }) =>
                   cx == null || cy == null ? <g /> : (
                     <AnomalyMarker
                       cx={cx}
                       cy={cy}
                       label={anomaly.label}
+                      color={seriesColorAt(anomaly.index, anomaly.value)}
                       drillable={drillable}
                       onClick={() =>
                         anomaly.drill &&
@@ -336,8 +358,8 @@ function TrendChart({
                   )
                 }
                 ifOverflow="visible"
-              />,
-            ]
+              />
+            )
           })}
         </LineChart>
       </ChartContainer>
@@ -357,7 +379,8 @@ function HorizontalBars({ widget, bare }: { widget: HBarWidget; bare?: boolean }
         style={{ height: Math.max(160, data.length * 30) }}
       >
         <BarChart data={data} layout="vertical" margin={{ left: 4, right: 24 }}>
-          <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+          {/* Solid hairline — see the note on the trend chart's grid. */}
+          <CartesianGrid horizontal={false} />
           <XAxis type="number" tickLine={false} axisLine={false} fontSize={11} />
           <YAxis
             type="category"
