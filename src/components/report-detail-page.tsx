@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
-import { getReportDetail, hasRealDetail } from "@/data/report-details"
+import { getReportDetail } from "@/data/report-details"
 
 type ReportDetailPageProps = {
   reportId: string
@@ -35,6 +35,19 @@ export function ReportDetailPage({ reportId, onBack }: ReportDetailPageProps) {
   const ask = (text: string) => {
     setDraft(text)
     textareaRef.current?.focus()
+  }
+
+  // Every library report now has contents; this only trips on a bad id.
+  if (!report) {
+    return (
+      <div className="flex h-svh flex-col items-center justify-center gap-3">
+        <p className="text-sm text-muted-foreground">Report not found.</p>
+        <Button variant="outline" size="sm" onClick={onBack}>
+          <ArrowLeft />
+          Back
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -87,15 +100,10 @@ export function ReportDetailPage({ reportId, onBack }: ReportDetailPageProps) {
               </div>
             </div>
 
-            {!hasRealDetail(reportId) && (
-              <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-                Showing DLP Incidents Status Monitoring as a stand-in — this
-                report’s contents aren’t ported yet.
-              </p>
-            )}
 
             {/* About this report — collapsed by default so it doesn't push the
                 data below the fold. */}
+            {report.about && (
             <Collapsible>
               <CollapsibleTrigger
                 render={
@@ -115,7 +123,7 @@ export function ReportDetailPage({ reportId, onBack }: ReportDetailPageProps) {
                     {report.about.blurb}
                   </p>
                   <ul className="flex flex-col gap-1">
-                    {report.about.questions.map((q) => (
+                    {report.about.questions.map((q: string) => (
                       <li
                         key={q}
                         className="flex gap-2 text-sm text-muted-foreground"
@@ -128,12 +136,18 @@ export function ReportDetailPage({ reportId, onBack }: ReportDetailPageProps) {
                 </div>
               </CollapsibleContent>
             </Collapsible>
+            )}
           </div>
 
           {/* KPI row spans both columns; the rest sit half-width, as in v5. */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {report.widgets.map((widget, i) => (
-              <ReportWidget key={i} widget={widget} />
+              <div
+                key={i}
+                className={widget.size === "full" ? "sm:col-span-2" : undefined}
+              >
+                <ReportWidget widget={widget} />
+              </div>
             ))}
           </div>
         </div>

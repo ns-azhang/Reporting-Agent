@@ -6,6 +6,11 @@ import {
   Cell,
   Line,
   LineChart,
+  Pie,
+  PieChart,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
   XAxis,
   YAxis,
 } from "recharts"
@@ -28,10 +33,13 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import type {
+  DonutWidget,
+  GaugeWidget,
   HBarWidget,
   KpiWidget,
   LineWidget,
   TableWidget,
+  UnsupportedWidget,
   Widget,
 } from "@/data/report-details"
 
@@ -225,11 +233,112 @@ function HorizontalBars({ widget, bare }: { widget: HBarWidget; bare?: boolean }
           />
           <Bar dataKey="value" radius={4}>
             {data.map((bar) => (
-              <Cell key={bar.label} fill={bar.color} />
+              <Cell key={bar.label} fill={bar.color ?? "#94a3b8"} />
             ))}
           </Bar>
         </BarChart>
       </ChartContainer>
+    </WidgetShell>
+  )
+}
+
+
+function DonutChart({ widget, bare }: { widget: DonutWidget; bare?: boolean }) {
+  const total = widget.slices.reduce((sum, s) => sum + s.value, 0)
+  const config: ChartConfig = Object.fromEntries(
+    widget.slices.map((s) => [s.label, { label: s.label, color: s.color }])
+  )
+
+  return (
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+      <div className="flex flex-wrap items-center gap-4">
+        <ChartContainer config={config} className="h-[180px] w-[180px] shrink-0">
+          <PieChart>
+            <ChartTooltip content={<ChartTooltipContent nameKey="label" />} />
+            <Pie
+              data={widget.slices}
+              dataKey="value"
+              nameKey="label"
+              innerRadius={48}
+              outerRadius={72}
+              strokeWidth={2}
+            >
+              {widget.slices.map((slice) => (
+                <Cell key={slice.label} fill={slice.color ?? "#94a3b8"} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ChartContainer>
+        {/* Legend doubles as the value table — the prototype shows counts and
+            shares beside the ring rather than relying on hover. */}
+        <div className="flex min-w-40 flex-1 flex-col gap-1.5">
+          {widget.slices.map((slice) => (
+            <div key={slice.label} className="flex items-center gap-2 text-xs">
+              <span
+                className="size-2.5 shrink-0 rounded-[2px]"
+                style={{ background: slice.color ?? "#94a3b8" }}
+              />
+              <span className="flex-1 truncate">{slice.label}</span>
+              <span className="font-medium">{slice.value}</span>
+              <span className="w-9 text-right text-muted-foreground">
+                {total ? Math.round((slice.value / total) * 100) : 0}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </WidgetShell>
+  )
+}
+
+function Gauge({ widget, bare }: { widget: GaugeWidget; bare?: boolean }) {
+  const config: ChartConfig = { value: { label: widget.label ?? "Value" } }
+  return (
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+      <div className="relative">
+        <ChartContainer config={config} className="h-[180px] w-full">
+          <RadialBarChart
+            data={[{ name: "value", value: widget.value }]}
+            innerRadius={62}
+            outerRadius={86}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <PolarAngleAxis
+              type="number"
+              domain={[0, 100]}
+              angleAxisId={0}
+              tick={false}
+            />
+            <RadialBar dataKey="value" cornerRadius={8} fill="#F43F5E" background />
+          </RadialBarChart>
+        </ChartContainer>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-semibold tracking-tight">
+            {widget.value}%
+          </span>
+          {widget.label && (
+            <span className="text-xs text-muted-foreground">{widget.label}</span>
+          )}
+        </div>
+      </div>
+    </WidgetShell>
+  )
+}
+
+/** map / sankey aren't drawn yet — say so rather than dropping the widget. */
+function UnsupportedChart({
+  widget,
+  bare,
+}: {
+  widget: UnsupportedWidget
+  bare?: boolean
+}) {
+  return (
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+      <div className="flex h-[160px] items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
+        {widget.type === "map" ? "Map" : "Sankey"} chart not ported yet
+      </div>
     </WidgetShell>
   )
 }
@@ -253,5 +362,12 @@ export function ReportWidget({
       return <TrendChart widget={widget} bare={bare} />
     case "hbar":
       return <HorizontalBars widget={widget} bare={bare} />
+    case "donut":
+      return <DonutChart widget={widget} bare={bare} />
+    case "gauge":
+      return <Gauge widget={widget} bare={bare} />
+    case "map":
+    case "sankey":
+      return <UnsupportedChart widget={widget} bare={bare} />
   }
 }
