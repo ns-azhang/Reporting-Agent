@@ -8,10 +8,126 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin></script>
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <!-- shadcn/ui token layer (Phase 1 of the shadcn restyle — see SHADCN-MIGRATION.md).
+         Maps the CSS variables defined in :root below onto Tailwind utilities so
+         `bg-primary`, `text-muted-foreground`, `border-border` etc. resolve. The
+         `<alpha-value>` placeholder is what keeps opacity modifiers working
+         (`bg-primary/80`) on Tailwind 3 — see the shadcn skill's customization.md.
+         Purely additive: it introduces new utility names and changes no existing
+         class, so this step alone must render identically to workflows.html. -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background:  "oklch(var(--background) / <alpha-value>)",
+              foreground:  "oklch(var(--foreground) / <alpha-value>)",
+              card: {
+                DEFAULT:    "oklch(var(--card) / <alpha-value>)",
+                foreground: "oklch(var(--card-foreground) / <alpha-value>)",
+              },
+              popover: {
+                DEFAULT:    "oklch(var(--popover) / <alpha-value>)",
+                foreground: "oklch(var(--popover-foreground) / <alpha-value>)",
+              },
+              primary: {
+                DEFAULT:    "oklch(var(--primary) / <alpha-value>)",
+                foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
+              },
+              secondary: {
+                DEFAULT:    "oklch(var(--secondary) / <alpha-value>)",
+                foreground: "oklch(var(--secondary-foreground) / <alpha-value>)",
+              },
+              muted: {
+                DEFAULT:    "oklch(var(--muted) / <alpha-value>)",
+                foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
+              },
+              accent: {
+                DEFAULT:    "oklch(var(--accent) / <alpha-value>)",
+                foreground: "oklch(var(--accent-foreground) / <alpha-value>)",
+              },
+              destructive: {
+                DEFAULT:    "oklch(var(--destructive) / <alpha-value>)",
+                foreground: "oklch(var(--destructive-foreground) / <alpha-value>)",
+              },
+              surface: {
+                DEFAULT:    "oklch(var(--surface) / <alpha-value>)",
+                foreground: "oklch(var(--surface-foreground) / <alpha-value>)",
+              },
+              sidebar: {
+                DEFAULT:            "oklch(var(--sidebar) / <alpha-value>)",
+                foreground:         "oklch(var(--sidebar-foreground) / <alpha-value>)",
+                accent:             "oklch(var(--sidebar-accent) / <alpha-value>)",
+                "accent-foreground":"oklch(var(--sidebar-accent-foreground) / <alpha-value>)",
+                border:             "oklch(var(--sidebar-border) / <alpha-value>)",
+              },
+              border: "oklch(var(--border) / <alpha-value>)",
+              input:  "oklch(var(--input) / <alpha-value>)",
+              ring:   "oklch(var(--ring) / <alpha-value>)",
+            },
+          },
+        },
+      };
+    </script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
     <style>
+      /* ---------------------------------------------------------------------
+         shadcn/ui design tokens — verbatim from shadcn's default light theme
+         (apps/v4/app/globals.css). Stored as bare OKLCH components (no oklch()
+         wrapper) so Tailwind's <alpha-value> substitution above can inject an
+         alpha channel. Note every neutral has chroma 0 — pure, unsaturated
+         gray. That is the main reason stock Tailwind `slate` (blue-tinted)
+         never looks like shadcn.
+
+         --primary is BLACK here, per shadcn's defaults. Netskope brand blue is
+         intentionally NOT preserved in v5. To go back to brand, this is the
+         only line that needs to change: `--primary: 0.488 0.243 264.376;`
+
+         Dark mode (.dark block) is deliberately absent — that is Phase 5, and
+         the values weren't verified yet, so they aren't guessed here.
+         --------------------------------------------------------------------- */
       :root {
+        --radius: 0.625rem;
+
+        --background: 1 0 0;
+        --foreground: 0 0 0;
+        --card: 1 0 0;
+        --card-foreground: 0 0 0;
+        --popover: 1 0 0;
+        --popover-foreground: 0 0 0;
+        --primary: 0 0 0;
+        --primary-foreground: 0.985 0 0;
+        --secondary: 0.97 0 0;
+        --secondary-foreground: 0.205 0 0;
+        --muted: 0.97 0 0;
+        --muted-foreground: 0.556 0 0;
+        --accent: 0.97 0 0;
+        --accent-foreground: 0.205 0 0;
+        --destructive: 0.577 0.245 27.325;
+        --destructive-foreground: 0.97 0.01 17;
+        --border: 0.922 0 0;
+        --input: 0.922 0 0;
+        --ring: 0.708 0 0;
+        --surface: 0.98 0 0;
+        --surface-foreground: 0 0 0;
+        --sidebar: 0.985 0 0;
+        --sidebar-foreground: 0 0 0;
+        --sidebar-accent: 0.97 0 0;
+        --sidebar-accent-foreground: 0.205 0 0;
+        --sidebar-border: 0.922 0 0;
+
+        /* Chart ramp (Phase 4) — the custom SVG charts read raw hex from JS,
+           not Tailwind classes, so these stay in hex. Values are the Tailwind
+           blues that shadcn's --chart-1..5 alias by default. */
+        --chart-1: #93c5fd;
+        --chart-2: #3b82f6;
+        --chart-3: #2563eb;
+        --chart-4: #1d4ed8;
+        --chart-5: #1e40af;
+
+        /* Legacy prototype palette — still referenced by the app-shell chrome
+           and .card-shadow/.focus-ring rules. Retired progressively in Phase 3. */
         --brand-50:  #eff6ff;
         --brand-100: #dbeafe;
         --brand-500: #3b82f6;
@@ -241,6 +357,164 @@ const I = {
   email:   <Icon d={<><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></>} />,
   hand:    <Icon d={<><path d="M7 11V6a1.5 1.5 0 0 1 3 0v4"/><path d="M10 10V5a1.5 1.5 0 0 1 3 0v5"/><path d="M13 10V6a1.5 1.5 0 0 1 3 0v6"/><path d="M16 11V8a1.5 1.5 0 0 1 3 0v8a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5v-2l-2-3a1.5 1.5 0 0 1 2-2l2 2"/></>} />,
 };
+
+/* ========================================================================
+   shadcn/ui primitives — Phase 2 of the shadcn restyle.
+
+   Recipes are ported from shadcn's own component CSS layer
+   (apps/v4/registry/styles/style-vega.css — the style imported first by the
+   docs' style-registry, and the one with the familiar h-9 / rounded-md
+   geometry). That layer is authored in Tailwind v4, so a few utilities are
+   translated to their v3.4 equivalents:
+
+       ring-3            -> ring
+       shadow-xs         -> shadow-sm      (v4 xs == v3 sm)
+       rounded-4xl       -> rounded-full   (visually identical at h-5)
+       gap-(--x)         -> gap-[var(--x)]
+       color-mix() hover -> /80 alpha      (near-identical, v3-friendly)
+
+   Dropped for now: dark: variants (Phase 5) and v4-only variants
+   (in-data-[…], has-data-[…], active:not-aria-[…]).
+
+   These are LOOK-ONLY ports. Radix isn't available in a no-build file, so
+   interactive behaviour still comes from the prototype's existing hand-rolled
+   logic (useClickOutside etc.) — which is all this prototype needs.
+   ======================================================================== */
+
+/* Minimal cn(): joins truthy class strings. No tailwind-merge, so when
+   overriding a primitive's own colours pass the replacement via the variant
+   rather than className, or the two rules will both apply. */
+const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+const BTN_BASE =
+  "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md " +
+  "border border-transparent bg-clip-padding text-sm font-medium transition-all " +
+  "outline-none select-none focus-visible:border-ring focus-visible:ring-ring/50 " +
+  "focus-visible:ring disabled:pointer-events-none disabled:opacity-50 " +
+  "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4";
+
+const BTN_VARIANT = {
+  default:     "bg-primary text-primary-foreground hover:bg-primary/80",
+  outline:     "border-border bg-background shadow-sm hover:bg-muted hover:text-foreground",
+  secondary:   "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  ghost:       "hover:bg-muted hover:text-foreground",
+  destructive: "bg-destructive/10 text-destructive hover:bg-destructive/20 " +
+               "focus-visible:ring-destructive/20 focus-visible:border-destructive/40",
+  link:        "text-primary underline-offset-4 hover:underline",
+};
+
+const BTN_SIZE = {
+  xs:        "h-6 gap-1 px-2 text-xs [&_svg]:size-3",
+  sm:        "h-8 gap-1 px-2.5",
+  default:   "h-9 gap-1.5 px-2.5",
+  lg:        "h-10 gap-1.5 px-2.5",
+  icon:      "size-9",
+  "icon-sm": "size-8",
+  "icon-xs": "size-6 [&_svg]:size-3",
+};
+
+function Button({ variant = "default", size = "default", className, asChild, ...props }) {
+  return (
+    <button
+      data-slot="button"
+      className={cn(BTN_BASE, BTN_VARIANT[variant], BTN_SIZE[size], className)}
+      {...props}
+    />
+  );
+}
+
+function Input({ className, ...props }) {
+  return (
+    <input
+      data-slot="input"
+      className={cn(
+        "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-1",
+        "text-base shadow-sm transition-[color,box-shadow] outline-none md:text-sm",
+        "placeholder:text-muted-foreground",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring",
+        "disabled:pointer-events-none disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+const BADGE_VARIANT = {
+  default:     "bg-primary text-primary-foreground",
+  secondary:   "bg-secondary text-secondary-foreground",
+  outline:     "border-border text-foreground",
+  destructive: "bg-destructive/10 text-destructive",
+  muted:       "bg-muted text-muted-foreground",
+};
+
+function Badge({ variant = "default", className, ...props }) {
+  return (
+    <span
+      data-slot="badge"
+      className={cn(
+        "inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 rounded-full",
+        "border border-transparent px-2 py-0.5 text-xs font-medium transition-all",
+        "[&>svg]:size-3",
+        BADGE_VARIANT[variant], className
+      )}
+      {...props}
+    />
+  );
+}
+
+function Card({ className, ...props }) {
+  return (
+    <div
+      data-slot="card"
+      className={cn(
+        "flex flex-col gap-[var(--card-spacing)] overflow-hidden rounded-xl",
+        "py-[var(--card-spacing)] bg-card text-card-foreground text-sm",
+        "shadow-sm ring-1 ring-foreground/10 [--card-spacing:1.5rem]",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+const CardHeader      = ({ className, ...p }) => <div data-slot="card-header" className={cn("flex flex-col gap-1.5 px-6", className)} {...p} />;
+const CardTitle       = ({ className, ...p }) => <div data-slot="card-title" className={cn("font-semibold leading-none", className)} {...p} />;
+const CardDescription = ({ className, ...p }) => <div data-slot="card-description" className={cn("text-muted-foreground text-sm", className)} {...p} />;
+const CardContent     = ({ className, ...p }) => <div data-slot="card-content" className={cn("px-6", className)} {...p} />;
+const CardFooter      = ({ className, ...p }) => <div data-slot="card-footer" className={cn("flex items-center px-6", className)} {...p} />;
+
+const Separator = ({ className, orientation = "horizontal", ...p }) => (
+  <div
+    data-slot="separator"
+    role="separator"
+    className={cn("bg-border shrink-0", orientation === "vertical" ? "h-full w-px" : "h-px w-full", className)}
+    {...p}
+  />
+);
+
+const Skeleton = ({ className, ...p }) => (
+  <div data-slot="skeleton" className={cn("bg-muted animate-pulse rounded-md", className)} {...p} />
+);
+
+/* Dropdown menu row — matches the ⋮ / Suggested Prompts menus in this app. */
+const MenuItem = ({ className, destructive, ...p }) => (
+  <button
+    data-slot="menu-item"
+    className={cn(
+      "flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5",
+      "text-sm outline-none transition-colors [&_svg]:size-4 [&_svg]:shrink-0",
+      destructive
+        ? "text-destructive hover:bg-destructive/10"
+        : "hover:bg-muted hover:text-foreground",
+      className
+    )}
+    {...p}
+  />
+);
+
+const MenuLabel = ({ className, ...p }) => (
+  <div className={cn("px-2 py-1.5 text-xs font-medium text-muted-foreground", className)} {...p} />
+);
 
 /* ---------------------------- EditableTitle ---------------------------- */
 /* Click-to-edit text. Enter or blur saves; Esc cancels. Empty string is
@@ -8223,7 +8497,7 @@ function PromptInput({ onSend, busy, onPickPrompt, libraryItems = [], hideTokenC
      icon) uses a single-line bar: search icon, growing textarea, Send —
      all inline, like a normal chat input. */
   const innerBox = suggestedPrompts ? (
-        <div className={`border border-slate-300 rounded-xl bg-white card-shadow focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all flex flex-col${fullHeight ? " flex-1" : ""}`} style={minHeight ? { minHeight } : {}}>
+        <div className={`rounded-md border border-input bg-background shadow-sm transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring flex flex-col${fullHeight ? " flex-1" : ""}`} style={minHeight ? { minHeight } : {}}>
           <div className="flex-1 flex flex-col cursor-text" onClick={() => taRef.current?.focus()}>
             <textarea
               ref={taRef}
@@ -8232,42 +8506,41 @@ function PromptInput({ onSend, busy, onPickPrompt, libraryItems = [], hideTokenC
               onKeyDown={onKey}
               rows={1}
               placeholder={placeholder}
-              className="w-full resize-none bg-transparent px-4 pt-3 pb-1 text-[14px] text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              className="w-full resize-none bg-transparent px-4 pt-3 pb-1 text-sm text-foreground placeholder:text-muted-foreground outline-none"
             />
             <div className="flex-1" />
           </div>
-          <div className="border-t border-slate-100" />
+          <Separator />
           <div className="flex items-center justify-between px-3 pb-2.5 pt-2">
             <div className="flex items-center gap-1">
               <div className="relative" ref={suggestRef}>
                 {suggestOpen && (
-                  <div className="menu-pop absolute top-full left-0 mt-1.5 w-72 bg-white border border-slate-200 rounded-xl card-shadow z-30 overflow-hidden">
-                    <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
-                      <span className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Suggested Prompts</span>
-                      <button onClick={openSuggest} className="text-[11px] text-blue-500 hover:text-blue-700 font-medium">Refresh</button>
+                  <div className="menu-pop absolute top-full left-0 mt-1.5 w-72 bg-popover text-popover-foreground rounded-md shadow-sm ring-1 ring-foreground/10 z-30 overflow-hidden">
+                    <div className="px-3 py-2 flex items-center justify-between border-b border-border">
+                      <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Suggested Prompts</span>
+                      <Button variant="link" size="xs" className="px-0" onClick={openSuggest}>Refresh</Button>
                     </div>
-                    <div className="py-1 max-h-72 overflow-y-auto">
+                    <div className="p-1 max-h-72 overflow-y-auto">
                       {suggestItems.map((p, i) => (
-                        <button key={i} onClick={() => { setVal(p.text); setSuggestOpen(false); taRef.current?.focus(); }}
-                          className="w-full text-left px-3 py-2 text-[12.5px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-start gap-2">
-                          <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 mt-0.5 flex-shrink-0">{p.tag}</span>
-                          <span>{p.text}</span>
-                        </button>
+                        <MenuItem key={i} className="items-start"
+                          onClick={() => { setVal(p.text); setSuggestOpen(false); taRef.current?.focus(); }}>
+                          <Badge variant="muted" className="mt-0.5 shrink-0">{p.tag}</Badge>
+                          <span className="text-left">{p.text}</span>
+                        </MenuItem>
                       ))}
                     </div>
                   </div>
                 )}
-                <button onClick={openSuggest}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-all ${suggestOpen ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}>
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                <Button variant={suggestOpen ? "secondary" : "ghost"} size="sm" onClick={openSuggest}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     style={{color:"#f59e0b",filter:"drop-shadow(0 0 4px rgba(251,191,36,0.85))"}}>
                     <path d="M9 21h6M12 3a6 6 0 0 1 6 6c0 2.22-1.21 4.16-3 5.2V17a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1v-2.8C7.21 13.16 6 11.22 6 9a6 6 0 0 1 6-6z"/>
                   </svg>
                   Suggested Prompts
-                  <svg className={`w-3 h-3 transition-transform ${suggestOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg className={`transition-transform ${suggestOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
-                </button>
+                </Button>
               </div>
               <div className="relative" ref={libRef}>
                 {libOpen && (
@@ -8289,24 +8562,21 @@ function PromptInput({ onSend, busy, onPickPrompt, libraryItems = [], hideTokenC
                   </div>
                 )}
               </div>
-              {!hideSearch && <button onClick={() => toast("Data search is read-only in this prototype", { kind: "info" })}
-                className="p-1.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-ring" title="Search data">{I.search}</button>}
+              {!hideSearch && <Button variant="ghost" size="icon-sm" title="Search data"
+                onClick={() => toast("Data search is read-only in this prototype", { kind: "info" })}>{I.search}</Button>}
 
             </div>
-            <button
-              onClick={submit}
-              disabled={!val.trim() || busy}
-              className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[13px] font-medium px-3 py-1.5 rounded-lg transition-colors focus-ring">
+            <Button size="sm" onClick={submit} disabled={!val.trim() || busy}>
               {busy ? <>{I.refresh} Working…</> : <>Send {I.send}</>}
-            </button>
+            </Button>
           </div>
-          {bottomSlot && <div className="border-t border-slate-100">{bottomSlot}</div>}
+          {bottomSlot && <div className="border-t border-border">{bottomSlot}</div>}
         </div>
   ) : (
-        <div className={`border border-slate-300 rounded-xl bg-white card-shadow focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all flex flex-col${fullHeight ? " flex-1" : ""}`} style={minHeight ? { minHeight } : {}}>
+        <div className={`rounded-md border border-input bg-background shadow-sm transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring flex flex-col${fullHeight ? " flex-1" : ""}`} style={minHeight ? { minHeight } : {}}>
           <div className="flex items-center gap-2 px-3 py-2 cursor-text" onClick={() => taRef.current?.focus()}>
-            {!hideSearch && <button onClick={e => { e.stopPropagation(); toast("Data search is read-only in this prototype", { kind: "info" }); }}
-              className="p-1.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-ring flex-shrink-0" title="Search data">{I.search}</button>}
+            {!hideSearch && <Button variant="ghost" size="icon-sm" className="shrink-0" title="Search data"
+              onClick={e => { e.stopPropagation(); toast("Data search is read-only in this prototype", { kind: "info" }); }}>{I.search}</Button>}
             <textarea
               ref={taRef}
               value={val}
@@ -8314,16 +8584,15 @@ function PromptInput({ onSend, busy, onPickPrompt, libraryItems = [], hideTokenC
               onKeyDown={onKey}
               rows={1}
               placeholder={placeholder}
-              className="flex-1 resize-none bg-transparent text-[14px] text-slate-900 placeholder:text-slate-400 focus:outline-none py-1"
+              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none py-1"
             />
-            <button
+            <Button size="sm" className="shrink-0"
               onClick={e => { e.stopPropagation(); submit(); }}
-              disabled={!val.trim() || busy}
-              className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[13px] font-medium px-3 py-1.5 rounded-lg transition-colors focus-ring flex-shrink-0">
+              disabled={!val.trim() || busy}>
               {busy ? <>{I.refresh} Working…</> : <>Send {I.send}</>}
-            </button>
+            </Button>
           </div>
-          {bottomSlot && <div className="border-t border-slate-100">{bottomSlot}</div>}
+          {bottomSlot && <div className="border-t border-border">{bottomSlot}</div>}
         </div>
   );
   if (bare) return innerBox;
@@ -9461,7 +9730,7 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto bg-slate-50 px-6 pt-10 pb-10 relative">
+    <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto bg-background px-6 pt-10 pb-10 relative">
       {/* Task-based onboarding — shown once on first visit, reopenable via "Customize view" */}
       {onboardingOpen && (
         <OnboardingScreen mode={onboardingMode}
@@ -9471,7 +9740,7 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
       )}
       <div className="w-full max-w-5xl flex flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-2" style={{ marginTop: "20px" }}>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Hello Aaron!</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Hello Aaron!</h1>
         </div>
         <div className="w-full">
           <PromptInput onSend={onSend} busy={busy} hideTokenCount hideSearch bare minHeight="200px"
@@ -9509,23 +9778,22 @@ function WelcomePage({ onSend, busy, libraryItems, persona, onChangePersona, onS
             The "Make these yours" link reopens the picker — one click away. */}
         <div className="w-full" style={{ marginTop: "calc(1.5rem - 0.7cm)" }}>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[11.5px] text-slate-400 font-medium uppercase tracking-wide flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide flex items-center gap-1.5">
+              <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
               {pinnedReports.length > 0 ? "Pinned reports" : selectedJobs.length === 0 ? "Popular reports" : "Suggested reports from Netskope Library"}
             </p>
             {ONBOARDING_ENABLED && pinnedReports.length === 0 && (
-            <button onClick={openCustomize}
-              className="inline-flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-slate-800 font-medium transition-colors">
-              {React.cloneElement(I.edit, { className: "w-3.5 h-3.5" })}Make these yours
-            </button>
+            <Button variant="ghost" size="sm" onClick={openCustomize}>
+              {React.cloneElement(I.edit, { className: "size-3.5" })}Make these yours
+            </Button>
             )}
           </div>
           <div className="grid grid-cols-3 gap-4">
             {(pinnedReports.length > 0 ? pinnedReports : quickActionCards).map((card) => (
               <button key={card.dashboardId} onClick={() => onPickDashboard && onPickDashboard(card)}
-                className="text-left bg-white border border-slate-200 hover:border-blue-400 hover:shadow-sm rounded-xl px-4 py-3.5 transition-all group">
-                <div className="text-[13px] font-semibold text-slate-800 group-hover:text-blue-700 leading-snug">{card.title}</div>
-                <div className="text-[11.5px] text-slate-400 leading-snug mt-1">{card.desc}</div>
+                className="text-left bg-card text-card-foreground rounded-xl px-4 py-3.5 shadow-sm ring-1 ring-foreground/10 transition-all hover:ring-ring focus-visible:outline-none focus-visible:ring focus-visible:ring-ring/50 group">
+                <div className="text-sm font-semibold leading-snug">{card.title}</div>
+                <div className="text-xs text-muted-foreground leading-snug mt-1">{card.desc}</div>
               </button>
             ))}
           </div>
@@ -11238,8 +11506,129 @@ const [isAgentView, setIsAgentView] = useState(false);
   );
 }
 
+/* ========================================================================
+   Kitchen sink — Phase 2 verification surface.
+
+   Reachable only at ?styleguide, so it never appears in the demo. The point
+   is to compare these primitives against ui.shadcn.com/docs/components and
+   fix discrepancies HERE, before the recipes get applied across real screens.
+   ======================================================================== */
+function StyleGuide() {
+  const Row = ({ label, children }) => (
+    <div className="flex flex-col gap-2">
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
+    </div>
+  );
+  const variants = ["default", "outline", "secondary", "ghost", "destructive", "link"];
+  const sizes = ["xs", "sm", "default", "lg"];
+
+  /* h-full + overflow-y-auto: the app shell pins html/body to height:100%,
+     so this screen needs to own its own scroll container. */
+  return (
+    <div className="h-full overflow-y-auto bg-background text-foreground">
+      <div className="mx-auto flex max-w-3xl flex-col gap-8 px-8 py-10">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">shadcn primitives — v5</h1>
+          <p className="text-sm text-muted-foreground">
+            Ported from style-vega.css. Compare against ui.shadcn.com/docs/components.
+          </p>
+        </div>
+
+        <Separator />
+
+        <Row label="Button — variants">
+          {variants.map(v => <Button key={v} variant={v}>{v}</Button>)}
+        </Row>
+
+        <Row label="Button — sizes">
+          {sizes.map(s => <Button key={s} size={s}>{s}</Button>)}
+          <Button size="icon" aria-label="icon">{I.plus}</Button>
+          <Button size="icon-sm" variant="outline" aria-label="icon-sm">{I.more}</Button>
+        </Row>
+
+        <Row label="Button — with icon / disabled">
+          <Button>{I.download} Download</Button>
+          <Button variant="outline">{I.share} Share</Button>
+          <Button disabled>Disabled</Button>
+        </Row>
+
+        <Row label="Badge">
+          {["default", "secondary", "outline", "destructive", "muted"].map(v => (
+            <Badge key={v} variant={v}>{v}</Badge>
+          ))}
+        </Row>
+
+        <Row label="Input">
+          <div className="w-full max-w-sm flex flex-col gap-2">
+            <Input placeholder="Ask about incidents, policies, users…" />
+            <Input placeholder="Disabled" disabled />
+          </div>
+        </Row>
+
+        <Row label="Skeleton">
+          <div className="flex w-full max-w-sm flex-col gap-2">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        </Row>
+
+        <div className="flex flex-col gap-2">
+          <div className="text-xs font-medium text-muted-foreground">Card</div>
+          <Card className="max-w-sm">
+            <CardHeader>
+              <CardTitle>DLP Incident Summary</CardTitle>
+              <CardDescription>Generated · 1.2s · scoped to abc-corp</CardDescription>
+            </CardHeader>
+            <CardContent className="text-muted-foreground">
+              147 DLP incidents are open this period across 95 objects with violations.
+            </CardContent>
+            <CardFooter className="gap-2">
+              <Button size="sm">Save to</Button>
+              <Button size="sm" variant="outline">Download</Button>
+            </CardFooter>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="text-xs font-medium text-muted-foreground">Menu (⋮ popover)</div>
+          <div className="w-64 rounded-md border border-border bg-popover p-1 shadow-sm">
+            <MenuLabel>Download as</MenuLabel>
+            <MenuItem>{I.doc} CSV</MenuItem>
+            <MenuItem>{I.doc} PDF</MenuItem>
+            <div className="my-1"><Separator /></div>
+            <MenuItem destructive>{I.trash} Remove from thread</MenuItem>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="flex flex-col gap-2">
+          <div className="text-xs font-medium text-muted-foreground">Tokens</div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["background", "bg-background"], ["foreground", "bg-foreground"],
+              ["primary", "bg-primary"], ["secondary", "bg-secondary"],
+              ["muted", "bg-muted"], ["accent", "bg-accent"],
+              ["destructive", "bg-destructive"], ["border", "bg-border"],
+              ["ring", "bg-ring"],
+            ].map(([name, cls]) => (
+              <div key={name} className="flex flex-col items-center gap-1">
+                <div className={cn("size-12 rounded-md ring-1 ring-foreground/10", cls)} />
+                <div className="text-[10px] text-muted-foreground">{name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const isStyleGuide = new URLSearchParams(window.location.search).has("styleguide");
+
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <ToastProvider><App /></ToastProvider>
+  <ToastProvider>{isStyleGuide ? <StyleGuide /> : <App />}</ToastProvider>
 );
     </script>
   </body>
