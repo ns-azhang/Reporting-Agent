@@ -69,6 +69,18 @@ export function useChat(
     const prompt = text.trim()
     if (!prompt || thinking) return
 
+    // A prompt that names a report hands off before touching this thread: the
+    // report is the answer, and it opens with its own conversation. Leaving the
+    // question behind here would strand a bubble with nothing under it — which
+    // is what you'd come back to after closing the report.
+    if (!responseId && !reportOpen) {
+      const report = matchReportByKeyword(prompt)
+      if (report) {
+        onOpenReport?.(report.id)
+        return
+      }
+    }
+
     push({ role: "user", text: prompt })
     setThinking(true)
     clearTimers()
@@ -112,12 +124,9 @@ export function useChat(
       return
     }
 
-    const report =
-      responseId || reportOpen ? undefined : matchReportByKeyword(prompt)
-
-    // A prompt bundling several questions starts the wizard — unless it names a
-    // report, in which case opening that report already answers it.
-    if (!responseId && !report) {
+    // A prompt bundling several questions starts the wizard. A prompt naming a
+    // report never gets here — it handed off above.
+    if (!responseId) {
       const questions = splitQuestions(prompt)
       if (questions.length > 1) {
         bundled.current = questions
@@ -136,14 +145,6 @@ export function useChat(
 
     after(THINKING_MS, () => {
       setThinking(false)
-      if (report) {
-        // The report *is* the answer, and it opens with this conversation beside
-        // it — so no turn is added here. A "we opened a report" card would only
-        // be a receipt for the navigation you just watched happen, and its one
-        // action would be to go back where you already are.
-        onOpenReport?.(report.id)
-        return
-      }
       push({
         role: "ai",
         responseId: resolveResponseId(responseId ?? classifyPrompt(prompt)),

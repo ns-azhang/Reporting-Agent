@@ -40,14 +40,25 @@ export function App() {
   const [resumed, setResumed] = useState<Session | null>(null)
 
   /**
-   * The conversation lives here, not in WelcomePage: a prompt naming a report
-   * opens it, which swaps the page out, and the thread has to still be there
-   * when you come back.
+   * Two conversations, deliberately separate.
+   *
+   * `chat` belongs to New Session. `reportChat` belongs to whichever report is
+   * open. Sharing one thread meant questions asked beside a report piled up on
+   * the New Session page, and a prompt that opened a report left its question
+   * stranded there with nothing under it — so closing the report dropped you on
+   * a half-finished thread instead of the page you started from.
+   *
+   * `reportChat` is created with reportOpen=true: from inside a report, a
+   * question that happens to name one answers in the pane rather than
+   * "navigating" to the page already on screen.
    */
-  const chat = useChat(
-    (reportId) => setOpenReportId(reportId),
-    openReportId !== null
-  )
+  const reportChat = useChat(undefined, true)
+  /** Every route into a report goes through here, so it always opens clean. */
+  const openReport = (reportId: string) => {
+    setOpenReportId(reportId)
+    reportChat.reset()
+  }
+  const chat = useChat(openReport)
 
   const newSession = () => {
     setOpenReportId(null)
@@ -115,21 +126,20 @@ export function App() {
         <SidebarInset>
           {openReportId ? (
             // An open report takes over the inset regardless of which list
-            // opened it; Back returns to that list. It gets the same
-            // conversation, so a prompt that opened a report lands you beside
-            // the thread that asked for it rather than in a dead end.
+            // opened it; Back returns to that list, untouched. The report gets
+            // its own conversation in the right-hand pane.
             <ReportDetailPage
               reportId={openReportId}
               onBack={() => setOpenReportId(null)}
-              turns={chat.turns}
-              thinking={chat.thinking}
-              onSend={chat.send}
+              turns={reportChat.turns}
+              thinking={reportChat.thinking}
+              onSend={reportChat.send}
               savableReports={savableReports}
               onSaveToReport={(response, report) =>
-                chat.note(`Added “${response.title}” to ${report.title}.`)
+                reportChat.note(`Added “${response.title}” to ${report.title}.`)
               }
               onCreateReport={(_response, name) =>
-                chat.note(`Created “${name}” with this chart.`)
+                reportChat.note(`Created “${name}” with this chart.`)
               }
             />
           ) : page === "new-session" ? (
@@ -139,7 +149,7 @@ export function App() {
               turns={chat.turns}
               thinking={chat.thinking}
               onSend={chat.send}
-              onOpenReport={(id) => setOpenReportId(id)}
+              onOpenReport={openReport}
               savableReports={savableReports}
               /* Saving lands as a line in the thread rather than a toast, so
                  there is still a record of it once the toast would have gone.
@@ -158,13 +168,13 @@ export function App() {
             <SessionHistoryPage onPickSession={resumeSession} />
           ) : page === "report-library" ? (
             <ReportLibraryPage
-              onOpenReport={(report) => setOpenReportId(report.id)}
+              onOpenReport={(report) => openReport(report.id)}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
             />
           ) : (
             <MyReportsPage
-              onOpenReport={(report) => setOpenReportId(report.id)}
+              onOpenReport={(report) => openReport(report.id)}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
             />
