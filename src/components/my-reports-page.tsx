@@ -200,28 +200,36 @@ export function MyReportsPage({
                     </span>
                   </button>
 
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant={report.owned ? "secondary" : "outline"}>
-                      {report.owned ? "Created by you" : "Netskope Library"}
-                    </Badge>
-                    <Badge variant="outline">{report.folder}</Badge>
-                    {sharedWith && (
-                      <Badge variant="outline" title={`Shared with ${sharedWith}`}>
-                        <Users className="size-3" />
-                        Shared
+                  {/* Pills and date travel together as a footer, pinned to the
+                      bottom by mt-auto so both line up across cards whose
+                      descriptions wrap to different line counts. Grid items
+                      already stretch to equal height, which is what gives
+                      mt-auto something to push against. One auto margin on the
+                      group, not one per child — free space splits between
+                      multiple auto margins instead of collapsing to the end. */}
+                  <div className="mt-auto flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant={report.owned ? "secondary" : "outline"}>
+                        {report.owned ? "Created by you" : "Netskope Library"}
                       </Badge>
+                      <Badge variant="outline">{report.folder}</Badge>
+                      {sharedWith && (
+                        <Badge
+                          variant="outline"
+                          title={`Shared with ${sharedWith}`}
+                        >
+                          <Users className="size-3" />
+                          Shared
+                        </Badge>
+                      )}
+                    </div>
+
+                    {report.createdAt && (
+                      <p className="text-xs text-muted-foreground">
+                        Created {formatDate(report.createdAt)}
+                      </p>
                     )}
                   </div>
-
-                  {/* mt-auto pins the date to the bottom of the card, so it
-                      lines up across cards whose descriptions wrap to
-                      different heights. Grid items stretch to equal height,
-                      which is what gives mt-auto something to push against. */}
-                  {report.createdAt && (
-                    <p className="mt-auto text-xs text-muted-foreground">
-                      Created {formatDate(report.createdAt)}
-                    </p>
-                  )}
                 </div>
               )
             })}

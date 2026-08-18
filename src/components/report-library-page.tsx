@@ -163,7 +163,11 @@ export function ReportLibraryPage({
                     </span>
                   </button>
 
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  {/* mt-auto pins the pills to the bottom of the card so they
+                      line up across a row whose descriptions wrap to different
+                      line counts. Grid items already stretch to equal height,
+                      which is what gives mt-auto something to push against. */}
+                  <div className="mt-auto flex flex-wrap items-center gap-1.5">
                     <Badge variant="secondary">Netskope Library</Badge>
                     <Badge variant="outline">{report.folder}</Badge>
                     {isFavorite && <Badge variant="outline">Favorite</Badge>}
