@@ -106,10 +106,26 @@ export function WelcomePage({
   }
 
   /**
-   * Suggested prompts and follow-ups both ask straight away rather than filling
-   * the composer: each is already a complete question, and the prototype treats
-   * clicking one as asking it.
+   * A suggested prompt fills the composer and puts the caret at the end rather
+   * than asking straight away. These are templates written ahead of time, and
+   * their scope — "this week", "last 30 days" — is the part you most often want
+   * to change; sending first would answer the wrong window and cost a round
+   * trip. Follow-ups are the opposite case: generated against the answer in
+   * front of you, so their scope is already right and they send directly.
    */
+  const pick = (text: string) => {
+    setValue(text)
+    // Caret to the end, ready to carry on typing or to backspace the time
+    // range. rAF so it lands after the menu has handled its own click.
+    //
+    // Only the caret: a focus() call here loses the race — the menu focuses the
+    // clicked item straight after, and holds it until the popup unmounts. That
+    // hand-off is what `finalFocus` on the content below redirects.
+    requestAnimationFrame(() =>
+      textareaRef.current?.setSelectionRange(text.length, text.length)
+    )
+  }
+
   const followUp = (text: string, responseId?: string) => onSend(text, responseId)
 
   // Keep the newest turn in view as the thread grows.
@@ -199,7 +215,18 @@ export function WelcomePage({
                 Suggested Prompts
                 <ChevronDown />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-80">
+              {/* Closing a menu hands focus back to its trigger, which would
+                  leave the staged prompt needing a click before you can edit
+                  it. finalFocus sends it to the composer instead. It maps onto
+                  floating-ui's returnFocus, which fires when the popup
+                  unmounts — so it cannot be exercised in the preview pane,
+                  where the exit animation is frozen and the popup never
+                  unmounts. Verified by reading MenuPopup, not by clicking. */}
+              <DropdownMenuContent
+                align="start"
+                className="w-80"
+                finalFocus={textareaRef}
+              >
                 {/* Base UI requires MenuGroupLabel to live inside its MenuGroup. */}
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Suggested Prompts</DropdownMenuLabel>
@@ -209,7 +236,7 @@ export function WelcomePage({
                       className="items-start gap-2"
                       /* Base UI menu items fire onClick — Radix's onSelect is
                          silently ignored, which is what made these inert. */
-                      onClick={() => onSend(p.text)}
+                      onClick={() => pick(p.text)}
                     >
                       <Badge variant="secondary" className="mt-px shrink-0">
                         {p.tag}
