@@ -139,15 +139,15 @@ export function WelcomePage({
         {/* The thread sits above the composer so the conversation reads
             top-down and the composer stays where you continue it. */}
         {started && (
-          <>
-            <Conversation
-              turns={turns}
-              thinking={thinking}
-              onPickFollowUp={followUp}
-              onOpenReport={onOpenReport}
-            />
-            <div ref={threadEnd} />
-          </>
+          <Conversation
+            turns={turns}
+            thinking={thinking}
+            onPickFollowUp={followUp}
+            onOpenReport={onOpenReport}
+            /* Picking an option is the same as typing that answer — the
+               wizard reads the next message either way. */
+            onAnswerClarify={(label) => onSend(label)}
+          />
         )}
 
         {/* Composer. Mirrors the prototype: tall textarea, toolbar row beneath.
@@ -215,6 +215,11 @@ export function WelcomePage({
             </Button>
           </div>
         </div>
+
+        {/* Auto-scroll anchor. It sits below the composer, not below the thread,
+            so a new answer brings the composer into view with it — otherwise
+            the box you continue in ends up just past the fold. */}
+        <div ref={threadEnd} />
 
         {/* Popular reports. Section heading + description line, matching how
             the sibling pages label sections ("Cases - last 3 days" over

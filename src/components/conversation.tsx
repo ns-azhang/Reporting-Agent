@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import type { ChatTurn } from "@/lib/use-chat"
+import { CLARIFY_STEPS } from "@/data/clarify"
 import { getReport } from "@/data/reports"
 import { getResponse, type Response } from "@/data/responses"
 import type { Widget } from "@/data/report-details"
@@ -29,6 +30,10 @@ import type { Widget } from "@/data/report-details"
  * Each assistant turn renders as a card: header, chart, insight, follow-ups,
  * then the feedback row. Charts reuse the same renderers the report canvas
  * uses, so a trend line looks the same in both places.
+ *
+ * A prompt bundling several questions is answered by the clarifying-questions
+ * wizard instead: ClarifyCard collects the shared scope, then one widget lands
+ * per question.
  *
  * Not ported from the prototype's card: the chart-type selector, the ⋮ "Save to
  * report" menu, and drill-through on clicking a bar or an anomaly.
@@ -130,6 +135,86 @@ function ReportOpenedCard({
         Open
         <ArrowUpRight />
       </Button>
+    </div>
+  )
+}
+
+/**
+ * A clarifying question: progress counter, the question, and the options —
+ * one flagged as recommended. Answering by typing works too, which is what the
+ * hint under the options is for.
+ *
+ * Options stop responding once the conversation has moved past the card, so
+ * scrolling back up doesn't offer to re-answer a settled question.
+ */
+function ClarifyCard({
+  stepIndex,
+  lead,
+  active,
+  onAnswer,
+}: {
+  stepIndex: number
+  lead: string
+  active: boolean
+  onAnswer?: (label: string) => void
+}) {
+  const step = CLARIFY_STEPS[stepIndex]
+  if (!step) return null
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10">
+      {lead && <p className="text-sm leading-relaxed">{lead}</p>}
+
+      <div className="flex flex-col gap-1.5">
+        <Badge variant="secondary" className="w-fit">
+          Question {stepIndex + 1} of {CLARIFY_STEPS.length}
+        </Badge>
+        <p className="text-sm font-medium leading-relaxed">{step.question}</p>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        {step.options.map((option) => (
+          <button
+            key={option.label}
+            disabled={!active}
+            onClick={() => onAnswer?.(option.label)}
+            className={cn(
+              "flex flex-col gap-0.5 rounded-lg border border-border px-3 py-2 text-left outline-none transition-colors",
+              active
+                ? "hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                : "bg-muted/50 opacity-60"
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <span className="text-xs font-medium">{option.label}</span>
+              {option.recommended && (
+                <Badge variant="outline" className="shrink-0">
+                  Recommended
+                </Badge>
+              )}
+            </span>
+            <span className="text-xs leading-snug text-muted-foreground">
+              {option.desc}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {active && (
+        <p className="text-xs text-muted-foreground">
+          Pick an option, or type your own answer below.
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** A plain assistant line — the wizard's closing acknowledgement. */
+function NoteCard({ text }: { text: string }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10">
+      <Sparkles className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <p className="text-sm leading-relaxed">{text}</p>
     </div>
   )
 }
@@ -342,11 +427,13 @@ export function Conversation({
   thinking,
   onPickFollowUp,
   onOpenReport,
+  onAnswerClarify,
 }: {
   turns: ChatTurn[]
   thinking?: boolean
   onPickFollowUp?: (text: string, responseId?: string) => void
   onOpenReport?: (reportId: string) => void
+  onAnswerClarify?: (label: string) => void
 }) {
   return (
     <div className="flex flex-col gap-5">
@@ -362,6 +449,21 @@ export function Conversation({
               onOpenReport={onOpenReport}
             />
           )
+        }
+        if (turn.role === "clarify") {
+          return (
+            <ClarifyCard
+              key={i}
+              stepIndex={turn.stepIndex}
+              lead={turn.lead}
+              // Only the newest card is live; anything above it is settled.
+              active={i === turns.length - 1 && !thinking}
+              onAnswer={onAnswerClarify}
+            />
+          )
+        }
+        if (turn.role === "note") {
+          return <NoteCard key={i} text={turn.text} />
         }
         const response = getResponse(turn.responseId)
         if (!response) return null
