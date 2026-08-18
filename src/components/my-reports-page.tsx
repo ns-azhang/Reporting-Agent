@@ -213,8 +213,12 @@ export function MyReportsPage({
                     )}
                   </div>
 
+                  {/* mt-auto pins the date to the bottom of the card, so it
+                      lines up across cards whose descriptions wrap to
+                      different heights. Grid items stretch to equal height,
+                      which is what gives mt-auto something to push against. */}
                   {report.createdAt && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="mt-auto text-xs text-muted-foreground">
                       Created {formatDate(report.createdAt)}
                     </p>
                   )}
