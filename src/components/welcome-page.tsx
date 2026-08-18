@@ -99,20 +99,17 @@ export function WelcomePage({
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const threadEnd = React.useRef<HTMLDivElement>(null)
 
-  /** A suggested prompt fills the composer, so you can edit before sending. */
-  const pick = (text: string) => {
-    setValue(text)
-    textareaRef.current?.focus()
-  }
-
   const send = () => {
     if (!value.trim() || thinking) return
     onSend(value)
     setValue("")
   }
 
-  // Follow-ups send straight away — they are already a complete question, and
-  // the prototype treats clicking one as asking it.
+  /**
+   * Suggested prompts and follow-ups both ask straight away rather than filling
+   * the composer: each is already a complete question, and the prototype treats
+   * clicking one as asking it.
+   */
   const followUp = (text: string, responseId?: string) => onSend(text, responseId)
 
   // Keep the newest turn in view as the thread grows.
@@ -210,7 +207,9 @@ export function WelcomePage({
                     <DropdownMenuItem
                       key={p.text}
                       className="items-start gap-2"
-                      onSelect={() => pick(p.text)}
+                      /* Base UI menu items fire onClick — Radix's onSelect is
+                         silently ignored, which is what made these inert. */
+                      onClick={() => onSend(p.text)}
                     >
                       <Badge variant="secondary" className="mt-px shrink-0">
                         {p.tag}
