@@ -11,6 +11,8 @@ import {
   PolarAngleAxis,
   RadialBar,
   RadialBarChart,
+  ReferenceDot,
+  ReferenceLine,
   XAxis,
   YAxis,
 } from "recharts"
@@ -161,11 +163,71 @@ function DataTable({ widget, bare }: { widget: TableWidget; bare?: boolean }) {
   )
 }
 
-function TrendChart({ widget, bare }: { widget: LineWidget; bare?: boolean }) {
+/** Red used for called-out points, matching the prototype's anomaly markers. */
+const ANOMALY = "#ef4444"
+const ANOMALY_FILL = "#fee2e2"
+
+/**
+ * One anomaly marker: a ring on the point, a dashed line dropping to the axis,
+ * and the label above it. A drillable marker is filled and gets a "↗", so it
+ * reads as clickable rather than as decoration.
+ */
+function AnomalyMarker({
+  cx,
+  cy,
+  label,
+  drillable,
+  onClick,
+}: {
+  cx: number
+  cy: number
+  label: string
+  drillable: boolean
+  onClick?: () => void
+}) {
+  return (
+    <g
+      onClick={drillable ? onClick : undefined}
+      style={drillable ? { cursor: "pointer" } : undefined}
+    >
+      {/* Oversized transparent hit target — a 7px ring is a hard click. */}
+      {drillable && <circle cx={cx} cy={cy} r={14} fill="transparent" />}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={7}
+        fill={drillable ? ANOMALY_FILL : "none"}
+        stroke={ANOMALY}
+        strokeWidth={1.5}
+      />
+      <text
+        x={cx}
+        y={cy - 12}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight={600}
+        fill={ANOMALY}
+      >
+        {label}
+        {drillable ? " ↗" : ""}
+      </text>
+    </g>
+  )
+}
+
+function TrendChart({
+  widget,
+  bare,
+  onDrill,
+}: {
+  widget: LineWidget
+  bare?: boolean
+  onDrill?: (text: string, responseId?: string) => void
+}) {
   // Recharts wants one row per x value with a key per series, whereas the
   // prototype stores parallel value arrays.
   const data = widget.xLabels.map((label, i) => {
-    const row: Record<string, string | number> = { label }
+    const row: Record<string, string | number> = { index: i, label }
     for (const s of widget.series) row[s.name] = s.values[i]
     return row
   })
@@ -174,20 +236,55 @@ function TrendChart({ widget, bare }: { widget: LineWidget; bare?: boolean }) {
     widget.series.map((s) => [s.name, { label: s.name, color: s.color }])
   )
 
+  const anomalies = widget.anomalies ?? []
+
+  /**
+   * Most of the prototype's xLabels are sparse — every fifth entry is named and
+   * the rest are "". It draws them by index, so blanks cost it nothing; a
+   * category axis keyed on the label instead folds all 24 blanks into one
+   * repeated category, which also leaves a ReferenceDot with nothing to bind to.
+   * So the axis is keyed on the index and the label is only ever displayed.
+   */
+  const namedTicks = widget.xLabels.flatMap((label, i) => (label ? [i] : []))
+  const labelAt = (i: number) => widget.xLabels[Math.round(i)] ?? ""
+  /**
+   * Ticks are always explicit: left to itself a numeric axis picks round
+   * numbers, which can land between two points and format to a blank. Sparse
+   * labels are the ones the data names; otherwise thin to ~8, as the prototype
+   * does (`i % ceil(n/8) === 0`).
+   */
+  const ticks =
+    namedTicks.length < widget.xLabels.length
+      ? namedTicks
+      : widget.xLabels.flatMap((_, i) =>
+          i % Math.ceil(widget.xLabels.length / 8) === 0 ? [i] : []
+        )
+
   return (
     <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+      {/* Extra headroom so a marker's label isn't clipped by the plot edge. */}
       <ChartContainer config={config} className="h-[220px] w-full">
-        <LineChart data={data} margin={{ left: 4, right: 8, top: 8 }}>
+        <LineChart data={data} margin={{ left: 4, right: 8, top: anomalies.length ? 24 : 8 }}>
           <CartesianGrid vertical={false} strokeDasharray="3 3" />
           <XAxis
-            dataKey="label"
+            dataKey="index"
+            type="number"
+            domain={[0, data.length - 1]}
+            ticks={ticks}
+            tickFormatter={(i: number) => labelAt(i)}
             tickLine={false}
             axisLine={false}
             tickMargin={8}
             fontSize={11}
           />
           <YAxis tickLine={false} axisLine={false} width={28} fontSize={11} />
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                labelFormatter={(value) => labelAt(Number(value))}
+              />
+            }
+          />
           <ChartLegend content={<ChartLegendContent />} />
           {widget.series.map((s) => (
             <Line
@@ -199,6 +296,49 @@ function TrendChart({ widget, bare }: { widget: LineWidget; bare?: boolean }) {
               dot={false}
             />
           ))}
+
+          {anomalies.map((anomaly) => {
+            const x = anomaly.index
+            if (x < 0 || x >= data.length) return null
+            const drillable = !!(anomaly.drill && onDrill)
+            return [
+              // `segment` keeps the drop-line under the point instead of
+              // spanning the full plot height, as the prototype draws it.
+              <ReferenceLine
+                key={`line-${anomaly.index}`}
+                segment={[
+                  { x, y: 0 },
+                  { x, y: anomaly.value },
+                ]}
+                stroke={ANOMALY}
+                strokeDasharray="3 3"
+                strokeWidth={1}
+                ifOverflow="visible"
+              />,
+              <ReferenceDot
+                key={`dot-${anomaly.index}`}
+                x={x}
+                y={anomaly.value}
+                // A `shape` gets the label, the hit target and the ring drawn as
+                // one group; ReferenceDot's own `label` can't carry a click.
+                shape={({ cx, cy }: { cx?: number; cy?: number }) =>
+                  cx == null || cy == null ? <g /> : (
+                    <AnomalyMarker
+                      cx={cx}
+                      cy={cy}
+                      label={anomaly.label}
+                      drillable={drillable}
+                      onClick={() =>
+                        anomaly.drill &&
+                        onDrill?.(anomaly.drill.text, anomaly.drill.id)
+                      }
+                    />
+                  )
+                }
+                ifOverflow="visible"
+              />,
+            ]
+          })}
         </LineChart>
       </ChartContainer>
     </WidgetShell>
@@ -349,9 +489,12 @@ const truncate = (s: string, n: number) =>
 export function ReportWidget({
   widget,
   bare,
+  onDrill,
 }: {
   widget: Widget
   bare?: boolean
+  /** Asks a question on behalf of the chart — clicking an anomaly marker. */
+  onDrill?: (text: string, responseId?: string) => void
 }) {
   switch (widget.type) {
     case "kpi":
@@ -359,7 +502,7 @@ export function ReportWidget({
     case "table":
       return <DataTable widget={widget} bare={bare} />
     case "line":
-      return <TrendChart widget={widget} bare={bare} />
+      return <TrendChart widget={widget} bare={bare} onDrill={onDrill} />
     case "hbar":
       return <HorizontalBars widget={widget} bare={bare} />
     case "donut":

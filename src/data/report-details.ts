@@ -35,6 +35,17 @@ export type LineWidget = Base & {
   xLabels: string[]
   /** `dashed` marks a comparison series (e.g. the prior period). */
   series: { name: string; color: string; values: number[]; dashed?: boolean }[]
+  /**
+   * Points the narrative calls out by name — a spike the insight text explains.
+   * `onDrill` on the marker asks `drill.text`, so the chart is a way into the
+   * follow-up rather than only an illustration.
+   */
+  anomalies?: {
+    index: number
+    value: number
+    label: string
+    drill?: { text: string; id?: string }
+  }[]
 }
 export type HBarWidget = Base & {
   type: "hbar"
@@ -154,6 +165,13 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "size": "half",
         "insight": "Daily incident creation peaked at 40 on July 15 and declined through the weekend. User count stays low (3–7 distinct users) throughout — incident volume is driven by a small set of users generating many violations each, not broad organizational activity.",
         "title": "Trend of DLP Incidents by Creation Date",
+        "anomalies": [
+          {
+            "index": 2,
+            "value": 40,
+            "label": "Jul 15 peak"
+          }
+        ],
         "series": [
           {
             "name": "# DLP Incidents",
@@ -1927,6 +1945,13 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "size": "half",
         "insight": "DLP alert volume has climbed steadily since late March, with Browser Access as the dominant access method. The Apr 6–13 spike (+85% week-over-week) aligns with a policy expansion. The Jun 15 week shows the highest weekly DLP volume this quarter across all access methods.",
         "title": "Trend of DLP Alerts — past 90 days",
+        "anomalies": [
+          {
+            "index": 13,
+            "value": 42,
+            "label": "Apr spike"
+          }
+        ],
         "series": [
           {
             "name": "Browser Access",
@@ -2735,6 +2760,13 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "size": "full",
         "insight": "Poor CCL app uploads spiked to 424 MB the week of May 25 — 10× the prior week and the largest single-week data movement to risky apps in the 90-day period. Medium CCL uploads peaked at 101 MB in the Jun 1 week. Both spikes warrant investigation into which specific apps and users drove the volume.",
         "title": "Trend of Uploads to Non-Enterprise Apps by CCL — last 90 days",
+        "anomalies": [
+          {
+            "index": 9,
+            "value": 424,
+            "label": "May 25 spike (424 MB)"
+          }
+        ],
         "series": [
           {
             "name": "Poor CCL",
@@ -2997,6 +3029,13 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "size": "full",
         "insight": "DLP alert volume peaked the week of Mar 30 at 1,473, likely coinciding with a policy expansion. May 11 shows a secondary peak (1,121). The Jun 15 partial week shows 390 alerts — on pace for a lower-volume month if the trend holds, though this could reflect incomplete data rather than genuine improvement.",
         "title": "DLP Policy Alerts — Trend Over Time (last 90 days)",
+        "anomalies": [
+          {
+            "index": 1,
+            "value": 1473,
+            "label": "Mar 30 peak (1,473)"
+          }
+        ],
         "series": [
           {
             "name": "DLP Alerts",
@@ -4033,6 +4072,13 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "size": "full",
         "insight": "Granular AI web transactions swing widely day to day — from 42 on July 15 to a peak of 2,421 on July 17. Transaction-level data captures the request traffic behind AI domains, so these swings track real interaction intensity rather than page visits.",
         "title": "AI Transactions Trend — Transactions Data",
+        "anomalies": [
+          {
+            "index": 3,
+            "value": 2421,
+            "label": "Jul 17 peak (2,421)"
+          }
+        ],
         "series": [
           {
             "name": "AI Transactions",
@@ -4237,6 +4283,13 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "size": "full",
         "insight": "Daily users of risky AI apps ranged from 0 to 4 this week, peaking at 4 on July 17. The zero-usage day mid-week suggests access is bursty rather than continuous, so point-in-time snapshots understate how many distinct users touch these apps over a full week.",
         "title": "Number of Users Accessing Risky AI Apps — last 7 days",
+        "anomalies": [
+          {
+            "index": 4,
+            "value": 4,
+            "label": "Jul 17 peak"
+          }
+        ],
         "series": [
           {
             "name": "Users",
@@ -4586,6 +4639,13 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "size": "full",
         "insight": "Uploads to non-corporate instances spiked to 30 events on July 16 — roughly 10x the daily baseline — then dropped back to near zero. A burst pattern like this usually traces to a single user moving a batch of files, which matches vsundaram's 27-event footprint.",
         "title": "Trend of Uploads to Non-Corporate Instances",
+        "anomalies": [
+          {
+            "index": 2,
+            "value": 30,
+            "label": "Jul 16 spike"
+          }
+        ],
         "series": [
           {
             "name": "Upload events",

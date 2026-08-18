@@ -54,6 +54,7 @@ function responseWidgets(response: Response): Widget[] {
       type: "line",
       xLabels: response.xLabels,
       series: response.series,
+      anomalies: response.anomalies,
       insight: "",
     })
   }
@@ -401,7 +402,14 @@ function ResponseCard({
       {widgets.length > 0 && (
         <div className="flex flex-col gap-4">
           {widgets.map((widget, i) => (
-            <ReportWidget key={i} widget={widget} bare />
+            <ReportWidget
+              key={i}
+              widget={widget}
+              bare
+              /* Clicking a called-out spike asks about it — the same path a
+                 follow-up chip takes. */
+              onDrill={onPickFollowUp}
+            />
           ))}
         </div>
       )}

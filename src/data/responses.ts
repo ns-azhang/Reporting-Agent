@@ -17,8 +17,8 @@
  *   ack       -> a one-line acknowledgement, the terminal state of an action
  *
  * Not ported: the two agent-flow responses (v6 has no agent builder), and the
- * per-point `drill` targets the prototype attaches to bars, slices and
- * anomalies — `anomalies` is kept as data but not yet drawn on the line chart.
+ * `drill` targets the prototype attaches to individual bars and slices — those
+ * have no visible affordance, unlike an anomaly marker, which carries one.
  */
 
 export type ResponseChartType =
@@ -82,8 +82,14 @@ export type Response = {
   kpis?: ResponseKpi[]
   series?: { name: string; color: string; values: number[] }[]
   xLabels?: string[]
-  /** Called out in the prototype's line chart; kept as data, not drawn yet. */
-  anomalies?: { index: number; value: number; label: string }[]
+  /** Points called out on the line chart. `drill` makes the marker clickable,
+   *  asking that question the way a follow-up chip does. */
+  anomalies?: {
+    index: number
+    value: number
+    label: string
+    drill?: FollowUp
+  }[]
   /** Index from which the series is projected rather than observed. */
   forecastIndex?: number
   /** `color` is optional — some responses leave their bars unstyled. */
@@ -458,7 +464,11 @@ export const RESPONSES: Record<string, Response> = {
       {
         "index": 5,
         "value": 224,
-        "label": "Spike"
+        "label": "Spike",
+        "drill": {
+          "text": "What caused the Saturday spike?",
+          "id": "rca-saturday"
+        }
       }
     ]
   },
@@ -2215,12 +2225,20 @@ export const RESPONSES: Record<string, Response> = {
       {
         "index": 17,
         "value": 182,
-        "label": "Apr 18 spike"
+        "label": "Apr 18 spike",
+        "drill": {
+          "text": "Why did Apr 18 spike?",
+          "id": "rca-apr26"
+        }
       },
       {
         "index": 26,
         "value": 224,
-        "label": "Apr 26 spike"
+        "label": "Apr 26 spike",
+        "drill": {
+          "text": "Why did Apr 26 spike?",
+          "id": "rca-apr26"
+        }
       }
     ]
   },
@@ -5290,7 +5308,11 @@ export const RESPONSES: Record<string, Response> = {
       {
         "index": 5,
         "value": 28,
-        "label": "Saturday spike"
+        "label": "Saturday spike",
+        "drill": {
+          "text": "What caused the Saturday spike?",
+          "id": "rca-saturday"
+        }
       }
     ]
   },
@@ -5399,7 +5421,11 @@ export const RESPONSES: Record<string, Response> = {
       {
         "index": 10,
         "value": 28,
-        "label": "Peak"
+        "label": "Peak",
+        "drill": {
+          "text": "What caused the 10am peak?",
+          "id": "rca-saturday"
+        }
       }
     ]
   },
