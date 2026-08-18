@@ -681,7 +681,7 @@ export const RESPONSES: Record<string, Response> = {
     "series": [
       {
         "name": "Critical",
-        "color": "#F43F5E",
+        "color": "var(--sev-critical)",
         "values": [
           2,
           3,
@@ -694,7 +694,7 @@ export const RESPONSES: Record<string, Response> = {
       },
       {
         "name": "High",
-        "color": "#EF4444",
+        "color": "var(--sev-high)",
         "values": [
           142,
           160,
@@ -2092,22 +2092,22 @@ export const RESPONSES: Record<string, Response> = {
       {
         "label": "Critical",
         "value": 64,
-        "color": "#F43F5E"
+        "color": "var(--sev-critical)"
       },
       {
         "label": "High",
         "value": 139,
-        "color": "#EF4444"
+        "color": "var(--sev-high)"
       },
       {
         "label": "Medium",
         "value": 482,
-        "color": "#FB923C"
+        "color": "var(--sev-medium)"
       },
       {
         "label": "Low",
         "value": 599,
-        "color": "#FBBF24"
+        "color": "var(--sev-low)"
       }
     ]
   },
@@ -3937,7 +3937,7 @@ export const RESPONSES: Record<string, Response> = {
     "series": [
       {
         "name": "Critical",
-        "color": "#F43F5E",
+        "color": "var(--sev-critical)",
         "values": [
           4,
           6,
@@ -4012,7 +4012,7 @@ export const RESPONSES: Record<string, Response> = {
     "series": [
       {
         "name": "Critical",
-        "color": "#F43F5E",
+        "color": "var(--sev-critical)",
         "values": [
           4,
           5,
@@ -4048,7 +4048,7 @@ export const RESPONSES: Record<string, Response> = {
       },
       {
         "name": "High",
-        "color": "#EF4444",
+        "color": "var(--sev-high)",
         "values": [
           12,
           14,
@@ -4084,7 +4084,7 @@ export const RESPONSES: Record<string, Response> = {
       },
       {
         "name": "Medium",
-        "color": "#FB923C",
+        "color": "var(--sev-medium)",
         "values": [
           44,
           48,
@@ -4120,7 +4120,7 @@ export const RESPONSES: Record<string, Response> = {
       },
       {
         "name": "Low",
-        "color": "#FBBF24",
+        "color": "var(--sev-low)",
         "values": [
           68,
           67,

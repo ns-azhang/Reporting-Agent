@@ -1128,22 +1128,22 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
           {
             "label": "Critical",
             "value": 64,
-            "color": "#F43F5E"
+            "color": "var(--sev-critical)"
           },
           {
             "label": "High",
             "value": 139,
-            "color": "#EF4444"
+            "color": "var(--sev-high)"
           },
           {
             "label": "Medium",
             "value": 482,
-            "color": "#FB923C"
+            "color": "var(--sev-medium)"
           },
           {
             "label": "Low",
             "value": 599,
-            "color": "#FBBF24"
+            "color": "var(--sev-low)"
           }
         ]
       },
@@ -1155,7 +1155,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "series": [
           {
             "name": "Critical",
-            "color": "#F43F5E",
+            "color": "var(--sev-critical)",
             "values": [
               4,
               5,
@@ -1191,7 +1191,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
           },
           {
             "name": "High",
-            "color": "#EF4444",
+            "color": "var(--sev-high)",
             "values": [
               12,
               14,
@@ -1227,7 +1227,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
           },
           {
             "name": "Medium",
-            "color": "#FB923C",
+            "color": "var(--sev-medium)",
             "values": [
               44,
               48,
@@ -1263,7 +1263,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
           },
           {
             "name": "Low",
-            "color": "#FBBF24",
+            "color": "var(--sev-low)",
             "values": [
               68,
               67,
@@ -2967,22 +2967,22 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
           {
             "label": "Low",
             "value": 75,
-            "color": "#FBBF24"
+            "color": "var(--sev-low)"
           },
           {
             "label": "Critical",
             "value": 12,
-            "color": "#F43F5E"
+            "color": "var(--sev-critical)"
           },
           {
             "label": "Medium",
             "value": 11,
-            "color": "#FB923C"
+            "color": "var(--sev-medium)"
           },
           {
             "label": "High",
             "value": 2,
-            "color": "#EF4444"
+            "color": "var(--sev-high)"
           }
         ]
       },

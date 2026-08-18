@@ -48,7 +48,38 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/**
+ * Severity ramp — the one place chart severity colours are defined.
+ *
+ * Adopted from the Aurora product's chart legend: magenta Critical, red High,
+ * amber Medium. The ramp v5 inherited put Critical on rose-500 (#F43F5E) right
+ * beside High on red-500 (#EF4444) — measured 3.5 ΔE apart for *normal* vision,
+ * so the two levels that matter most were near-indistinguishable. Aurora's
+ * magenta Critical is what fixes that.
+ *
+ * Two deliberate departures from Aurora, both forced by measurement:
+ *   - Low is slate, not yellow. Aurora's yellow Low sits 11.2 from its orange
+ *     Medium, under the 15 floor. Slate also reads right: least severe, least
+ *     salient.
+ *   - Medium is amber rather than orange, because orange sits 7.1 from red High.
+ *
+ * Validated with the dataviz validator against this app's own surfaces
+ * (light #ffffff, dark #171717), worst adjacent pair:
+ *   light  normal 20.8 / CVD 15.3  — both clear (floors 15 / 8)
+ *   dark   normal 15.1 / CVD  6.2  — CVD in the 6–8 band, which is legal only
+ *          with secondary encoding; every chart here carries a legend with
+ *          labels, and stacked segments are separated by a surface gap.
+ * The light amber is below 3:1 on white, so the same relief applies.
+ *
+ * Dark is its own set of steps chosen for the dark surface, not a flip: only
+ * Medium moves, darkened to stay inside the dark lightness band.
+ */
 :root {
+    --sev-critical: #C026D3;
+    --sev-high: #E34948;
+    --sev-medium: #EDA100;
+    --sev-low: #7B8794;
+
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -86,6 +117,10 @@
 }
 
 .dark {
+    /* Only Medium moves: amber darkened to sit inside the dark lightness band.
+       See the note on the light ramp above. */
+    --sev-medium: #C98500;
+
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
