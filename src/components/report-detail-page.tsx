@@ -4,6 +4,7 @@ import {
   ChevronDown,
   MessageSquare,
   PanelRightClose,
+  RefreshCw,
   Send,
   Share2,
   Sparkles,
@@ -23,6 +24,18 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { getReportDetail, type Widget } from "@/data/report-details"
+
+/** How long a "run" takes before the numbers are called fresh again. */
+const REFRESH_MS = 900
+
+/** "just now" / "3 min ago" / "2 hr ago" — coarse on purpose. */
+function relativeAge(elapsedMs: number) {
+  const minutes = Math.floor(elapsedMs / 60_000)
+  if (minutes < 1) return "just now"
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.floor(minutes / 60)
+  return hours < 24 ? `${hours} hr ago` : `${Math.floor(hours / 24)} d ago`
+}
 
 type ReportDetailPageProps = {
   reportId: string
@@ -77,6 +90,42 @@ export function ReportDetailPage({
     threadEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" })
   }, [turnCount, thinking])
 
+  /**
+   * Refresh re-runs the report. The data here is static, so there is nothing to
+   * re-fetch — but a button that does nothing visible is indistinguishable from
+   * a broken one, so it spins while it "runs" and then resets the age.
+   *
+   * `refreshedAt` is when the numbers were last pulled; `now` ticks so the
+   * relative age moves on its own instead of going stale until the next render.
+   */
+  const [refreshedAt, setRefreshedAt] = React.useState(() => Date.now())
+  const [now, setNow] = React.useState(() => Date.now())
+  const [refreshing, setRefreshing] = React.useState(false)
+
+  React.useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 30_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  // A new report is freshly loaded, and its age starts again from zero.
+  React.useEffect(() => {
+    setRefreshedAt(Date.now())
+    setNow(Date.now())
+    setRefreshing(false)
+  }, [reportId])
+
+  const refresh = () => {
+    if (refreshing) return
+    setRefreshing(true)
+    window.setTimeout(() => {
+      setRefreshedAt(Date.now())
+      setNow(Date.now())
+      setRefreshing(false)
+    }, REFRESH_MS)
+  }
+
+  const freshness = relativeAge(now - refreshedAt)
+
   // Every library report now has contents; this only trips on a bad id.
   if (!report) {
     return (
@@ -127,6 +176,22 @@ export function ReportDetailPage({
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                {/* The freshness of the numbers is the reason to press Refresh,
+                    so it sits beside the button rather than being something you
+                    have to press to find out. */}
+                <span className="text-xs whitespace-nowrap text-muted-foreground">
+                  {refreshing ? "Refreshing…" : `Updated ${freshness}`}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refresh}
+                  disabled={refreshing}
+                  aria-label="Refresh report data"
+                >
+                  <RefreshCw className={refreshing ? "animate-spin" : undefined} />
+                  Refresh
+                </Button>
                 <Button variant="outline" size="sm">
                   <Share2 />
                   Share
