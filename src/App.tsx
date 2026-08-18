@@ -7,6 +7,7 @@ import { ReportLibraryPage } from "@/components/report-library-page"
 import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
 import { WelcomePage } from "@/components/welcome-page"
+import type { Session } from "@/data/sessions"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -33,14 +34,28 @@ export function App() {
    */
   const [openReportId, setOpenReportId] = useState<string | null>(null)
 
+  /** Session restored from history, rendered as a thread on the prompt page. */
+  const [resumed, setResumed] = useState<Session | null>(null)
+
   const newSession = () => {
     setOpenReportId(null)
+    setResumed(null)
+    setPage("new-session")
+    setSessionKey((k) => k + 1)
+  }
+
+  /** Resuming drops you on the prompt page with the thread rebuilt above the
+      composer, so you can carry on where the conversation left off. */
+  const resumeSession = (session: Session) => {
+    setOpenReportId(null)
+    setResumed(session)
     setPage("new-session")
     setSessionKey((k) => k + 1)
   }
 
   const navigate = (next: Page) => {
     setOpenReportId(null)
+    if (next !== "new-session") setResumed(null)
     setPage(next)
   }
 
@@ -78,12 +93,11 @@ export function App() {
           ) : page === "new-session" ? (
             <WelcomePage
               key={sessionKey}
+              resumed={resumed}
               onOpenReport={(id) => setOpenReportId(id)}
             />
           ) : page === "session-history" ? (
-            // Resuming a session lands you back on the prompt page. The thread
-            // itself isn't restored yet — that needs the conversation view.
-            <SessionHistoryPage onPickSession={newSession} />
+            <SessionHistoryPage onPickSession={resumeSession} />
           ) : page === "report-library" ? (
             <ReportLibraryPage
               onOpenReport={(report) => setOpenReportId(report.id)}

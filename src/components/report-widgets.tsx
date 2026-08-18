@@ -50,31 +50,42 @@ function WidgetShell({
   children,
   insight,
   className,
+  bare,
 }: {
   title?: string
   children: React.ReactNode
   insight: string
   className?: string
+  /** Drop the card chrome when the widget is already inside one — otherwise a
+      chart nested in a response card renders as a card within a card. */
+  bare?: boolean
 }) {
   return (
     <section
       className={cn(
-        "flex flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10",
+        "flex flex-col gap-3",
+        !bare &&
+          "rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10",
         className
       )}
     >
-      {title && (
-        <h3 className="text-sm font-semibold leading-snug">{title}</h3>
-      )}
+      {title && <h3 className="text-sm font-semibold leading-snug">{title}</h3>}
       {children}
-      <Insight>{insight}</Insight>
+      {/* Empty insight means the caller shows the narrative itself (the
+          conversation card does), so the block is omitted rather than
+          rendering an orphaned icon. */}
+      {insight && <Insight>{insight}</Insight>}
     </section>
   )
 }
 
-function KpiRow({ widget }: { widget: KpiWidget }) {
+function KpiRow({ widget, bare }: { widget: KpiWidget; bare?: boolean }) {
   return (
-    <WidgetShell insight={widget.insight} className="sm:col-span-2">
+    <WidgetShell
+      insight={widget.insight}
+      bare={bare}
+      className={bare ? undefined : "sm:col-span-2"}
+    >
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {widget.kpis.map((kpi) => {
           // invertColor marks metrics where "up" is bad (more open incidents),
@@ -111,9 +122,9 @@ function KpiRow({ widget }: { widget: KpiWidget }) {
   )
 }
 
-function DataTable({ widget }: { widget: TableWidget }) {
+function DataTable({ widget, bare }: { widget: TableWidget; bare?: boolean }) {
   return (
-    <WidgetShell title={widget.title} insight={widget.insight}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -142,7 +153,7 @@ function DataTable({ widget }: { widget: TableWidget }) {
   )
 }
 
-function TrendChart({ widget }: { widget: LineWidget }) {
+function TrendChart({ widget, bare }: { widget: LineWidget; bare?: boolean }) {
   // Recharts wants one row per x value with a key per series, whereas the
   // prototype stores parallel value arrays.
   const data = widget.xLabels.map((label, i) => {
@@ -156,7 +167,7 @@ function TrendChart({ widget }: { widget: LineWidget }) {
   )
 
   return (
-    <WidgetShell title={widget.title} insight={widget.insight}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
       <ChartContainer config={config} className="h-[220px] w-full">
         <LineChart data={data} margin={{ left: 4, right: 8, top: 8 }}>
           <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -186,12 +197,12 @@ function TrendChart({ widget }: { widget: LineWidget }) {
   )
 }
 
-function HorizontalBars({ widget }: { widget: HBarWidget }) {
+function HorizontalBars({ widget, bare }: { widget: HBarWidget; bare?: boolean }) {
   const data = widget.bars.map((b) => ({ ...b, short: truncate(b.label, 28) }))
   const config: ChartConfig = { value: { label: "Incidents" } }
 
   return (
-    <WidgetShell title={widget.title} insight={widget.insight}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
       <ChartContainer
         config={config}
         className="w-full"
@@ -226,15 +237,21 @@ function HorizontalBars({ widget }: { widget: HBarWidget }) {
 const truncate = (s: string, n: number) =>
   s.length > n ? `${s.slice(0, n - 1)}…` : s
 
-export function ReportWidget({ widget }: { widget: Widget }) {
+export function ReportWidget({
+  widget,
+  bare,
+}: {
+  widget: Widget
+  bare?: boolean
+}) {
   switch (widget.type) {
     case "kpi":
-      return <KpiRow widget={widget} />
+      return <KpiRow widget={widget} bare={bare} />
     case "table":
-      return <DataTable widget={widget} />
+      return <DataTable widget={widget} bare={bare} />
     case "line":
-      return <TrendChart widget={widget} />
+      return <TrendChart widget={widget} bare={bare} />
     case "hbar":
-      return <HorizontalBars widget={widget} />
+      return <HorizontalBars widget={widget} bare={bare} />
   }
 }

@@ -1,5 +1,6 @@
 import * as React from "react"
 
+import { Conversation } from "@/components/conversation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -12,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown, LayoutGrid, Lightbulb, Send } from "lucide-react"
+import type { Session } from "@/data/sessions"
 
 /** The 6 cards shown when nothing is pinned — mirrors POPULAR_REPORTS. */
 const POPULAR_REPORTS = [
@@ -67,9 +69,11 @@ const SUGGESTED_PROMPTS = [
 
 type WelcomePageProps = {
   onOpenReport?: (id: string) => void
+  /** Set when arriving from Session History — renders the restored thread. */
+  resumed?: Session | null
 }
 
-export function WelcomePage({ onOpenReport }: WelcomePageProps) {
+export function WelcomePage({ onOpenReport, resumed }: WelcomePageProps) {
   const [value, setValue] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
 
@@ -89,11 +93,21 @@ export function WelcomePage({ onOpenReport }: WelcomePageProps) {
             entry, which is the convention those pages follow
             (nav "Overview" -> title "Overview"). */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">New Session</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {resumed ? resumed.title : "New Session"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Ask a question about your security data.
+            {resumed
+              ? `Resumed from Session History · ${resumed.when}`
+              : "Ask a question about your security data."}
           </p>
         </div>
+
+        {/* Restored thread. It sits above the composer so the conversation
+            reads top-down and the composer stays where you continue it. */}
+        {resumed && (
+          <Conversation turns={resumed.turns} onPickFollowUp={pick} />
+        )}
 
         {/* Composer. Mirrors the prototype: tall textarea, toolbar row beneath. */}
         <div className="flex min-h-[200px] flex-col rounded-md border border-input bg-background shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-3">
@@ -148,7 +162,10 @@ export function WelcomePage({ onOpenReport }: WelcomePageProps) {
 
         {/* Popular reports. Section heading + description line, matching how
             the sibling pages label sections ("Cases - last 3 days" over
-            "Cases by status and risk level"). */}
+            "Cases by status and risk level").
+            Hidden on a resumed thread — it is a way to start, and you have
+            already started. */}
+        {!resumed && (
         <section className="flex flex-col gap-3">
           <div className="flex flex-col gap-0.5">
             <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight">
@@ -176,6 +193,7 @@ export function WelcomePage({ onOpenReport }: WelcomePageProps) {
             ))}
           </div>
         </section>
+        )}
       </div>
     </div>
   )
