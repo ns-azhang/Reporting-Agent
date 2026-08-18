@@ -44,7 +44,10 @@ export function App() {
    * opens it, which swaps the page out, and the thread has to still be there
    * when you come back.
    */
-  const chat = useChat((reportId) => setOpenReportId(reportId))
+  const chat = useChat(
+    (reportId) => setOpenReportId(reportId),
+    openReportId !== null
+  )
 
   const newSession = () => {
     setOpenReportId(null)
@@ -112,10 +115,22 @@ export function App() {
         <SidebarInset>
           {openReportId ? (
             // An open report takes over the inset regardless of which list
-            // opened it; Back returns to that list.
+            // opened it; Back returns to that list. It gets the same
+            // conversation, so a prompt that opened a report lands you beside
+            // the thread that asked for it rather than in a dead end.
             <ReportDetailPage
               reportId={openReportId}
               onBack={() => setOpenReportId(null)}
+              turns={chat.turns}
+              thinking={chat.thinking}
+              onSend={chat.send}
+              savableReports={savableReports}
+              onSaveToReport={(response, report) =>
+                chat.note(`Added “${response.title}” to ${report.title}.`)
+              }
+              onCreateReport={(_response, name) =>
+                chat.note(`Created “${name}” with this chart.`)
+              }
             />
           ) : page === "new-session" ? (
             <WelcomePage

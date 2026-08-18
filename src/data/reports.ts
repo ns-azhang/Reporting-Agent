@@ -119,7 +119,10 @@ export const getReport = (id: string) => REPORTS.find((r) => r.id === id)
  */
 export const REPORT_KEYWORDS: Record<string, string[]> = {
   "ai-risk-assessment": ["ai risk", "risk assessment", "ai security", "risky ai"],
-  "genai-admin": ["genai", "ai", "artificial intelligence", "llm", "copilot"],
+  /* No bare "ai" here. It matched \bai\b anywhere, and since this report is
+     listed before AI Risk Assessment it won that report on its own name —
+     "AI Risk Assessment" opened AI Usage. */
+  "genai-admin": ["genai", "ai usage", "artificial intelligence", "llm", "copilot"],
   "insider-threat": ["insider", "risky user", "uba", "watchlist"],
   "security-engineer": ["security engineer", "posture", "dspm"],
 }

@@ -12,9 +12,6 @@ import type { Turn } from "@/data/sessions"
  */
 export type ChatTurn =
   | Turn
-  /** A prompt that named a library report, which opened instead of answering.
-      Recorded so the thread still reads as a conversation when you come back. */
-  | { role: "report"; reportId: string }
   /** One step of the clarifying-questions wizard. */
   | {
       role: "clarify"
@@ -33,7 +30,16 @@ const HANDOFF_MS = 400
 /** Generating several widgets takes a little longer than one answer. */
 const GENERATING_MS = 900
 
-export function useChat(onOpenReport?: (reportId: string) => void) {
+export function useChat(
+  onOpenReport?: (reportId: string) => void,
+  /**
+   * True while a report is open. A prompt that names a report opens it; once
+   * you are already in one, the conversation continues beside it instead —
+   * otherwise a follow-up mentioning the report you are looking at would
+   * "navigate" you to the page you are already on.
+   */
+  reportOpen = false
+) {
   const [turns, setTurns] = React.useState<ChatTurn[]>([])
   const [thinking, setThinking] = React.useState(false)
   /** 0 = no wizard running; n = waiting for the answer to CLARIFY_STEPS[n-1]. */
@@ -106,7 +112,8 @@ export function useChat(onOpenReport?: (reportId: string) => void) {
       return
     }
 
-    const report = responseId ? undefined : matchReportByKeyword(prompt)
+    const report =
+      responseId || reportOpen ? undefined : matchReportByKeyword(prompt)
 
     // A prompt bundling several questions starts the wizard — unless it names a
     // report, in which case opening that report already answers it.
@@ -129,15 +136,18 @@ export function useChat(onOpenReport?: (reportId: string) => void) {
 
     after(THINKING_MS, () => {
       setThinking(false)
-      push(
-        report
-          ? { role: "report", reportId: report.id }
-          : {
-              role: "ai",
-              responseId: resolveResponseId(responseId ?? classifyPrompt(prompt)),
-            }
-      )
-      if (report) onOpenReport?.(report.id)
+      if (report) {
+        // The report *is* the answer, and it opens with this conversation beside
+        // it — so no turn is added here. A "we opened a report" card would only
+        // be a receipt for the navigation you just watched happen, and its one
+        // action would be to go back where you already are.
+        onOpenReport?.(report.id)
+        return
+      }
+      push({
+        role: "ai",
+        responseId: resolveResponseId(responseId ?? classifyPrompt(prompt)),
+      })
     })
   }
 

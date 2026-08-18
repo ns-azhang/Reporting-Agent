@@ -1,6 +1,5 @@
 import * as React from "react"
 import {
-  ArrowUpRight,
   Check,
   Copy,
   Sparkles,
@@ -19,7 +18,6 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import type { ChatTurn } from "@/lib/use-chat"
 import { CLARIFY_STEPS } from "@/data/clarify"
-import { getReport } from "@/data/reports"
 import { getResponse, type Response } from "@/data/responses"
 import type { Widget } from "@/data/report-details"
 
@@ -106,37 +104,6 @@ export function ThinkingBubble() {
           />
         ))}
       </span>
-    </div>
-  )
-}
-
-/** A prompt that named a report, so the report opened instead of answering. */
-function ReportOpenedCard({
-  reportId,
-  onOpenReport,
-}: {
-  reportId: string
-  onOpenReport?: (reportId: string) => void
-}) {
-  const report = getReport(reportId)
-  if (!report) return null
-  return (
-    <div className="flex items-center gap-3 rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10">
-      <Sparkles className="size-4 shrink-0 text-muted-foreground" />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="text-sm font-semibold leading-snug">{report.title}</p>
-        <p className="text-xs text-muted-foreground">
-          Opened the matching report from the library.
-        </p>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onOpenReport?.(report.id)}
-      >
-        Open
-        <ArrowUpRight />
-      </Button>
     </div>
   )
 }
@@ -456,7 +423,6 @@ export function Conversation({
   turns,
   thinking,
   onPickFollowUp,
-  onOpenReport,
   onAnswerClarify,
   savableReports,
   onSaveToReport,
@@ -465,7 +431,6 @@ export function Conversation({
   turns: ChatTurn[]
   thinking?: boolean
   onPickFollowUp?: (text: string, responseId?: string) => void
-  onOpenReport?: (reportId: string) => void
   onAnswerClarify?: (label: string) => void
   /** Reports the ⋮ menu can save a chart into. */
   savableReports?: SavableReport[]
@@ -477,15 +442,6 @@ export function Conversation({
       {turns.map((turn, i) => {
         if (turn.role === "user") {
           return <UserBubble key={i} text={turn.text} />
-        }
-        if (turn.role === "report") {
-          return (
-            <ReportOpenedCard
-              key={i}
-              reportId={turn.reportId}
-              onOpenReport={onOpenReport}
-            />
-          )
         }
         if (turn.role === "clarify") {
           return (

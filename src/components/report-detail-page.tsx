@@ -9,7 +9,11 @@ import {
   Sparkles,
 } from "lucide-react"
 
+import { Conversation } from "@/components/conversation"
 import { ReportWidget } from "@/components/report-widgets"
+import type { SavableReport } from "@/components/card-menu"
+import type { ChatTurn } from "@/lib/use-chat"
+import type { Response } from "@/data/responses"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,18 +28,47 @@ import { getReportDetail } from "@/data/report-details"
 type ReportDetailPageProps = {
   reportId: string
   onBack: () => void
+  /**
+   * The same conversation the prompt page uses. A prompt that names a report
+   * opens it *with* the thread, so the report is on the left and the chat keeps
+   * going on the right — you carry on iterating rather than being handed a
+   * finished artifact and dropped.
+   */
+  turns: ChatTurn[]
+  thinking: boolean
+  onSend: (text: string, responseId?: string) => void
+  savableReports?: SavableReport[]
+  onSaveToReport?: (response: Response, report: SavableReport) => void
+  onCreateReport?: (response: Response, name: string) => void
 }
 
-export function ReportDetailPage({ reportId, onBack }: ReportDetailPageProps) {
+export function ReportDetailPage({
+  reportId,
+  onBack,
+  turns,
+  thinking,
+  onSend,
+  savableReports,
+  onSaveToReport,
+  onCreateReport,
+}: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
   const [chatOpen, setChatOpen] = React.useState(true)
   const [draft, setDraft] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
+  const threadEnd = React.useRef<HTMLDivElement>(null)
 
-  const ask = (text: string) => {
-    setDraft(text)
-    textareaRef.current?.focus()
+  const send = () => {
+    if (!draft.trim() || thinking) return
+    onSend(draft)
+    setDraft("")
   }
+
+  const turnCount = turns.length
+  React.useEffect(() => {
+    if (turnCount === 0) return
+    threadEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+  }, [turnCount, thinking])
 
   // Every library report now has contents; this only trips on a bad id.
   if (!report) {
@@ -179,20 +212,38 @@ export function ReportDetailPage({ reportId, onBack }: ReportDetailPageProps) {
               <p className="text-xs leading-relaxed">{report.summary}</p>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                Try asking
-              </span>
-              {report.examplePrompts.map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => ask(prompt)}
-                  className="rounded-md border border-border px-3 py-2 text-left text-xs outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
+            {/* The thread that brought you here, and everything since. */}
+            {turns.length > 0 && (
+              <Conversation
+                turns={turns}
+                thinking={thinking}
+                onPickFollowUp={onSend}
+                onAnswerClarify={(label) => onSend(label)}
+                savableReports={savableReports}
+                onSaveToReport={onSaveToReport}
+                onCreateReport={onCreateReport}
+              />
+            )}
+
+            {/* Openers, shown until the conversation has its own momentum. */}
+            {turns.length === 0 && !thinking && (
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Try asking
+                </span>
+                {report.examplePrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => onSend(prompt)}
+                    className="rounded-md border border-border px-3 py-2 text-left text-xs outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div ref={threadEnd} />
           </div>
 
           <div className="p-3">
@@ -201,11 +252,21 @@ export function ReportDetailPage({ reportId, onBack }: ReportDetailPageProps) {
                 ref={textareaRef}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    send()
+                  }
+                }}
                 placeholder="Ask about this report…"
                 className="min-h-[64px] resize-none border-0 bg-transparent px-3 pt-2.5 text-sm shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
               />
               <div className="flex justify-end px-2 pb-2">
-                <Button size="sm" disabled={!draft.trim()}>
+                <Button
+                  size="sm"
+                  disabled={!draft.trim() || thinking}
+                  onClick={send}
+                >
                   Send <Send />
                 </Button>
               </div>
