@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"
 import {
-  OWNED_REPORTS,
   REPORTS,
   SHARED_ACCESS,
   getReport,
@@ -33,12 +32,15 @@ const formatDate = (iso: string) =>
   })
 
 type MyReportsPageProps = {
+  /** Reports the user owns — seeded ones plus any saved from the library. */
+  ownedReports: { id: string; createdAt: string }[]
   onOpenReport?: (report: Report) => void
   favorites: string[]
   onToggleFavorite: (id: string) => void
 }
 
 export function MyReportsPage({
+  ownedReports,
   onOpenReport,
   favorites,
   onToggleFavorite,
@@ -51,7 +53,7 @@ export function MyReportsPage({
    * own — mirroring the prototype, where starring a template surfaces it here.
    */
   const myReports = React.useMemo<MyReport[]>(() => {
-    const owned = OWNED_REPORTS.flatMap(({ id, createdAt }) => {
+    const owned = ownedReports.flatMap(({ id, createdAt }) => {
       const report = getReport(id)
       return report ? [{ ...report, owned: true, createdAt }] : []
     })
@@ -60,7 +62,7 @@ export function MyReportsPage({
       (r) => favorites.includes(r.id) && !ownedIds.has(r.id)
     ).map((r) => ({ ...r, owned: false }))
     return [...owned, ...favourited]
-  }, [favorites])
+  }, [favorites, ownedReports])
 
   const folderCounts = React.useMemo(() => {
     const counts: Record<string, number> = {}

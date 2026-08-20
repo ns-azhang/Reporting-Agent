@@ -4,7 +4,9 @@ import {
   ChevronDown,
   MessageSquare,
   PanelRightClose,
+  Check,
   RefreshCw,
+  Save,
   Send,
   Share2,
   Sparkles,
@@ -42,6 +44,13 @@ type ReportDetailPageProps = {
   reportId: string
   /** Which list opened it — decides the provenance badge. */
   origin: ReportOrigin
+  /** True once this report belongs to the user, so Save has nothing left to do. */
+  owned: boolean
+  /**
+   * Save this report into My Reports. For a library template that is a clone —
+   * the template stays in the library and the user gets their own copy.
+   */
+  onSaveReport: (reportId: string) => void
   onBack: () => void
   /**
    * The same conversation the prompt page uses. A prompt that names a report
@@ -66,6 +75,8 @@ type ReportDetailPageProps = {
 export function ReportDetailPage({
   reportId,
   origin,
+  owned,
+  onSaveReport,
   onBack,
   turns,
   thinking,
@@ -130,6 +141,21 @@ export function ReportDetailPage({
 
   const freshness = relativeAge(now - refreshedAt)
 
+  /**
+   * Save latches once the report is the user's. A library template becomes a
+   * copy in My Reports; one already theirs is simply already saved, which is
+   * why the button reads "Saved" and stops rather than pretending each press
+   * committed something.
+   */
+  const [justSaved, setJustSaved] = React.useState(false)
+  React.useEffect(() => setJustSaved(false), [reportId])
+  const saved = owned || justSaved
+  const save = () => {
+    if (saved) return
+    onSaveReport(reportId)
+    setJustSaved(true)
+  }
+
   // Every library report now has contents; this only trips on a bad id.
   if (!report) {
     return (
@@ -174,42 +200,68 @@ export function ReportDetailPage({
                     {report.title}
                   </h1>
                   {/* Follows the list that opened it, so the header never
-                      contradicts the card just clicked. */}
+                      contradicts the card just clicked — except once you save a
+                      library template, when it really has become yours. */}
                   <Badge variant="secondary">
-                    {reportBadgeLabel(reportId, origin)}
+                    {saved && origin === "library"
+                      ? "Created by you"
+                      : reportBadgeLabel(origin, owned)}
                   </Badge>
                 </div>
                 <p className="max-w-2xl text-sm text-muted-foreground">
                   {report.description}
                 </p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              {/* Actions stack above the freshness line rather than sharing a
+                  row with it: three labelled buttons plus a timestamp is more
+                  than the canvas has room for beside a long title once the chat
+                  pane is open, and it was the buttons that wrapped. */}
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={saved ? "outline" : "default"}
+                    size="sm"
+                    onClick={save}
+                    disabled={saved}
+                    /* disabled:opacity-100 so the latched state reads as
+                       "done" rather than "unavailable". */
+                    className={saved ? "disabled:opacity-100" : undefined}
+                  >
+                    {saved ? <Check /> : <Save />}
+                    {saved ? "Saved" : "Save"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refresh}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw
+                      className={refreshing ? "animate-spin" : undefined}
+                    />
+                    Refresh
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Share2 />
+                    Share
+                  </Button>
+                  {!chatOpen && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setChatOpen(true)}
+                    >
+                      <MessageSquare />
+                      Ask
+                    </Button>
+                  )}
+                </div>
                 {/* The freshness of the numbers is the reason to press Refresh,
-                    so it sits beside the button rather than being something you
-                    have to press to find out. */}
+                    so it stays visible rather than being something you press to
+                    find out. */}
                 <span className="text-xs whitespace-nowrap text-muted-foreground">
                   {refreshing ? "Refreshing…" : `Updated ${freshness}`}
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={refresh}
-                  disabled={refreshing}
-                  aria-label="Refresh report data"
-                >
-                  <RefreshCw className={refreshing ? "animate-spin" : undefined} />
-                  Refresh
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Share2 />
-                  Share
-                </Button>
-                {!chatOpen && (
-                  <Button size="sm" onClick={() => setChatOpen(true)}>
-                    <MessageSquare />
-                    Ask
-                  </Button>
-                )}
               </div>
             </div>
 

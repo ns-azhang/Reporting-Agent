@@ -110,6 +110,33 @@ export function App() {
    * after the report's built-in widgets, so the link in "Added X to <report>"
    * leads somewhere the chart actually is.
    */
+  /**
+   * Library templates the user saved. Saving one is a clone: the template stays
+   * in the library, and the user gets a copy that shows up in My Reports — so
+   * ownership is runtime state, not just the seeded OWNED_REPORTS.
+   */
+  const [savedReports, setSavedReports] = useState<
+    { id: string; createdAt: string }[]
+  >([])
+  const saveReport = (reportId: string) =>
+    setSavedReports((prev) =>
+      prev.some((r) => r.id === reportId)
+        ? prev
+        : [
+            ...prev,
+            // Today, in the same ISO shape the seeded entries use.
+            { id: reportId, createdAt: new Date().toISOString().slice(0, 10) },
+          ]
+    )
+  /** Everything the user owns: seeded plus saved this session. */
+  const ownedReports = useMemo(
+    () => [
+      ...OWNED_REPORTS,
+      ...savedReports.filter((s) => !OWNED_REPORTS.some((o) => o.id === s.id)),
+    ],
+    [savedReports]
+  )
+
   const [savedWidgets, setSavedWidgets] = useState<Record<string, Widget[]>>({})
   const saveWidgets = (reportId: string, widgets: Widget[]) =>
     setSavedWidgets((prev) => ({
@@ -123,7 +150,7 @@ export function App() {
    * means one thing across the app.
    */
   const savableReports = useMemo(() => {
-    const ownedIds = OWNED_REPORTS.map((r) => r.id)
+    const ownedIds = ownedReports.map((r) => r.id)
     const ids = [...ownedIds, ...favorites.filter((f) => !ownedIds.includes(f))]
     return ids.flatMap((id) => {
       const report = getReport(id)
@@ -131,7 +158,7 @@ export function App() {
         ? [{ id, title: report.title, sharedWith: SHARED_ACCESS[id] }]
         : []
     })
-  }, [favorites])
+  }, [favorites, ownedReports])
 
   if (showStyleGuide) {
     return <StyleGuide />
@@ -156,6 +183,8 @@ export function App() {
             <ReportDetailPage
               reportId={openReportId}
               origin={reportOrigin}
+              owned={ownedReports.some((r) => r.id === openReportId)}
+              onSaveReport={saveReport}
               onBack={() => setOpenReportId(null)}
               turns={reportChat.turns}
               thinking={reportChat.thinking}
@@ -191,6 +220,7 @@ export function App() {
             />
           ) : (
             <MyReportsPage
+              ownedReports={ownedReports}
               onOpenReport={(report) => openReport(report.id, "my-reports")}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}

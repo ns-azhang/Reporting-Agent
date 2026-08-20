@@ -118,11 +118,13 @@ export type ReportOrigin = "library" | "my-reports"
  * Inside My Reports the card itself distinguishes the two, since that list
  * mixes reports you created with library reports you favourited — so the
  * header matches it by checking ownership there.
+ *
+ * `owned` is passed in rather than looked up: saving a library template makes it
+ * the user's at runtime, so ownership is no longer answerable from the seeded
+ * OWNED_REPORTS alone.
  */
-export const reportBadgeLabel = (id: string, origin: ReportOrigin) =>
-  origin === "my-reports" && isOwnedReport(id)
-    ? "Created by you"
-    : "Netskope Library"
+export const reportBadgeLabel = (origin: ReportOrigin, owned: boolean) =>
+  origin === "my-reports" && owned ? "Created by you" : "Netskope Library"
 
 /** Who a report is shared with, where it is shared at all. */
 export const SHARED_ACCESS: Record<string, string> = {
