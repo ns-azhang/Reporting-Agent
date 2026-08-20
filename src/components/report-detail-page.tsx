@@ -251,7 +251,11 @@ export function ReportDetailPage({
                     />
                     Refresh
                   </Button>
-                  <Button variant="outline" size="sm">
+                  {/* Off for now, like Copy share link on the card menu.
+                      Kept in place rather than removed so the header keeps its
+                      shape — a plain Button, so `disabled` reaches the element
+                      and its own variants grey it out and stop the clicks. */}
+                  <Button variant="outline" size="sm" disabled>
                     <Share2 />
                     Share
                   </Button>
