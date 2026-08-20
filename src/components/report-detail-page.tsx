@@ -142,18 +142,27 @@ export function ReportDetailPage({
   const freshness = relativeAge(now - refreshedAt)
 
   /**
-   * Save latches once the report is the user's. A library template becomes a
-   * copy in My Reports; one already theirs is simply already saved, which is
-   * why the button reads "Saved" and stops rather than pretending each press
-   * committed something.
+   * Save tracks unsaved work, not ownership.
+   *
+   * Opening a report changes nothing, so there is nothing to save and the
+   * button is inert — it does not claim "Saved" either, because the user hasn't
+   * saved anything. Asking questions in the pane, or dropping a chart onto the
+   * canvas, is what creates something worth keeping; the button goes live then.
+   * "Saved" appears only after a press, and only until the next change.
+   *
+   * `savedAt` is the change count at the last save, or null if this visit has
+   * saved nothing.
    */
-  const [justSaved, setJustSaved] = React.useState(false)
-  React.useEffect(() => setJustSaved(false), [reportId])
-  const saved = owned || justSaved
+  const changeCount = turns.length + extraWidgets.length
+  const [savedAt, setSavedAt] = React.useState<number | null>(null)
+  React.useEffect(() => setSavedAt(null), [reportId])
+
+  const dirty = savedAt === null ? changeCount > 0 : changeCount > savedAt
+  const showSaved = savedAt !== null && !dirty
   const save = () => {
-    if (saved) return
+    if (!dirty) return
     onSaveReport(reportId)
-    setJustSaved(true)
+    setSavedAt(changeCount)
   }
 
   // Every library report now has contents; this only trips on a bad id.
@@ -203,7 +212,7 @@ export function ReportDetailPage({
                       contradicts the card just clicked — except once you save a
                       library template, when it really has become yours. */}
                   <Badge variant="secondary">
-                    {saved && origin === "library"
+                    {savedAt !== null && origin === "library"
                       ? "Created by you"
                       : reportBadgeLabel(origin, owned)}
                   </Badge>
@@ -219,16 +228,17 @@ export function ReportDetailPage({
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 <div className="flex items-center gap-2">
                   <Button
-                    variant={saved ? "outline" : "default"}
+                    variant={dirty ? "default" : "outline"}
                     size="sm"
                     onClick={save}
-                    disabled={saved}
-                    /* disabled:opacity-100 so the latched state reads as
-                       "done" rather than "unavailable". */
-                    className={saved ? "disabled:opacity-100" : undefined}
+                    disabled={!dirty}
+                    /* disabled:opacity-100 only for the just-saved state, so it
+                       reads as "done". Plain disabled Save keeps the usual fade,
+                       which is what "nothing to save" should look like. */
+                    className={showSaved ? "disabled:opacity-100" : undefined}
                   >
-                    {saved ? <Check /> : <Save />}
-                    {saved ? "Saved" : "Save"}
+                    {showSaved ? <Check /> : <Save />}
+                    {showSaved ? "Saved" : "Save"}
                   </Button>
                   <Button
                     variant="outline"
