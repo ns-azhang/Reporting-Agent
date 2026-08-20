@@ -140,14 +140,32 @@ export function AppSidebar({
                 <SidebarMenuItem key={item.page}>
                   <SidebarMenuButton
                     isActive={!disabled && page === item.page}
-                    disabled={disabled}
+                    /**
+                     * A plain `disabled` prop does nothing here. These rows
+                     * carry a tooltip, so SidebarMenuButton renders them
+                     * through Base UI's TooltipTrigger, which takes `disabled`
+                     * as its own prop and — per its docs — "doesn't apply the
+                     * `disabled` attribute to the trigger element", telling you
+                     * to pass it "via the `render` prop" instead. Without the
+                     * native attribute the variants' `disabled:` utilities
+                     * never matched, so the row stayed fully live.
+                     *
+                     * So: `render` puts the real attribute on the element,
+                     * which also drops it out of the tab order rather than
+                     * leaving a focusable dead control. The two utilities are
+                     * still spelled out below so the greying doesn't depend on
+                     * that plumbing holding.
+                     */
+                    render={disabled ? <button type="button" disabled /> : undefined}
+                    aria-disabled={disabled || undefined}
                     onClick={disabled ? undefined : () => onNavigate(item.page)}
-                    /* Just the title. A disabled row gets pointer-events-none
-                       from the button's own variants, so it never receives
-                       hover — there is no way to surface a reason here, and a
-                       tooltip explaining the disable would never appear. */
+                    /* Just the title — an inert row never receives hover, so a
+                       tooltip explaining the disable could never appear. */
                     tooltip={item.title}
-                    className="h-8"
+                    className={cn(
+                      "h-8",
+                      disabled && "pointer-events-none opacity-50"
+                    )}
                   >
                     <item.icon />
                     <span className="truncate">{item.title}</span>
