@@ -442,7 +442,8 @@ function ResponseCard({
 
       {response.followUps.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+          {/* Sentence case, matching the Insight label above it. */}
+          <span className="text-[11px] font-semibold text-muted-foreground">
             Suggested follow-ups
           </span>
           <div className="flex flex-wrap gap-2">
