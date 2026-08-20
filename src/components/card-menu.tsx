@@ -1,5 +1,5 @@
 import * as React from "react"
-import { MoreVertical, Users } from "lucide-react"
+import { Save, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,9 +14,10 @@ import {
 import { Input } from "@/components/ui/input"
 
 /**
- * The ⋮ menu on a response card. Save to is the only thing in it — Download and
- * Copy share link are out of beta scope — so it opens straight onto the report
- * picker rather than making you step through a submenu to reach the sole option.
+ * "Save to" on a response card. It used to be a ⋮ holding Save to, Download and
+ * Copy share link; the latter two are out of beta scope, and one action behind a
+ * kebab behind a submenu was two clicks and a guess to reach the only option.
+ * Now the trigger is labelled and opens the report picker directly.
  *
  * The caller only mounts this when the card has a chart worth saving, so there
  * is no empty state here: a menu whose only content is "nothing to save" is a
@@ -70,15 +71,24 @@ export function CardMenu({
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
+      {/* Labelled, not a kebab. A ⋮ is right when it hides several things;
+          with one action it just makes you click to find out what that is. */}
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-label="Save to a report" />}
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-mr-1 text-muted-foreground"
+          />
+        }
       >
-        <MoreVertical />
+        <Save />
+        Save to
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
-          {/* Names the panel, since the kebab no longer says what it opens. */}
-          <DropdownMenuLabel>Save to</DropdownMenuLabel>
+          {/* The trigger says "Save to", so this names the field instead. */}
+          <DropdownMenuLabel>New report</DropdownMenuLabel>
           {/* A field inside a menu: stop keys here so the menu's own typeahead
               and arrow navigation don't eat what you type. */}
           <div
