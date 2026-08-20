@@ -18,7 +18,8 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import type { ChatTurn } from "@/lib/use-chat"
 import { CLARIFY_STEPS } from "@/data/clarify"
-import { getResponse, type Response } from "@/data/responses"
+import { type Response } from "@/data/responses"
+import { getVisibleResponse } from "@/data/beta-scope"
 import type { Widget } from "@/data/report-details"
 
 /**
@@ -517,7 +518,8 @@ export function Conversation({
             />
           )
         }
-        const response = getResponse(turn.responseId)
+        // Gated: out-of-scope follow-up chips are stripped before render.
+        const response = getVisibleResponse(turn.responseId)
         if (!response) return null
         return (
           <ResponseCard
