@@ -45,11 +45,27 @@ export type Page =
   | "report-library"
   | "my-reports"
 
+/**
+ * `disabled` keeps a destination visible but unreachable. Session History is
+ * turned off for now — the page and its resume-a-session flow are still in the
+ * codebase, just with no way in, the same treatment the out-of-scope actions
+ * get in @/data/beta-scope. Drop the flag to bring it back.
+ */
 const NAV_ITEMS = [
-  { page: "session-history", title: "Session History", icon: History },
+  {
+    page: "session-history",
+    title: "Session History",
+    icon: History,
+    disabled: true,
+  },
   { page: "report-library", title: "Report Library", icon: LibraryBig },
   { page: "my-reports", title: "My Reports", icon: User },
-] as const satisfies readonly { page: Page; title: string; icon: unknown }[]
+] as const satisfies readonly {
+  page: Page
+  title: string
+  icon: unknown
+  disabled?: boolean
+}[]
 
 const USER = {
   name: "Kevin Flyn",
@@ -118,19 +134,27 @@ export function AppSidebar({
               </SidebarMenuButton>
             </SidebarMenuItem>
 
-            {NAV_ITEMS.map((item) => (
-              <SidebarMenuItem key={item.page}>
-                <SidebarMenuButton
-                  isActive={page === item.page}
-                  onClick={() => onNavigate(item.page)}
-                  tooltip={item.title}
-                  className="h-8"
-                >
-                  <item.icon />
-                  <span className="truncate">{item.title}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              const disabled = "disabled" in item && item.disabled
+              return (
+                <SidebarMenuItem key={item.page}>
+                  <SidebarMenuButton
+                    isActive={!disabled && page === item.page}
+                    disabled={disabled}
+                    onClick={disabled ? undefined : () => onNavigate(item.page)}
+                    /* Just the title. A disabled row gets pointer-events-none
+                       from the button's own variants, so it never receives
+                       hover — there is no way to surface a reason here, and a
+                       tooltip explaining the disable would never appear. */
+                    tooltip={item.title}
+                    className="h-8"
+                  >
+                    <item.icon />
+                    <span className="truncate">{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
