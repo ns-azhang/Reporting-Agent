@@ -24,7 +24,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { getReportDetail, type Widget } from "@/data/report-details"
-import { isOwnedReport } from "@/data/reports"
+import { reportBadgeLabel, type ReportOrigin } from "@/data/reports"
 
 /** How long a "run" takes before the numbers are called fresh again. */
 const REFRESH_MS = 900
@@ -40,6 +40,8 @@ function relativeAge(elapsedMs: number) {
 
 type ReportDetailPageProps = {
   reportId: string
+  /** Which list opened it — decides the provenance badge. */
+  origin: ReportOrigin
   onBack: () => void
   /**
    * The same conversation the prompt page uses. A prompt that names a report
@@ -63,6 +65,7 @@ type ReportDetailPageProps = {
 
 export function ReportDetailPage({
   reportId,
+  origin,
   onBack,
   turns,
   thinking,
@@ -170,14 +173,10 @@ export function ReportDetailPage({
                   <h1 className="text-2xl font-semibold tracking-tight">
                     {report.title}
                   </h1>
-                  {/* Provenance, not the route you arrived by — a report you
-                      created says so whether you opened it from My Reports or
-                      found it in the library listing. Same wording as the
-                      My Reports card. */}
+                  {/* Follows the list that opened it, so the header never
+                      contradicts the card just clicked. */}
                   <Badge variant="secondary">
-                    {isOwnedReport(reportId)
-                      ? "Created by you"
-                      : "Netskope Library"}
+                    {reportBadgeLabel(reportId, origin)}
                   </Badge>
                 </div>
                 <p className="max-w-2xl text-sm text-muted-foreground">

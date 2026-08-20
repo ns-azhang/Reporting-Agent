@@ -7,7 +7,12 @@ import { ReportLibraryPage } from "@/components/report-library-page"
 import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
 import { WelcomePage } from "@/components/welcome-page"
-import { OWNED_REPORTS, SHARED_ACCESS, getReport } from "@/data/reports"
+import {
+  OWNED_REPORTS,
+  SHARED_ACCESS,
+  getReport,
+  type ReportOrigin,
+} from "@/data/reports"
 import type { Widget } from "@/data/report-details"
 import type { Session } from "@/data/sessions"
 import { useChat } from "@/lib/use-chat"
@@ -36,6 +41,12 @@ export function App() {
    * value, so closing it returns you to whichever list you came from.
    */
   const [openReportId, setOpenReportId] = useState<string | null>(null)
+  /**
+   * Which list opened it. The provenance badge follows the route rather than the
+   * report, because two library templates are also reports the user owns — so
+   * the header has to say what the card they clicked said.
+   */
+  const [reportOrigin, setReportOrigin] = useState<ReportOrigin>("library")
 
   /** Session restored from history, rendered as a thread on the prompt page. */
   const [resumed, setResumed] = useState<Session | null>(null)
@@ -55,8 +66,9 @@ export function App() {
    */
   const reportChat = useChat(undefined, true)
   /** Every route into a report goes through here, so it always opens clean. */
-  const openReport = (reportId: string) => {
+  const openReport = (reportId: string, origin: ReportOrigin = "library") => {
     setOpenReportId(reportId)
+    setReportOrigin(origin)
     reportChat.reset()
   }
   const chat = useChat(openReport)
@@ -143,6 +155,7 @@ export function App() {
             // its own conversation in the right-hand pane.
             <ReportDetailPage
               reportId={openReportId}
+              origin={reportOrigin}
               onBack={() => setOpenReportId(null)}
               turns={reportChat.turns}
               thinking={reportChat.thinking}
@@ -151,7 +164,7 @@ export function App() {
               savableReports={savableReports}
               onNote={reportChat.note}
               onSaveWidget={saveWidgets}
-              onOpenReport={openReport}
+              onOpenReport={(id) => openReport(id, "my-reports")}
             />
           ) : page === "new-session" ? (
             <WelcomePage
@@ -161,6 +174,7 @@ export function App() {
               thinking={chat.thinking}
               onSend={chat.send}
               onOpenReport={openReport}
+              onOpenSavedReport={(id) => openReport(id, "my-reports")}
               savableReports={savableReports}
               /* A ⋮ action lands as a line in the thread rather than a toast, so
                  there is still a record of it once a toast would have gone. */
@@ -177,7 +191,7 @@ export function App() {
             />
           ) : (
             <MyReportsPage
-              onOpenReport={(report) => openReport(report.id)}
+              onOpenReport={(report) => openReport(report.id, "my-reports")}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
             />

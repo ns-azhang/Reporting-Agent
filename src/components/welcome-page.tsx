@@ -72,7 +72,14 @@ const SUGGESTED_PROMPTS = [
 /* All navigation now lives in the left sidebar — this page has no top bar. */
 
 type WelcomePageProps = {
+  /** Opening a Popular reports card — a library template. */
   onOpenReport?: (id: string) => void
+  /**
+   * Following the report link in a "Added X to <report>" note. Separate from
+   * the cards because it lands on a report you own, and the provenance badge
+   * follows the route in.
+   */
+  onOpenSavedReport?: (id: string) => void
   /** Set when arriving from Session History — renders the restored thread. */
   resumed?: Session | null
   /** The conversation so far. Lives in App so it survives opening a report. */
@@ -89,6 +96,7 @@ type WelcomePageProps = {
 
 export function WelcomePage({
   onOpenReport,
+  onOpenSavedReport,
   resumed,
   turns,
   thinking,
@@ -173,7 +181,7 @@ export function WelcomePage({
             savableReports={savableReports}
             onNote={onNote}
             onSaveWidget={onSaveWidget}
-            onOpenReport={onOpenReport}
+            onOpenReport={onOpenSavedReport}
           />
         )}
 
