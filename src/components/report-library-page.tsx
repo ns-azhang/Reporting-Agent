@@ -28,26 +28,28 @@ export function ReportLibraryPage({
   const [query, setQuery] = React.useState("")
   const [tags, setTags] = React.useState<string[]>([])
 
-  // Absolute counts per chip, like Aurora's "4 Crit + high". Deliberately not
-  // narrowed by the other active filters, so the numbers stay stable as you
-  // toggle chips rather than shifting under the cursor.
-  const tagCounts = React.useMemo(() => {
-    const counts: Record<string, number> = {}
-    for (const report of REPORTS) {
-      counts[report.folder] = (counts[report.folder] ?? 0) + 1
-    }
-    return counts
-  }, [])
-
   const q = query.trim().toLowerCase()
-  const isFiltering = q.length > 0 || tags.length > 0
-  const results = REPORTS.filter((report) => {
-    const matchesQuery =
+  const matchesQuery = React.useCallback(
+    (report: Report) =>
       !q ||
       report.title.toLowerCase().includes(q) ||
       report.desc.toLowerCase().includes(q) ||
-      report.folder.toLowerCase().includes(q)
+      report.folder.toLowerCase().includes(q),
+    [q]
+  )
 
+  // Counts follow the search but not the chips — see the note in My Reports.
+  const searched = React.useMemo(() => REPORTS.filter(matchesQuery), [matchesQuery])
+
+  const tagCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const report of searched) {
+      counts[report.folder] = (counts[report.folder] ?? 0) + 1
+    }
+    return counts
+  }, [searched])
+
+  const results = REPORTS.filter((report) => {
     // No tags selected means "all" — the conventional filter default, so there
     // is no explicit All chip to keep in sync.
     const matchesTags =
@@ -58,7 +60,7 @@ export function ReportLibraryPage({
           : report.folder === tag
       )
 
-    return matchesQuery && matchesTags
+    return matchesQuery(report) && matchesTags
   })
 
   return (
@@ -89,6 +91,9 @@ export function ReportLibraryPage({
             />
           </InputGroup>
 
+          {/* A chip counting 0 within the current search can only empty the
+              list, so it is dropped — except while selected, which would
+              otherwise strand a filter the user can no longer see or clear. */}
           <FilterChips
             value={tags}
             onValueChange={setTags}
@@ -96,7 +101,7 @@ export function ReportLibraryPage({
               {
                 value: FAVORITE_TAG,
                 label: "Favorite",
-                count: favorites.length,
+                count: searched.filter((r) => favorites.includes(r.id)).length,
                 icon: <Star className="size-3.5" />,
               },
               ...REPORT_TAGS.map((tag) => ({
@@ -104,13 +109,13 @@ export function ReportLibraryPage({
                 label: tag,
                 count: tagCounts[tag] ?? 0,
               })),
-            ]}
+            ].filter((o) => o.count > 0 || tags.includes(o.value))}
           />
         </div>
 
         {/* Result count sits with the results, and only while a filter is
             actually narrowing them — "11 of 11" says nothing. */}
-        {isFiltering && results.length > 0 && (
+        {results.length > 0 && results.length < REPORTS.length && (
           <p className="-mb-2 text-sm text-muted-foreground">
             Showing {results.length} of {REPORTS.length}
           </p>

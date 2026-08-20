@@ -64,28 +64,44 @@ export function MyReportsPage({
     return [...owned, ...favourited]
   }, [favorites, ownedReports])
 
+  const q = query.trim().toLowerCase()
+  const matchesQuery = React.useCallback(
+    (report: MyReport) =>
+      !q ||
+      report.title.toLowerCase().includes(q) ||
+      report.desc.toLowerCase().includes(q) ||
+      report.folder.toLowerCase().includes(q),
+    [q]
+  )
+
+  /**
+   * Chip counts follow the search but ignore the chips themselves.
+   *
+   * Search is what the user is actively narrowing to, so the counts have to
+   * move with it — a "2 DLP" chip beside one visible result reads as broken.
+   * Chip selection is different: recomputing on each toggle makes the numbers
+   * shift under the cursor as you click them.
+   */
+  const searched = React.useMemo(
+    () => myReports.filter(matchesQuery),
+    [myReports, matchesQuery]
+  )
+
   const folderCounts = React.useMemo(() => {
     const counts: Record<string, number> = {}
-    for (const report of myReports) {
+    for (const report of searched) {
       counts[report.folder] = (counts[report.folder] ?? 0) + 1
     }
     return counts
-  }, [myReports])
+  }, [searched])
 
   const folders = React.useMemo(
     () => [...new Set(myReports.map((r) => r.folder))],
     [myReports]
   )
 
-  const q = query.trim().toLowerCase()
   const isFiltering = q.length > 0 || tags.length > 0
   const results = myReports.filter((report) => {
-    const matchesQuery =
-      !q ||
-      report.title.toLowerCase().includes(q) ||
-      report.desc.toLowerCase().includes(q) ||
-      report.folder.toLowerCase().includes(q)
-
     const matchesTags =
       tags.length === 0 ||
       tags.some((tag) =>
@@ -94,7 +110,7 @@ export function MyReportsPage({
           : report.folder === tag
       )
 
-    return matchesQuery && matchesTags
+    return matchesQuery(report) && matchesTags
   })
 
   return (
@@ -121,6 +137,8 @@ export function MyReportsPage({
             />
           </InputGroup>
 
+          {/* Zero-count chips are dropped while searching — see the note in
+              the Report Library. */}
           <FilterChips
             value={tags}
             onValueChange={setTags}
@@ -128,7 +146,7 @@ export function MyReportsPage({
               {
                 value: FAVORITE_TAG,
                 label: "Favorite",
-                count: myReports.filter((r) => favorites.includes(r.id)).length,
+                count: searched.filter((r) => favorites.includes(r.id)).length,
                 icon: <Star className="size-3.5" />,
               },
               ...folders.map((folder) => ({
@@ -136,11 +154,13 @@ export function MyReportsPage({
                 label: folder,
                 count: folderCounts[folder] ?? 0,
               })),
-            ]}
+            ].filter((o) => o.count > 0 || tags.includes(o.value))}
           />
         </div>
 
-        {isFiltering && results.length > 0 && (
+        {/* Only when the filter actually removed something. "Showing 2 of 2"
+            says the filter did nothing, which reads as a broken filter. */}
+        {results.length > 0 && results.length < myReports.length && (
           <p className="-mb-2 text-sm text-muted-foreground">
             Showing {results.length} of {myReports.length}
           </p>
