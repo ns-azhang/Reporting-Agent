@@ -431,7 +431,9 @@ function ResponseCard({
 
       {/* Insight — the narrative, set apart from the chart as in the prototype. */}
       <div className="flex flex-col gap-1.5 rounded-lg bg-muted p-3">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+        {/* Sentence case. tracking-wide went with it — the extra letter-spacing
+            is there to make all-caps readable, and just looks loose without it. */}
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
           <Sparkles className="size-3" />
           Insight
         </span>
