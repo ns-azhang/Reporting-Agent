@@ -24,6 +24,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { getReportDetail, type Widget } from "@/data/report-details"
+import { isOwnedReport } from "@/data/reports"
 
 /** How long a "run" takes before the numbers are called fresh again. */
 const REFRESH_MS = 900
@@ -169,7 +170,15 @@ export function ReportDetailPage({
                   <h1 className="text-2xl font-semibold tracking-tight">
                     {report.title}
                   </h1>
-                  <Badge variant="secondary">Netskope Library</Badge>
+                  {/* Provenance, not the route you arrived by — a report you
+                      created says so whether you opened it from My Reports or
+                      found it in the library listing. Same wording as the
+                      My Reports card. */}
+                  <Badge variant="secondary">
+                    {isOwnedReport(reportId)
+                      ? "Created by you"
+                      : "Netskope Library"}
+                  </Badge>
                 </div>
                 <p className="max-w-2xl text-sm text-muted-foreground">
                   {report.description}

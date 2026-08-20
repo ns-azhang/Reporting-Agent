@@ -101,6 +101,14 @@ export const OWNED_REPORTS: { id: string; createdAt: string }[] = [
   { id: "security-engineer", createdAt: "2026-07-16" },
 ]
 
+/**
+ * Ownership is a property of the report, not of the route you opened it from —
+ * so a report you created reads the same whether you reached it via My Reports
+ * or the Report Library.
+ */
+export const isOwnedReport = (id: string) =>
+  OWNED_REPORTS.some((report) => report.id === id)
+
 /** Who a report is shared with, where it is shared at all. */
 export const SHARED_ACCESS: Record<string, string> = {
   "security-engineer": "Everyone at my organization",
