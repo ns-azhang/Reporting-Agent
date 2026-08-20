@@ -375,10 +375,12 @@ function ResponseCard({
           </p>
         </div>
         {isAction && <Badge variant="secondary">Action</Badge>}
+        {/* Only where there is something to save. An action or ack card has no
+            chart, and a menu that can only say "nothing to save" is a dead
+            control. */}
+        {widgets.length > 0 && (
         <CardMenu
           reports={savableReports}
-          hasChart={widgets.length > 0}
-          isAction={isAction}
           title={response.title}
           onNote={onNote}
           /* The card owns saving because only it holds the response the widgets
@@ -393,6 +395,7 @@ function ResponseCard({
             })
           }}
         />
+        )}
       </div>
 
       {response.action && <ActionPanel action={response.action} />}

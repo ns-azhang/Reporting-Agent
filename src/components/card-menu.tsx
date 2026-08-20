@@ -1,12 +1,5 @@
 import * as React from "react"
-import {
-  Download,
-  FileText,
-  Link2,
-  MoreVertical,
-  Save,
-  Users,
-} from "lucide-react"
+import { MoreVertical, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -16,32 +9,18 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 
 /**
- * The ⋮ menu on a response card, ported from the prototype's ResponseCard menu
- * in its `saveToMode` form — the one the conversation thread uses, which is
- * just Save to and Download. (The dashboard-canvas variant also carries Share,
- * Copy insight, Add to dashboard and Remove; those belong to a surface v6 does
- * not have.)
+ * The ⋮ menu on a response card. Save to is the only thing in it — Download and
+ * Copy share link are out of beta scope — so it opens straight onto the report
+ * picker rather than making you step through a submenu to reach the sole option.
  *
- * Save to needs a chart to save, and Download has nothing to export from a
- * prepared action, so each hides when it has nothing to act on rather than
- * offering a dead item.
- *
- * Every item here completes its action outright. Download used to send "Export
- * this as a CSV" into the chat, which answered with an export card offering
- * CSV, PDF and a share link all over again — asking the same question twice.
- * The formats live here, so the answer does too, and the share link joins them
- * as its own item rather than hiding under "Download as".
- *
- * Confirmation lands in the thread via `onNote`, since there is no toaster.
- * The copy lives here so all of this menu's wording sits in one place.
+ * The caller only mounts this when the card has a chart worth saving, so there
+ * is no empty state here: a menu whose only content is "nothing to save" is a
+ * dead control, and hiding it says the same thing more clearly.
  */
 
 export type SavableReport = {
@@ -51,24 +30,14 @@ export type SavableReport = {
   sharedWith?: string
 }
 
-/** "DLP Incident Trend — Last 30 Days" -> "DLP_Incident_Trend_Last_30_Days" */
-const filenameFor = (title: string, extension: string) =>
-  `${title.replace(/[^\w]+/g, "_").replace(/^_+|_+$/g, "")}.${extension}`
-
 export function CardMenu({
   reports,
-  hasChart,
-  isAction,
   title,
   onNote,
   onSaveTo,
 }: {
   reports: SavableReport[]
-  /** False on a card with nothing chart-shaped to save. */
-  hasChart: boolean
-  /** True for prepared actions and acknowledgements. */
-  isAction: boolean
-  /** The card's own title — names the download and the new report. */
+  /** The card's own title — the default name for a new report. */
   title: string
   /** Record a finished action in the thread. */
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
@@ -87,16 +56,14 @@ export function CardMenu({
     setName("")
     setOpen(false)
   }
-  const act = (note: string) => {
-    onNote?.(note)
+  const create = () => {
+    onNote?.(`Created “${name.trim() || title}” with this chart.`)
     dismiss()
   }
   const saveTo = (report: SavableReport) => {
     onSaveTo?.(report)
     dismiss()
   }
-  const create = () =>
-    act(`Created “${name.trim() || title}” with this chart.`)
 
   const owned = reports.filter((r) => !r.sharedWith)
   const shared = reports.filter((r) => r.sharedWith)
@@ -104,134 +71,79 @@ export function CardMenu({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-label="More" />}
+        render={<Button variant="ghost" size="icon-sm" aria-label="Save to a report" />}
       >
         <MoreVertical />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Save />
-              Save to
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="w-64">
-              {!hasChart ? (
-                <DropdownMenuGroup>
-                  <DropdownMenuItem disabled>
-                    Nothing to save from this card.
+          {/* Names the panel, since the kebab no longer says what it opens. */}
+          <DropdownMenuLabel>Save to</DropdownMenuLabel>
+          {/* A field inside a menu: stop keys here so the menu's own typeahead
+              and arrow navigation don't eat what you type. */}
+          <div
+            className="flex items-center gap-1.5 px-2 py-1"
+            onKeyDown={(e) => {
+              e.stopPropagation()
+              if (e.key === "Enter") create()
+            }}
+          >
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={title}
+              className="h-7 min-w-0 flex-1 text-xs"
+            />
+            <Button size="sm" className="h-7" onClick={create}>
+              Create
+            </Button>
+          </div>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        {reports.length === 0 ? (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>My reports</DropdownMenuLabel>
+            <DropdownMenuItem disabled>
+              No reports yet — create one above.
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        ) : (
+          <>
+            {owned.length > 0 && (
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>My reports</DropdownMenuLabel>
+                {owned.map((report) => (
+                  <DropdownMenuItem
+                    key={report.id}
+                    onClick={() => saveTo(report)}
+                  >
+                    <span className="truncate">{report.title}</span>
                   </DropdownMenuItem>
-                </DropdownMenuGroup>
-              ) : (
-                <>
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>New report</DropdownMenuLabel>
-                    {/* A field inside a menu: stop keys here so the menu's own
-                        typeahead and arrow navigation don't eat what you type. */}
-                    <div
-                      className="flex items-center gap-1.5 px-2 py-1"
-                      onKeyDown={(e) => {
-                        e.stopPropagation()
-                        if (e.key === "Enter") create()
-                      }}
-                    >
-                      <Input
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder={title}
-                        className="h-7 min-w-0 flex-1 text-xs"
-                      />
-                      <Button size="sm" className="h-7" onClick={create}>
-                        Create
-                      </Button>
-                    </div>
-                  </DropdownMenuGroup>
-
-                  <DropdownMenuSeparator />
-
-                  {reports.length === 0 ? (
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>My reports</DropdownMenuLabel>
-                      <DropdownMenuItem disabled>
-                        No reports yet — create one above.
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  ) : (
-                    <>
-                      {owned.length > 0 && (
-                        <DropdownMenuGroup>
-                          <DropdownMenuLabel>My reports</DropdownMenuLabel>
-                          {owned.map((report) => (
-                            <DropdownMenuItem
-                              key={report.id}
-                              onClick={() => saveTo(report)}
-                            >
-                              <span className="truncate">{report.title}</span>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuGroup>
-                      )}
-                      {shared.length > 0 && (
-                        <>
-                          {owned.length > 0 && <DropdownMenuSeparator />}
-                          <DropdownMenuGroup>
-                            <DropdownMenuLabel>
-                              Shared with edit access
-                            </DropdownMenuLabel>
-                            {shared.map((report) => (
-                              <DropdownMenuItem
-                                key={report.id}
-                                title={`Shared with ${report.sharedWith}`}
-                                onClick={() => saveTo(report)}
-                              >
-                                <Users className="text-muted-foreground" />
-                                <span className="truncate">{report.title}</span>
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuGroup>
-                        </>
-                      )}
-                    </>
-                  )}
-                </>
-              )}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-
-          {!isAction && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Download />
-                Download
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-40">
+                ))}
+              </DropdownMenuGroup>
+            )}
+            {shared.length > 0 && (
+              <>
+                {owned.length > 0 && <DropdownMenuSeparator />}
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>Download as</DropdownMenuLabel>
-                  {(["csv", "pdf"] as const).map((extension) => (
+                  <DropdownMenuLabel>Shared with edit access</DropdownMenuLabel>
+                  {shared.map((report) => (
                     <DropdownMenuItem
-                      key={extension}
-                      onClick={() =>
-                        act(`Downloaded ${filenameFor(title, extension)}.`)
-                      }
+                      key={report.id}
+                      title={`Shared with ${report.sharedWith}`}
+                      onClick={() => saveTo(report)}
                     >
-                      <FileText />
-                      {extension.toUpperCase()}
+                      <Users className="text-muted-foreground" />
+                      <span className="truncate">{report.title}</span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          )}
-
-          {/* Its own item, not a third entry under "Download as" — a link is
-              not a file format. */}
-          <DropdownMenuItem
-            onClick={() => act(`Copied a share link to “${title}”.`)}
-          >
-            <Link2 />
-            Copy share link
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
+              </>
+            )}
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
