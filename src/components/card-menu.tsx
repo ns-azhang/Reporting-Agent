@@ -72,15 +72,15 @@ export function CardMenu({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       {/* Labelled, not a kebab. A ⋮ is right when it hides several things;
-          with one action it just makes you click to find out what that is. */}
+          with one action it just makes you click to find out what that is.
+
+          `secondary` rather than `ghost`: filled at rest, which is the state
+          asked for, and its hover is a genuinely darker step the token layer
+          derives (color-mix toward foreground) rather than the same grey the
+          resting state already uses. Ghost's hover *was* that grey, so making
+          it the resting colour would have left hover with nowhere to go. */}
       <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-mr-1 text-muted-foreground"
-          />
-        }
+        render={<Button variant="secondary" size="sm" className="-mr-1" />}
       >
         <Save />
         Save to
