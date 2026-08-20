@@ -26,7 +26,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { getReportDetail, type Widget } from "@/data/report-details"
-import { reportBadgeLabel, type ReportOrigin } from "@/data/reports"
+import {
+  SHARED_ACCESS,
+  reportBadgeLabel,
+  type ReportOrigin,
+} from "@/data/reports"
 
 /** How long a "run" takes before the numbers are called fresh again. */
 const REFRESH_MS = 900
@@ -367,6 +371,13 @@ export function ReportDetailPage({
                 onPickFollowUp={onSend}
                 onAnswerClarify={(label) => onSend(label)}
                 savableReports={savableReports}
+                /* Saving here lands on the canvas to the left immediately,
+                   which is the whole point of offering it first. */
+                currentReport={{
+                  id: reportId,
+                  title: report.title,
+                  sharedWith: SHARED_ACCESS[reportId],
+                }}
                 onNote={onNote}
                 onSaveWidget={onSaveWidget}
                 onOpenReport={onOpenReport}

@@ -344,12 +344,14 @@ function ResponseCard({
   response,
   onPickFollowUp,
   savableReports = [],
+  currentReport,
   onNote,
   onSaveWidget,
 }: {
   response: Response
   onPickFollowUp?: (text: string, responseId?: string) => void
   savableReports?: SavableReport[]
+  currentReport?: SavableReport
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
 }) {
@@ -382,6 +384,7 @@ function ResponseCard({
         {widgets.length > 0 && (
         <CardMenu
           reports={savableReports}
+          currentReport={currentReport}
           title={response.title}
           onNote={onNote}
           /* The card owns saving because only it holds the response the widgets
@@ -476,6 +479,7 @@ export function Conversation({
   onPickFollowUp,
   onAnswerClarify,
   savableReports,
+  currentReport,
   onNote,
   onSaveWidget,
   onOpenReport,
@@ -484,8 +488,10 @@ export function Conversation({
   thinking?: boolean
   onPickFollowUp?: (text: string, responseId?: string) => void
   onAnswerClarify?: (label: string) => void
-  /** Reports the ⋮ menu can save a chart into. */
+  /** Reports the Save to menu can save a chart into. */
   savableReports?: SavableReport[]
+  /** The report this thread sits beside, offered first as "currently open". */
+  currentReport?: SavableReport
   /** Record a finished ⋮ action in the thread. */
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
   /** Actually add a chart to a report, so the note's link tells the truth. */
@@ -530,6 +536,7 @@ export function Conversation({
             response={response}
             onPickFollowUp={onPickFollowUp}
             savableReports={savableReports}
+            currentReport={currentReport}
             onNote={onNote}
             onSaveWidget={onSaveWidget}
           />

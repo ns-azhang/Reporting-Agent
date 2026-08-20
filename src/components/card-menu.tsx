@@ -1,6 +1,8 @@
 import * as React from "react"
 import { Save, Users } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -33,11 +35,18 @@ export type SavableReport = {
 
 export function CardMenu({
   reports,
+  currentReport,
   title,
   onNote,
   onSaveTo,
 }: {
   reports: SavableReport[]
+  /**
+   * The report this card is sitting inside, when it is in a report's chat pane.
+   * It leads the list: adding a chart to the report you are looking at is the
+   * common case, and it was the one target the picker didn't offer.
+   */
+  currentReport?: SavableReport
   /** The card's own title — the default name for a new report. */
   title: string
   /** Record a finished action in the thread. */
@@ -66,8 +75,10 @@ export function CardMenu({
     dismiss()
   }
 
-  const owned = reports.filter((r) => !r.sharedWith)
-  const shared = reports.filter((r) => r.sharedWith)
+  // The open report leads its own group, so it must not also appear below.
+  const others = reports.filter((r) => r.id !== currentReport?.id)
+  const owned = others.filter((r) => !r.sharedWith)
+  const shared = others.filter((r) => r.sharedWith)
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -86,6 +97,21 @@ export function CardMenu({
         Save to
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
+        {currentReport && (
+          <>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Currently open</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => saveTo(currentReport)}>
+                <span className="flex-1 truncate">{currentReport.title}</span>
+                <Badge variant="outline" className="shrink-0">
+                  current
+                </Badge>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
         <DropdownMenuGroup>
           {/* The trigger says "Save to", so this names the field instead. */}
           <DropdownMenuLabel>New report</DropdownMenuLabel>
@@ -112,13 +138,15 @@ export function CardMenu({
 
         <DropdownMenuSeparator />
 
-        {reports.length === 0 ? (
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>My reports</DropdownMenuLabel>
-            <DropdownMenuItem disabled>
-              No reports yet — create one above.
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
+        {others.length === 0 ? (
+          !currentReport && (
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>My reports</DropdownMenuLabel>
+              <DropdownMenuItem disabled>
+                No reports yet — create one above.
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          )
         ) : (
           <>
             {owned.length > 0 && (
