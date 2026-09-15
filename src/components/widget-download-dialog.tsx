@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronDown, Download, ExternalLink } from "lucide-react"
+import { ChevronDown, Download } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -130,18 +130,15 @@ export function WidgetDownloadDialog({
     if (blob) downloadBlob(`${slug(title)}.${format.ext}`, blob)
     onOpenChange(false)
   }
-  /* AA's "Open in Browser": the same file, shown in a new tab instead of saved. */
-  const openInBrowser = async () => {
-    const blob = await build()
-    if (!blob) return
-    const url = URL.createObjectURL(blob)
-    window.open(url, "_blank", "noopener")
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
-  }
+  // AA also offers "Open in Browser" (the same file shown in a new tab instead
+  // of saved). Left out here: the team found the label unclear, and the
+  // formats that benefit are the ones a browser renders — HTML, PNG, TXT.
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      {/* The stock popup edge is a hairline ring; here the shadow alone lifts
+          the dialog off the overlay. */}
+      <DialogContent className="ring-0 shadow-xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Download</DialogTitle>
           <DialogDescription className="truncate">{title}</DialogDescription>
@@ -182,8 +179,8 @@ export function WidgetDownloadDialog({
               />
             }
           >
-            <ChevronDown className="transition-transform duration-200 group-aria-expanded:rotate-180" />
             Advanced data options
+            <ChevronDown className="transition-transform duration-200 group-aria-expanded:rotate-180" />
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="flex flex-col gap-5 pt-3 pl-1">
@@ -256,24 +253,14 @@ export function WidgetDownloadDialog({
           </CollapsibleContent>
         </Collapsible>
 
-        <DialogFooter className="sm:justify-between">
-          {format.openable ? (
-            <Button variant="ghost" size="sm" onClick={openInBrowser} disabled={busy}>
-              <ExternalLink />
-              Open in Browser
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex gap-2">
-            <DialogClose render={<Button variant="outline" size="sm" />}>
-              Cancel
-            </DialogClose>
-            <Button size="sm" onClick={download} disabled={busy}>
-              <Download />
-              Download
-            </Button>
-          </div>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" size="sm" />}>
+            Cancel
+          </DialogClose>
+          <Button size="sm" onClick={download} disabled={busy}>
+            <Download />
+            Download
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
