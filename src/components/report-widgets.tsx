@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Sparkles, TrendingDown, TrendingUp } from "lucide-react"
 import {
   Bar,
@@ -32,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { WidgetMenu } from "@/components/widget-menu"
 import { cn } from "@/lib/utils"
 import type {
   DonutWidget,
@@ -54,21 +56,28 @@ function Insight({ children }: { children: React.ReactNode }) {
   )
 }
 
+/** The chrome every renderer passes straight through to WidgetShell. */
+type Chrome = {
+  /** Drop the card chrome when the widget is already inside one — otherwise a
+      chart nested in a response card renders as a card within a card. */
+  bare?: boolean
+  /** Top-right control, e.g. the per-widget download menu on the canvas. */
+  menu?: React.ReactNode
+}
+
 function WidgetShell({
   title,
   children,
   insight,
   className,
   bare,
+  menu,
 }: {
   title?: string
   children: React.ReactNode
   insight: string
   className?: string
-  /** Drop the card chrome when the widget is already inside one — otherwise a
-      chart nested in a response card renders as a card within a card. */
-  bare?: boolean
-}) {
+} & Chrome) {
   return (
     <section
       className={cn(
@@ -78,7 +87,18 @@ function WidgetShell({
         className
       )}
     >
-      {title && <h3 className="text-sm font-semibold leading-snug">{title}</h3>}
+      {/* Header row exists when there is a title or a menu; the menu sits at
+          the far right whether or not there is a title to share the row with. */}
+      {(title || menu) && (
+        <div className="flex items-start justify-between gap-2">
+          {title ? (
+            <h3 className="text-sm font-semibold leading-snug">{title}</h3>
+          ) : (
+            <span />
+          )}
+          {menu}
+        </div>
+      )}
       {children}
       {/* Empty insight means the caller shows the narrative itself (the
           conversation card does), so the block is omitted rather than
@@ -88,11 +108,11 @@ function WidgetShell({
   )
 }
 
-function KpiRow({ widget, bare }: { widget: KpiWidget; bare?: boolean }) {
+function KpiRow({ widget, bare, menu }: { widget: KpiWidget } & Chrome) {
   return (
     <WidgetShell
       insight={widget.insight}
-      bare={bare}
+      bare={bare} menu={menu}
       className={bare ? undefined : "sm:col-span-2"}
     >
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -131,9 +151,9 @@ function KpiRow({ widget, bare }: { widget: KpiWidget; bare?: boolean }) {
   )
 }
 
-function DataTable({ widget, bare }: { widget: TableWidget; bare?: boolean }) {
+function DataTable({ widget, bare, menu }: { widget: TableWidget } & Chrome) {
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -240,12 +260,12 @@ function AnomalyMarker({
 function TrendChart({
   widget,
   bare,
+  menu,
   onDrill,
 }: {
   widget: LineWidget
-  bare?: boolean
   onDrill?: (text: string, responseId?: string) => void
-}) {
+} & Chrome) {
   // Recharts wants one row per x value with a key per series, whereas the
   // prototype stores parallel value arrays.
   const data = widget.xLabels.map((label, i) => {
@@ -292,7 +312,7 @@ function TrendChart({
         )
 
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
       {/* Extra headroom so a marker's label isn't clipped by the plot edge. */}
       <ChartContainer config={config} className="h-[220px] w-full">
         <LineChart data={data} margin={{ left: 4, right: 8, top: anomalies.length ? 24 : 8 }}>
@@ -367,12 +387,12 @@ function TrendChart({
   )
 }
 
-function HorizontalBars({ widget, bare }: { widget: HBarWidget; bare?: boolean }) {
+function HorizontalBars({ widget, bare, menu }: { widget: HBarWidget } & Chrome) {
   const data = widget.bars.map((b) => ({ ...b, short: truncate(b.label, 28) }))
   const config: ChartConfig = { value: { label: "Incidents" } }
 
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
       <ChartContainer
         config={config}
         className="w-full"
@@ -406,14 +426,14 @@ function HorizontalBars({ widget, bare }: { widget: HBarWidget; bare?: boolean }
 }
 
 
-function DonutChart({ widget, bare }: { widget: DonutWidget; bare?: boolean }) {
+function DonutChart({ widget, bare, menu }: { widget: DonutWidget } & Chrome) {
   const total = widget.slices.reduce((sum, s) => sum + s.value, 0)
   const config: ChartConfig = Object.fromEntries(
     widget.slices.map((s) => [s.label, { label: s.label, color: s.color }])
   )
 
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
       <div className="flex flex-wrap items-center gap-4">
         <ChartContainer config={config} className="h-[180px] w-[180px] shrink-0">
           <PieChart>
@@ -454,10 +474,10 @@ function DonutChart({ widget, bare }: { widget: DonutWidget; bare?: boolean }) {
   )
 }
 
-function Gauge({ widget, bare }: { widget: GaugeWidget; bare?: boolean }) {
+function Gauge({ widget, bare, menu }: { widget: GaugeWidget } & Chrome) {
   const config: ChartConfig = { value: { label: widget.label ?? "Value" } }
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
       <div className="relative">
         <ChartContainer config={config} className="h-[180px] w-full">
           <RadialBarChart
@@ -493,12 +513,12 @@ function Gauge({ widget, bare }: { widget: GaugeWidget; bare?: boolean }) {
 function UnsupportedChart({
   widget,
   bare,
+  menu,
 }: {
   widget: UnsupportedWidget
-  bare?: boolean
-}) {
+} & Chrome) {
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
       <div className="flex h-[160px] items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
         {widget.type === "map" ? "Map" : "Sankey"} chart not ported yet
       </div>
@@ -513,27 +533,60 @@ export function ReportWidget({
   widget,
   bare,
   onDrill,
+  downloadable,
 }: {
   widget: Widget
   bare?: boolean
   /** Asks a question on behalf of the chart — clicking an anomaly marker. */
   onDrill?: (text: string, responseId?: string) => void
+  /** Show the per-widget ⋮ Download menu. Only meaningful on the canvas. */
+  downloadable?: boolean
 }) {
-  switch (widget.type) {
-    case "kpi":
-      return <KpiRow widget={widget} bare={bare} />
-    case "table":
-      return <DataTable widget={widget} bare={bare} />
-    case "line":
-      return <TrendChart widget={widget} bare={bare} onDrill={onDrill} />
-    case "hbar":
-      return <HorizontalBars widget={widget} bare={bare} />
-    case "donut":
-      return <DonutChart widget={widget} bare={bare} />
-    case "gauge":
-      return <Gauge widget={widget} bare={bare} />
-    case "map":
-    case "sankey":
-      return <UnsupportedChart widget={widget} bare={bare} />
+  // The wrapper is how the menu finds this widget's SVG for the PNG export —
+  // `display: contents` keeps it out of the grid layout.
+  const host = React.useRef<HTMLDivElement>(null)
+  const chrome: Chrome = {
+    bare,
+    menu:
+      downloadable && !bare ? (
+        <WidgetMenu
+          widget={widget}
+          /* Recharts' surface specifically. A bare "svg" matched the first
+             one in the section — the ⋮ button's own 16px lucide icon, which
+             sits in the header ahead of the chart — and rasterised that. */
+          getSvg={() =>
+            host.current?.querySelector<SVGSVGElement>("svg.recharts-surface") ??
+            null
+          }
+        />
+      ) : undefined,
   }
+
+  const body = (() => {
+    switch (widget.type) {
+      case "kpi":
+        return <KpiRow widget={widget} {...chrome} />
+      case "table":
+        return <DataTable widget={widget} {...chrome} />
+      case "line":
+        return <TrendChart widget={widget} {...chrome} onDrill={onDrill} />
+      case "hbar":
+        return <HorizontalBars widget={widget} {...chrome} />
+      case "donut":
+        return <DonutChart widget={widget} {...chrome} />
+      case "gauge":
+        return <Gauge widget={widget} {...chrome} />
+      case "map":
+      case "sankey":
+        return <UnsupportedChart widget={widget} {...chrome} />
+    }
+  })()
+
+  return chrome.menu ? (
+    <div ref={host} className="contents">
+      {body}
+    </div>
+  ) : (
+    body
+  )
 }
