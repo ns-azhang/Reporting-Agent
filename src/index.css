@@ -6,6 +6,22 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    /* A filter chip the assistant just set: one ring pulse and a tint that
+       fades, so the eye is drawn to what changed without a toast. */
+    --animate-filter-flash: filter-flash 1.4s ease-out 1;
+    @keyframes filter-flash {
+        0% {
+            box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 55%, transparent);
+            background-color: color-mix(in oklab, var(--primary) 12%, transparent);
+        }
+        60% {
+            box-shadow: 0 0 0 6px transparent;
+        }
+        100% {
+            box-shadow: 0 0 0 0 transparent;
+            background-color: var(--background);
+        }
+    }
     --font-heading: var(--font-sans);
     --font-sans: 'Figtree Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);

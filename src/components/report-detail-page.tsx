@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 
 import { Conversation } from "@/components/conversation"
+import { FilterBar } from "@/components/filter-bar"
 import { ReportWidget } from "@/components/report-widgets"
 import type { SavableReport } from "@/components/card-menu"
 import type { ChatTurn } from "@/lib/use-chat"
@@ -42,6 +43,13 @@ import {
   slug,
   toPDF,
 } from "@/lib/export"
+import {
+  applyIntent,
+  defaultFilters,
+  describeFilters,
+  extractFilters,
+  type FilterState,
+} from "@/lib/filters"
 import { getReportDetail, type Widget } from "@/data/report-details"
 import {
   SHARED_ACCESS,
@@ -118,7 +126,7 @@ export function ReportDetailPage({
 
   const send = () => {
     if (!draft.trim() || thinking) return
-    onSend(draft)
+    sendPrompt(draft)
     setDraft("")
   }
 
@@ -163,6 +171,52 @@ export function ReportDetailPage({
   }
 
   const freshness = relativeAge(now - refreshedAt)
+
+  /**
+   * Global filters. The report opens on its own defaults (its description
+   * names the window). A prompt that narrows the view — "last 30 days", "only
+   * the Critical incidents" — lands in the bar as a chip when the answer does,
+   * marked as the assistant's, and a note in the thread says what was applied.
+   * From then on it is a plain control: change it or remove it by clicking.
+   *
+   * The seeded figures don't re-query, so a filter change re-runs the report
+   * (the Refresh spin) rather than pretending nothing happened.
+   */
+  // Keyed on the description string, not `report`: getReportDetail builds a
+  // fresh object per render, which would recompute this every time and make
+  // the reset effect below loop.
+  const description = report?.description
+  const filterDefaults = React.useMemo(
+    () => defaultFilters(description),
+    [description]
+  )
+  const [filters, setFilters] = React.useState<FilterState>(filterDefaults)
+  const [filterFlash, setFilterFlash] = React.useState(0)
+  React.useEffect(() => setFilters(filterDefaults), [filterDefaults])
+
+  const changeFilters = (next: FilterState) => {
+    setFilters(next)
+    refresh()
+  }
+
+  /** Answer the prompt, and expose whatever scope it set. */
+  const sendPrompt = (text: string, responseId?: string) => {
+    if (!text.trim() || thinking) return
+    onSend(text, responseId)
+    const intent = extractFilters(text)
+    if (!intent) return
+    // Land with the answer, not before it: the chat's thinking beat is 800ms.
+    window.setTimeout(() => {
+      setFilters((current) => applyIntent(current, intent, filterDefaults, "ai"))
+      setFilterFlash((k) => k + 1)
+      refresh()
+      onNote?.(
+        intent.kind === "clear"
+          ? "Cleared all filters"
+          : `Applied filters — ${describeFilters(intent.values)}`
+      )
+    }, 1_000)
+  }
 
   /**
    * Save tracks unsaved work, not ownership.
@@ -344,6 +398,14 @@ export function ReportDetailPage({
               </div>
             </div>
 
+            {/* What the canvas is scoped to, always visible — including what
+                the assistant assumed on the user's behalf. */}
+            <FilterBar
+              state={filters}
+              defaults={filterDefaults}
+              onChange={changeFilters}
+              flashKey={filterFlash}
+            />
 
             {/* About this report — collapsed by default so it doesn't push the
                 data below the fold. */}
@@ -432,8 +494,8 @@ export function ReportDetailPage({
               <Conversation
                 turns={turns}
                 thinking={thinking}
-                onPickFollowUp={onSend}
-                onAnswerClarify={(label) => onSend(label)}
+                onPickFollowUp={sendPrompt}
+                onAnswerClarify={(label) => sendPrompt(label)}
                 savableReports={savableReports}
                 /* Saving here lands on the canvas to the left immediately,
                    which is the whole point of offering it first. */
@@ -457,7 +519,7 @@ export function ReportDetailPage({
                 {report.examplePrompts.map((prompt) => (
                   <button
                     key={prompt}
-                    onClick={() => onSend(prompt)}
+                    onClick={() => sendPrompt(prompt)}
                     className="rounded-md border border-border px-3 py-2 text-left text-xs outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
                     {prompt}
