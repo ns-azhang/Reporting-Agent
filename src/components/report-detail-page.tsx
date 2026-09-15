@@ -43,6 +43,8 @@ import {
   slug,
   toPDF,
 } from "@/lib/export"
+import { cn } from "@/lib/utils"
+import { filterWidget } from "@/lib/filter-data"
 import {
   applyIntent,
   defaultFilters,
@@ -251,15 +253,20 @@ export function ReportDetailPage({
    * stands.
    */
   const allWidgets = report ? [...report.widgets, ...extraWidgets] : []
+  // What the canvas shows under the current filters — and what exports carry,
+  // so the file matches the screen.
+  const shownWidgets = allWidgets.map((w) =>
+    filterWidget(w, filters.values, filterDefaults.values)
+  )
   const exportAs = (format: ExportFormat) => {
     if (!report) return
     const base = slug(report.title)
     if (format === "JSON") {
-      downloadBytes(`${base}.zip`, reportBundle(report, allWidgets), "application/zip")
+      downloadBytes(`${base}.zip`, reportBundle(report, shownWidgets), "application/zip")
     } else if (format === "CSV") {
-      downloadText(`${base}.csv`, reportCSV(report, allWidgets), "text/csv")
+      downloadText(`${base}.csv`, reportCSV(report, shownWidgets), "text/csv")
     } else {
-      downloadBytes(`${base}.pdf`, toPDF(reportPDFLines(report, allWidgets)), "application/pdf")
+      downloadBytes(`${base}.pdf`, toPDF(reportPDFLines(report, shownWidgets)), "application/pdf")
     }
   }
 
@@ -450,8 +457,15 @@ export function ReportDetailPage({
 
           {/* KPI row spans both columns; the rest sit half-width, as in v5.
               Charts saved here from a chat card come after the built-ins. */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {allWidgets.map((widget, i) => (
+          <div
+            /* Dimmed while a re-run is in flight, so a filter change reads as
+               the report being re-queried rather than the numbers jumping. */
+            className={cn(
+              "grid grid-cols-1 gap-4 transition-opacity duration-300 sm:grid-cols-2",
+              refreshing && "opacity-50"
+            )}
+          >
+            {shownWidgets.map((widget, i) => (
               <div
                 key={i}
                 className={widget.size === "full" ? "sm:col-span-2" : undefined}
