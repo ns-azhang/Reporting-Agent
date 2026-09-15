@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Sparkles, TrendingDown, TrendingUp } from "lucide-react"
+import { Sparkle, TrendingDown, TrendingUp } from "lucide-react"
 import {
   Bar,
   BarChart,
@@ -50,7 +50,8 @@ import type {
 function Insight({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex gap-2 border-t border-border pt-3">
-      <Sparkles className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+      {/* One four-point sparkle: the "AI wrote this" cue without the cluster. */}
+      <Sparkle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
       <p className="text-xs leading-relaxed text-muted-foreground">{children}</p>
     </div>
   )
