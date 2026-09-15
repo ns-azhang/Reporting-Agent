@@ -96,6 +96,117 @@ export function widgetTable(widget: Widget): Table {
   }
 }
 
+// -------------------------------------------- AA's "Advanced data options" --
+
+export type WidgetDownloadOptions = {
+  /**
+   * "viz" applies the chart's own display choices — for a bar chart, the label
+   * truncation it draws with. "table" is the underlying labels in full.
+   */
+  results: "viz" | "table"
+  /** "unformatted" turns "1,284" into 1284 and "+18%" into 0.18. */
+  values: "formatted" | "unformatted"
+  /**
+   * How many rows. "current" is what the widget displays; "all" is everything
+   * behind it. In this prototype those are the same set — the seeded data holds
+   * exactly what is drawn — so the distinction is carried but not yet felt. A
+   * number caps the count.
+   */
+  rows: "current" | "all" | number
+}
+
+export const DEFAULT_DOWNLOAD_OPTIONS: WidgetDownloadOptions = {
+  results: "viz",
+  values: "formatted",
+  rows: "current",
+}
+
+/** The bar chart truncates labels at this width; the "viz" option mirrors it. */
+const VIZ_LABEL_WIDTH = 28
+const truncateLabel = (s: string) =>
+  s.length > VIZ_LABEL_WIDTH ? `${s.slice(0, VIZ_LABEL_WIDTH - 1)}…` : s
+
+/** "1,284" -> "1284", "+18%" -> "0.18", "−14%" -> "-0.14"; anything else as is. */
+export const unformat = (v: string): string => {
+  const t = v.trim().replace(/−/g, "-")
+  const m = /^([+-]?)([\d,]*\.?\d+)(%?)$/.exec(t)
+  if (!m) return v
+  const n = Number(m[2].replace(/,/g, ""))
+  if (Number.isNaN(n)) return v
+  const signed = m[1] === "-" ? -n : n
+  return String(m[3] ? signed / 100 : signed)
+}
+
+export function applyDownloadOptions(
+  widget: Widget,
+  table: Table,
+  opts: WidgetDownloadOptions
+): Table {
+  let rows = table.rows
+  if (opts.results === "viz" && widget.type === "hbar") {
+    rows = rows.map(([label, ...rest]) => [truncateLabel(label), ...rest])
+  }
+  if (opts.values === "unformatted") {
+    rows = rows.map((r) => r.map(unformat))
+  }
+  if (typeof opts.rows === "number") {
+    rows = rows.slice(0, Math.max(0, opts.rows))
+  }
+  return { columns: table.columns, rows }
+}
+
+// ------------------------------------------------- widget format list --
+
+export type WidgetFormat = {
+  id: "txt" | "xlsx" | "csv" | "json" | "html" | "md" | "png"
+  label: string
+  ext: string
+  mime: string
+  /** Needs the chart's SVG; only offered where one exists. */
+  needsSvg?: boolean
+  /** Text the browser can show directly — AA's "Open in Browser". */
+  openable?: boolean
+}
+
+/** AA's dialog list, in AA's order. */
+export const WIDGET_FORMATS: WidgetFormat[] = [
+  { id: "txt", label: "TXT (tab-separated values)", ext: "txt", mime: "text/plain", openable: true },
+  { id: "xlsx", label: "Excel Spreadsheet (Excel 2007 or later)", ext: "xlsx", mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+  { id: "csv", label: "CSV", ext: "csv", mime: "text/csv", openable: true },
+  { id: "json", label: "JSON", ext: "json", mime: "application/json", openable: true },
+  { id: "html", label: "HTML", ext: "html", mime: "text/html", openable: true },
+  { id: "md", label: "Markdown", ext: "md", mime: "text/markdown", openable: true },
+  { id: "png", label: "PNG (Image of Visualization)", ext: "png", mime: "image/png", needsSvg: true, openable: true },
+]
+
+/** Build the file for one widget in one format, honouring the options. */
+export async function buildWidgetFile(
+  widget: Widget,
+  title: string,
+  format: WidgetFormat,
+  opts: WidgetDownloadOptions,
+  svg: SVGSVGElement | null
+): Promise<Blob | null> {
+  const table = applyDownloadOptions(widget, widgetTable(widget), opts)
+  const text = (body: string) => new Blob([body], { type: `${format.mime};charset=utf-8` })
+  switch (format.id) {
+    case "txt":
+      return text(toTSV(table))
+    case "csv":
+      return text(toCSV(table))
+    case "json":
+      return text(toJSON(table))
+    case "html":
+      return text(toHTML(title, table))
+    case "md":
+      return text(toMarkdown(title, table))
+    case "xlsx":
+      return new Blob([toXLSX([{ name: title, table }]) as BlobPart], { type: format.mime })
+    case "png":
+      return svg ? svgToPNG(svg) : null
+  }
+}
+
 /** Charts have an SVG to capture; tables and KPI rows don't. */
 export const hasVisualization = (widget: Widget) =>
   widget.type === "line" ||

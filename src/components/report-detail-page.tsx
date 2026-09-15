@@ -3,10 +3,8 @@ import {
   ArrowLeft,
   ChevronDown,
   Check,
-  Download,
   FileDown,
   MessageSquare,
-  MoreVertical,
   PanelRightClose,
   RefreshCw,
   Save,
@@ -27,28 +25,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -79,71 +61,7 @@ function relativeAge(elapsedMs: number) {
   return hours < 24 ? `${hours} hr ago` : `${Math.floor(hours / 24)} d ago`
 }
 
-type DownloadFormat = "PDF" | "CSV"
-
-/**
- * Advanced Analytics' report-level Download: a small dialog with a Format
- * select, then the file lands. Two formats here, matching the AA dialog for a
- * dashboard; the per-widget menu is where the longer list lives.
- */
-function DownloadReportDialog({
-  open,
-  onOpenChange,
-  title,
-  onDownload,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  title: string
-  onDownload: (format: DownloadFormat) => void
-}) {
-  const [format, setFormat] = React.useState<DownloadFormat>("PDF")
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Download {title}</DialogTitle>
-          <DialogDescription>
-            PDF carries the titles, insights and figures; CSV is one file with a
-            section per widget.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium">Format</span>
-          {/* Base UI's Select.Value renders the raw value and onValueChange can
-              emit null on clear, hence the guard and the value-as-label. */}
-          <Select
-            value={format}
-            onValueChange={(v) => v && setFormat(v as DownloadFormat)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="PDF">PDF</SelectItem>
-              <SelectItem value="CSV">CSV</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" size="sm" />}>
-            Cancel
-          </DialogClose>
-          <Button
-            size="sm"
-            onClick={() => {
-              onDownload(format)
-              onOpenChange(false)
-            }}
-          >
-            <Download />
-            Download
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
+type ExportFormat = "JSON" | "PDF" | "CSV"
 
 type ReportDetailPageProps = {
   reportId: string
@@ -271,25 +189,20 @@ export function ReportDetailPage({
   }
 
   /**
-   * Export and Download, as Advanced Analytics has them. Export is the report
-   * definition — a ZIP of JSON. Download is the report's contents, as PDF or
-   * CSV, behind the same small dialog AA uses. Both include charts saved onto
-   * this canvas from chat, since those are part of the report as it stands.
+   * One Export menu, three formats. AA splits these across a header Export
+   * (the report definition as JSON) and a ⋮ → Download… → dialog (PDF or CSV of
+   * the contents); that was two controls and an intermediate step for what is
+   * one decision. Here the formats sit directly under Export. All three include
+   * charts saved onto this canvas from chat — they are part of the report as it
+   * stands.
    */
-  const [downloadOpen, setDownloadOpen] = React.useState(false)
   const allWidgets = report ? [...report.widgets, ...extraWidgets] : []
-  const exportReport = () => {
-    if (!report) return
-    downloadBytes(
-      `${slug(report.title)}.zip`,
-      reportBundle(report, allWidgets),
-      "application/zip"
-    )
-  }
-  const downloadReport = (format: DownloadFormat) => {
+  const exportAs = (format: ExportFormat) => {
     if (!report) return
     const base = slug(report.title)
-    if (format === "CSV") {
+    if (format === "JSON") {
+      downloadBytes(`${base}.zip`, reportBundle(report, allWidgets), "application/zip")
+    } else if (format === "CSV") {
       downloadText(`${base}.csv`, reportCSV(report, allWidgets), "text/csv")
     } else {
       downloadBytes(`${base}.pdf`, toPDF(reportPDFLines(report, allWidgets)), "application/pdf")
@@ -390,30 +303,24 @@ export function ReportDetailPage({
                     <Share2 />
                     Share
                   </Button>
-                  {/* AA's header Export: the report itself, as a ZIP of JSON. */}
-                  <Button variant="outline" size="sm" onClick={exportReport}>
-                    <FileDown />
-                    Export
-                  </Button>
-                  {/* AA keeps Download in the dashboard's ⋮, not the header. */}
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          size="icon-sm"
-                          aria-label="More report options"
-                        />
-                      }
+                      render={<Button variant="outline" size="sm" />}
                     >
-                      <MoreVertical />
+                      <FileDown />
+                      Export
+                      <ChevronDown className="opacity-60" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44">
                       <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={() => setDownloadOpen(true)}>
-                          <Download />
-                          Download…
-                        </DropdownMenuItem>
+                        {(["JSON", "PDF", "CSV"] as const).map((format) => (
+                          <DropdownMenuItem
+                            key={format}
+                            onClick={() => exportAs(format)}
+                          >
+                            Export as {format}
+                          </DropdownMenuItem>
+                        ))}
                       </DropdownMenuGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -442,17 +349,20 @@ export function ReportDetailPage({
                 data below the fold. */}
             {report.about && (
             <Collapsible>
+              {/* Reads as a disclosure, not a stray line of text: link styling
+                  so it underlines on hover, and the chevron after the label
+                  where a disclosure's arrow belongs — turning over when open. */}
               <CollapsibleTrigger
                 render={
                   <Button
-                    variant="ghost"
+                    variant="link"
                     size="sm"
-                    className="-ml-2 w-fit text-muted-foreground"
+                    className="group -ml-2.5 w-fit gap-1.5 text-muted-foreground hover:text-foreground"
                   />
                 }
               >
-                <ChevronDown />
                 About this report
+                <ChevronDown className="transition-transform duration-200 group-aria-expanded:rotate-180" />
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="flex flex-col gap-2 pt-2 pl-1">
@@ -490,13 +400,6 @@ export function ReportDetailPage({
           </div>
         </div>
       </div>
-
-      <DownloadReportDialog
-        open={downloadOpen}
-        onOpenChange={setDownloadOpen}
-        title={report.title}
-        onDownload={downloadReport}
-      />
 
       {/* Chat pane */}
       {chatOpen && (
