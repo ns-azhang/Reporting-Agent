@@ -81,23 +81,22 @@ function WidgetShell({
   return (
     <section
       className={cn(
-        "flex flex-col gap-3",
+        "relative flex flex-col gap-3",
         !bare &&
           "rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10",
         className
       )}
     >
-      {/* Header row exists when there is a title or a menu; the menu sits at
-          the far right whether or not there is a title to share the row with. */}
-      {(title || menu) && (
+      {/* With a title the menu shares its row. Without one (the KPI strip) a
+          header row would only hold the menu and push the figures down, so the
+          menu floats in the corner over the top padding instead. */}
+      {title ? (
         <div className="flex items-start justify-between gap-2">
-          {title ? (
-            <h3 className="text-sm font-semibold leading-snug">{title}</h3>
-          ) : (
-            <span />
-          )}
+          <h3 className="text-sm font-semibold leading-snug">{title}</h3>
           {menu}
         </div>
+      ) : (
+        menu && <div className="absolute top-3 right-4">{menu}</div>
       )}
       {children}
       {/* Empty insight means the caller shows the narrative itself (the
@@ -115,7 +114,9 @@ function KpiRow({ widget, bare, menu }: { widget: KpiWidget } & Chrome) {
       bare={bare} menu={menu}
       className={bare ? undefined : "sm:col-span-2"}
     >
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* The floating ⋮ sits over this strip's top-right corner; keep the last
+          KPI's label clear of it. */}
+      <div className={cn("grid grid-cols-2 gap-4 lg:grid-cols-4", menu && "pr-8")}>
         {widget.kpis.map((kpi) => {
           // invertColor marks metrics where "up" is bad (more open incidents),
           // so the arrow direction and the colour have to be decided separately.
