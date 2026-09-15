@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, ChevronDown, ListFilter, Plus, Sparkle, X } from "lucide-react"
+import { Check, ChevronDown, Plus, Sparkle, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -66,9 +66,10 @@ export function FilterBar({
   const canAdd = !values.severity || !values.region
 
   return (
+    // No leading filter icon: the chips name themselves ("Date:", "Severity:"),
+    // and a bare icon at the head of a row looks like a control that does
+    // nothing. The row is labelled for assistive tech instead.
     <div className="flex flex-wrap items-center gap-2" aria-label="Report filters">
-      <ListFilter className="size-4 text-muted-foreground" aria-hidden />
-
       <Chip
         label={FILTER_LABELS.date}
         value={filterValueLabel("date", values)!}
