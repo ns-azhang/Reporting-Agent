@@ -15,7 +15,8 @@ const FAVORITE_TAG = "Favorite"
 
 type ReportLibraryPageProps = {
   onOpenReport?: (report: Report) => void
-  /** Favourites live in App — My Reports lists whatever is favourited here. */
+  /** Favourites live in App so the star agrees across lists. A starred report
+      stays here, starred; the Favorite chip is how you get back to them. */
   favorites: string[]
   onToggleFavorite: (id: string) => void
 }

@@ -97,8 +97,9 @@ export function App() {
     setPage(next)
   }
 
-  // Favourites live here rather than in a page, because starring a report in
-  // the Report Library is what surfaces it in My Reports.
+  // Favourites live here so the star reads the same on every list. Starring
+  // marks a report where it is — it doesn't copy it into My Reports; that is
+  // what Save does, and doing both used to list the report twice.
   const [favorites, setFavorites] = useState<string[]>([])
   const toggleFavorite = (id: string) =>
     setFavorites((prev) =>
@@ -145,20 +146,20 @@ export function App() {
     }))
 
   /**
-   * What a card's ⋮ "Save to" can write into: the same set My Reports lists —
-   * reports you own, plus library reports you favourited — so "my reports"
-   * means one thing across the app.
+   * What a card's "Save to" can write into: the same set My Reports lists —
+   * the reports you own — so "my reports" means one thing across the app. A
+   * favourited template isn't yours to write into until you save it.
    */
-  const savableReports = useMemo(() => {
-    const ownedIds = ownedReports.map((r) => r.id)
-    const ids = [...ownedIds, ...favorites.filter((f) => !ownedIds.includes(f))]
-    return ids.flatMap((id) => {
-      const report = getReport(id)
-      return report
-        ? [{ id, title: report.title, sharedWith: SHARED_ACCESS[id] }]
-        : []
-    })
-  }, [favorites, ownedReports])
+  const savableReports = useMemo(
+    () =>
+      ownedReports.flatMap(({ id }) => {
+        const report = getReport(id)
+        return report
+          ? [{ id, title: report.title, sharedWith: SHARED_ACCESS[id] }]
+          : []
+      }),
+    [ownedReports]
+  )
 
   if (showStyleGuide) {
     return <StyleGuide />

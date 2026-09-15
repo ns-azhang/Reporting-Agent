@@ -9,20 +9,12 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"
-import {
-  REPORTS,
-  SHARED_ACCESS,
-  getReport,
-  type Report,
-} from "@/data/reports"
+import { SHARED_ACCESS, getReport, type Report } from "@/data/reports"
 
 const FAVORITE_TAG = "Favorite"
 
-/** An entry in My Reports: either created by the user, or a favourited template. */
-type MyReport = Report & {
-  owned: boolean
-  createdAt?: string
-}
+/** An entry in My Reports: a report the user created, or saved from the library. */
+type MyReport = Report & { createdAt: string }
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", {
@@ -49,20 +41,19 @@ export function MyReportsPage({
   const [tags, setTags] = React.useState<string[]>([])
 
   /**
-   * Owned reports first, then library reports the user favourited but doesn't
-   * own — mirroring the prototype, where starring a template surfaces it here.
+   * Only reports the user owns. Favouriting doesn't move a report: a starred
+   * library template stays in the library (starred there), and a starred
+   * report here stays here. Otherwise a template that was both favourited and
+   * saved showed up twice — once as the favourite, once as the saved copy.
    */
-  const myReports = React.useMemo<MyReport[]>(() => {
-    const owned = ownedReports.flatMap(({ id, createdAt }) => {
-      const report = getReport(id)
-      return report ? [{ ...report, owned: true, createdAt }] : []
-    })
-    const ownedIds = new Set(owned.map((r) => r.id))
-    const favourited = REPORTS.filter(
-      (r) => favorites.includes(r.id) && !ownedIds.has(r.id)
-    ).map((r) => ({ ...r, owned: false }))
-    return [...owned, ...favourited]
-  }, [favorites, ownedReports])
+  const myReports = React.useMemo<MyReport[]>(
+    () =>
+      ownedReports.flatMap(({ id, createdAt }) => {
+        const report = getReport(id)
+        return report ? [{ ...report, createdAt }] : []
+      }),
+    [ownedReports]
+  )
 
   const q = query.trim().toLowerCase()
   const matchesQuery = React.useCallback(
@@ -121,7 +112,7 @@ export function MyReportsPage({
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">My Reports</h1>
           <p className="text-sm text-muted-foreground">
-            Reports you created, plus library reports you’ve favorited.
+            Reports you created or saved from the Report Library.
           </p>
         </div>
 
@@ -175,8 +166,8 @@ export function MyReportsPage({
               <p className="text-sm">No reports match your filters</p>
             ) : (
               <p className="max-w-xs text-sm">
-                Nothing here yet. Favorite a report in the Report Library and it
-                will show up here.
+                Nothing here yet. Open a report in the Report Library and save
+                it, and your copy will show up here.
               </p>
             )}
           </div>
@@ -231,9 +222,7 @@ export function MyReportsPage({
                       multiple auto margins instead of collapsing to the end. */}
                   <div className="mt-auto flex flex-col gap-2">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant={report.owned ? "secondary" : "outline"}>
-                        {report.owned ? "Created by you" : "Netskope Library"}
-                      </Badge>
+                      <Badge variant="secondary">Created by you</Badge>
                       <Badge variant="outline">{report.folder}</Badge>
                       {sharedWith && (
                         <Badge
@@ -246,11 +235,9 @@ export function MyReportsPage({
                       )}
                     </div>
 
-                    {report.createdAt && (
-                      <p className="text-xs text-muted-foreground">
-                        Created {formatDate(report.createdAt)}
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Created {formatDate(report.createdAt)}
+                    </p>
                   </div>
                 </div>
               )
