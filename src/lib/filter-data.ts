@@ -8,6 +8,7 @@ import type {
 import {
   REGIONS,
   SEVERITIES,
+  type Category,
   type DateRange,
   type FilterValues,
   type Region,
@@ -60,6 +61,70 @@ const REGION_SHARE: Record<Region, number> = {
   APAC: 0.2,
 }
 
+/** Relative activity by category — Cloud Storage is the seeded baseline. */
+const CATEGORY_SHARE: Record<Category, number> = {
+  "Cloud Storage": 1,
+  "Generative AI": 2.4,
+  Collaboration: 1.8,
+  Webmail: 0.9,
+  Technology: 1.5,
+  "Customer Relationship Management": 0.6,
+  "IaaS/PaaS": 1.1,
+}
+
+/**
+ * Representative apps per category, in the same order, so a table seeded with
+ * Cloud Storage apps can be re-cast for another category position by
+ * position: OneDrive's row becomes Copilot's, Box's becomes Gemini's.
+ */
+const APPS_BY_CATEGORY: Record<Category, string[]> = {
+  "Cloud Storage": [
+    "GCP Storage",
+    "Microsoft Office 365 OneDrive for Business",
+    "Box",
+    "Dropbox",
+    "Google Drive",
+    "Amazon S3",
+  ],
+  "Generative AI": ["ChatGPT", "Microsoft Copilot", "Google Gemini", "Claude", "Perplexity", "Midjourney"],
+  Collaboration: ["Microsoft Teams", "Slack", "Zoom", "Webex", "Miro", "Notion"],
+  Webmail: ["Outlook.com", "Gmail", "Yahoo Mail", "ProtonMail", "iCloud Mail", "Zoho Mail"],
+  Technology: ["GitHub", "Stack Overflow", "Jira", "Postman", "npm", "Docker Hub"],
+  "Customer Relationship Management": ["Salesforce", "HubSpot", "Zendesk", "Zoho CRM", "Pipedrive", "Freshsales"],
+  "IaaS/PaaS": ["AWS Console", "Microsoft Azure", "Google Cloud Platform", "DigitalOcean", "Heroku", "Cloudflare"],
+}
+
+/** How prose shortens the long app names — policy names say "OneDrive". */
+const SHORT_NAMES: Record<string, string> = {
+  "Microsoft Office 365 OneDrive for Business": "OneDrive",
+  "Google Cloud Platform": "GCP",
+}
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+/**
+ * Re-cast text from the report's seeded category to the chosen one: the
+ * category name itself, and each app for its counterpart (short forms too).
+ * Longest names first so "Google Drive" is swapped before "Google" could be.
+ */
+function recategorize(text: string, from: Category, to: Category): string {
+  if (from === to) return text
+  let out = text.replace(new RegExp(`\\b${escapeRe(from)}\\b`, "g"), to)
+  const pairs = APPS_BY_CATEGORY[from]
+    .flatMap((app, i) => {
+      const replacement = APPS_BY_CATEGORY[to][i]
+      const short = SHORT_NAMES[app]
+      return short
+        ? [[app, replacement] as const, [short, SHORT_NAMES[replacement] ?? replacement] as const]
+        : [[app, replacement] as const]
+    })
+    .sort((a, b) => b[0].length - a[0].length)
+  for (const [app, replacement] of pairs) {
+    out = out.replace(new RegExp(`\\b${escapeRe(app)}\\b`, "g"), replacement)
+  }
+  return out
+}
+
 /** Stable pseudo-random in [0, 1) from a string — FNV-1a, then scaled. */
 function hash01(s: string): number {
   let h = 0x811c9dc5
@@ -73,20 +138,33 @@ function hash01(s: string): number {
 /** A little spread around 1 so scaled figures don't all share one ratio. */
 const jitter = (seed: string, spread = 0.08) => 1 + (hash01(seed) * 2 - 1) * spread
 
-type Factors = { date: number; severity: number; region: number }
+type Factors = { date: number; severity: number; region: number; category: number }
 
 function factorsFor(values: FilterValues, defaults: FilterValues): Factors {
   return {
     date: RANGE_DAYS[values.date] / RANGE_DAYS[defaults.date],
     severity: values.severity ? SEVERITY_SHARE[values.severity] : 1,
     region: values.region ? REGION_SHARE[values.region] : 1,
+    category:
+      values.category && defaults.category
+        ? CATEGORY_SHARE[values.category] / CATEGORY_SHARE[defaults.category]
+        : 1,
   }
 }
 
-const product = (f: Factors) => f.date * f.severity * f.region
+const product = (f: Factors) => f.date * f.severity * f.region * f.category
 
 const isDefaultView = (values: FilterValues, defaults: FilterValues) =>
-  values.date === defaults.date && !values.severity && !values.region
+  values.date === defaults.date &&
+  values.category === defaults.category &&
+  !values.severity &&
+  !values.region
+
+/** Text re-cast for the chosen category, or as-is when there isn't one. */
+const recast = (text: string, values: FilterValues, defaults: FilterValues) =>
+  values.category && defaults.category
+    ? recategorize(text, defaults.category, values.category)
+    : text
 
 /* ----------------------------- number strings ----------------------------- */
 
@@ -254,8 +332,13 @@ function filterByLabels<T extends { label: string }>(
 /** Headers whose cells are not volumes, whatever they look like. */
 const NON_VOLUME_COLUMN = /%|percent|rating|score|\bid\b|date|week|status|severity|region|rank/i
 
-function filterTable(w: TableWidget, values: FilterValues, f: Factors): TableWidget {
-  let rows = w.rows
+function filterTable(
+  w: TableWidget,
+  values: FilterValues,
+  defaults: FilterValues,
+  f: Factors
+): TableWidget {
+  let rows = w.rows.map((r) => r.map((cell) => recast(cell, values, defaults)))
   let factor = product(f)
 
   const bandColumn = (test: RegExp) => w.columns.findIndex((c) => test.test(c))
@@ -284,7 +367,7 @@ function filterTable(w: TableWidget, values: FilterValues, f: Factors): TableWid
         : cell
     )
   )
-  return { ...w, rows, insight: scaleText(w.insight, factor) }
+  return { ...w, rows, insight: scaleText(recast(w.insight, values, defaults), factor) }
 }
 
 function filterLine(w: LineWidget, values: FilterValues, defaults: FilterValues, f: Factors): LineWidget {
@@ -320,21 +403,39 @@ function filterLine(w: LineWidget, values: FilterValues, defaults: FilterValues,
   }
 }
 
-function filterBars(w: HBarWidget, values: FilterValues, f: Factors): HBarWidget {
+function filterBars(
+  w: HBarWidget,
+  values: FilterValues,
+  defaults: FilterValues,
+  f: Factors
+): HBarWidget {
   const { items, factor } = filterByLabels(w.bars, values, f)
   return {
     ...w,
-    bars: items.map((b) => ({ ...b, value: Math.max(1, Math.round(b.value * factor * jitter(b.label))) })),
-    insight: scaleText(w.insight, factor),
+    bars: items.map((b) => ({
+      ...b,
+      label: recast(b.label, values, defaults),
+      value: Math.max(1, Math.round(b.value * factor * jitter(b.label))),
+    })),
+    insight: scaleText(recast(w.insight, values, defaults), factor),
   }
 }
 
-function filterDonut(w: DonutWidget, values: FilterValues, f: Factors): DonutWidget {
+function filterDonut(
+  w: DonutWidget,
+  values: FilterValues,
+  defaults: FilterValues,
+  f: Factors
+): DonutWidget {
   const { items, factor } = filterByLabels(w.slices, values, f)
   return {
     ...w,
-    slices: items.map((s) => ({ ...s, value: Math.max(1, Math.round(s.value * factor * jitter(s.label))) })),
-    insight: scaleText(w.insight, factor),
+    slices: items.map((s) => ({
+      ...s,
+      label: recast(s.label, values, defaults),
+      value: Math.max(1, Math.round(s.value * factor * jitter(s.label))),
+    })),
+    insight: scaleText(recast(w.insight, values, defaults), factor),
   }
 }
 
@@ -348,17 +449,17 @@ export function filterWidget(widget: Widget, values: FilterValues, defaults: Fil
       return {
         ...widget,
         kpis: widget.kpis.map((k) => ({ ...k, value: scaleNumberString(k.value, factor) })),
-        insight: scaleText(widget.insight, factor),
+        insight: scaleText(recast(widget.insight, values, defaults), factor),
       }
     }
     case "table":
-      return filterTable(widget, values, f)
+      return filterTable(widget, values, defaults, f)
     case "line":
       return filterLine(widget, values, defaults, f)
     case "hbar":
-      return filterBars(widget, values, f)
+      return filterBars(widget, values, defaults, f)
     case "donut":
-      return filterDonut(widget, values, f)
+      return filterDonut(widget, values, defaults, f)
     // Gauges are ratios and the placeholders have nothing to scale.
     default:
       return widget

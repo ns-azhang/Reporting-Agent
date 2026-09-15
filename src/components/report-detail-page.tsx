@@ -188,9 +188,10 @@ export function ReportDetailPage({
   // fresh object per render, which would recompute this every time and make
   // the reset effect below loop.
   const description = report?.description
+  const fixedCategory = report?.filters?.category
   const filterDefaults = React.useMemo(
-    () => defaultFilters(description),
-    [description]
+    () => defaultFilters(description, { category: fixedCategory }),
+    [description, fixedCategory]
   )
   const [filters, setFilters] = React.useState<FilterState>(filterDefaults)
   const [filterFlash, setFilterFlash] = React.useState(0)
@@ -323,7 +324,11 @@ export function ReportDetailPage({
                   </Badge>
                 </div>
                 <p className="max-w-2xl text-sm text-muted-foreground">
-                  {report.description}
+                  {/* A category-scoped report names its category here; keep
+                      that in step with the chip. */}
+                  {fixedCategory && filters.values.category
+                    ? report.description.replace(fixedCategory, filters.values.category)
+                    : report.description}
                 </p>
               </div>
               {/* Actions stack above the freshness line rather than sharing a

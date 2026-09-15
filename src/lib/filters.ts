@@ -32,7 +32,24 @@ export type Severity = (typeof SEVERITIES)[number]
 export const REGIONS = ["Americas", "EMEA", "APAC"] as const
 export type Region = (typeof REGIONS)[number]
 
-export type FilterKey = "date" | "severity" | "region"
+/**
+ * Application categories, for reports scoped to one (AA's Application
+ * Category Dashboard). Unlike severity or region this is a required filter on
+ * the reports that carry it — it can be changed, not removed — and it doesn't
+ * apply to reports that don't.
+ */
+export const CATEGORIES = [
+  "Cloud Storage",
+  "Generative AI",
+  "Collaboration",
+  "Webmail",
+  "Technology",
+  "Customer Relationship Management",
+  "IaaS/PaaS",
+] as const
+export type Category = (typeof CATEGORIES)[number]
+
+export type FilterKey = "date" | "severity" | "region" | "category"
 
 /** Who set a filter last: the report itself, a prompt, or a click in the bar. */
 export type FilterSource = "default" | "ai" | "user"
@@ -41,6 +58,7 @@ export type FilterValues = {
   date: DateRange
   severity?: Severity
   region?: Region
+  category?: Category
 }
 
 export type FilterState = {
@@ -52,6 +70,7 @@ export const FILTER_LABELS: Record<FilterKey, string> = {
   date: "Date",
   severity: "Severity",
   region: "Region",
+  category: "Category",
 }
 
 export function filterValueLabel(key: FilterKey, values: FilterValues): string | undefined {
@@ -64,14 +83,40 @@ export function filterValueLabel(key: FilterKey, values: FilterValues): string |
  * last 7 days", "30-day trend", "for the last 90 days", "June 2025". Anything
  * that names no period defaults to a week, the most common window here.
  */
-export function defaultFilters(description: string | undefined): FilterState {
+export function defaultFilters(
+  description: string | undefined,
+  /** Dashboard-level filters the report declares beyond its date range. */
+  fixed?: { category?: Category }
+): FilterState {
   const t = (description ?? "").toLowerCase()
   let date: DateRange = "7d"
   if (/\b(90|ninety)[- ]days?\b/.test(t)) date = "90d"
   else if (/\b(30|thirty)[- ]days?\b|\b(june|jun) 2025\b|\bmonth\b/.test(t)) date = "30d"
   else if (/\b(24|twenty-four)[- ]hours?\b/.test(t)) date = "24h"
   else if (/\b(12|twelve)[- ]months?\b|\byear\b/.test(t)) date = "12m"
-  return { values: { date }, sources: { date: "default" } }
+  const values: FilterValues = { date }
+  const sources: FilterState["sources"] = { date: "default" }
+  if (fixed?.category) {
+    values.category = fixed.category
+    sources.category = "default"
+  }
+  return { values, sources }
+}
+
+/** Ways people refer to a category that aren't its display name. */
+const CATEGORY_ALIASES: [RegExp, Category][] = [
+  [/\bgen\s?ai\b|\bgenerative\b|\bai apps?\b|\bllms?\b/, "Generative AI"],
+  [/\bcrm\b|\bsalesforce\b/, "Customer Relationship Management"],
+  [/\biaas\b|\bpaas\b|\bcloud infrastructure\b/, "IaaS/PaaS"],
+  [/\bcollab(oration)?\b|\bmessaging\b/, "Collaboration"],
+  [/\bweb ?mail\b|\bemail apps?\b/, "Webmail"],
+  [/\bstorage\b/, "Cloud Storage"],
+]
+
+function matchCategory(t: string): Category | undefined {
+  const named = CATEGORIES.find((c) => t.includes(c.toLowerCase()))
+  if (named) return named
+  return CATEGORY_ALIASES.find(([re]) => re.test(t))?.[1]
 }
 
 /** What a prompt asks the filters to do — set some, or start over. */
@@ -125,10 +170,18 @@ export function extractFilters(prompt: string): FilterIntent | null {
           : "Americas"
   }
 
+  const category = matchCategory(t)
+  if (category) values.category = category
+
   return Object.keys(values).length ? { kind: "set", values } : null
 }
 
-/** Apply an intent to the current state, marking touched filters with `source`. */
+/**
+ * Apply an intent to the current state, marking touched filters with `source`.
+ * A category only lands on a report that has a category to begin with —
+ * "show me the generative AI apps" on the DLP report is a question, not a
+ * filter it can honour.
+ */
 export function applyIntent(
   state: FilterState,
   intent: FilterIntent,
@@ -136,14 +189,17 @@ export function applyIntent(
   source: FilterSource
 ): FilterState {
   if (intent.kind === "clear") return defaults
+  const next = { ...intent.values }
+  if (next.category && !defaults.values.category) delete next.category
   const sources = { ...state.sources }
-  for (const key of Object.keys(intent.values) as FilterKey[]) sources[key] = source
-  return { values: { ...state.values, ...intent.values }, sources }
+  for (const key of Object.keys(next) as FilterKey[]) sources[key] = source
+  return { values: { ...state.values, ...next }, sources }
 }
 
 /** True when nothing differs from the report's own defaults. */
 export const isDefaultFilters = (state: FilterState, defaults: FilterState) =>
   state.values.date === defaults.values.date &&
+  state.values.category === defaults.values.category &&
   !state.values.severity &&
   !state.values.region
 
@@ -153,5 +209,6 @@ export function describeFilters(values: Partial<FilterValues>): string {
   if (values.date) parts.push(`Date · ${dateLabel(values.date)}`)
   if (values.severity) parts.push(`Severity · ${values.severity}`)
   if (values.region) parts.push(`Region · ${values.region}`)
+  if (values.category) parts.push(`Category · ${values.category}`)
   return parts.join(", ")
 }

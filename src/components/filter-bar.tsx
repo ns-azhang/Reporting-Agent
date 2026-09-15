@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  CATEGORIES,
   DATE_RANGES,
   FILTER_LABELS,
   REGIONS,
@@ -85,6 +86,26 @@ export function FilterBar({
           ))}
         </DropdownMenuGroup>
       </Chip>
+
+      {/* A report scoped to a category always has one — changeable, never
+          removed, like the date. */}
+      {values.category && (
+        <Chip
+          label={FILTER_LABELS.category}
+          value={values.category}
+          source={sources.category}
+          flashKey={flashKey}
+        >
+          <DropdownMenuGroup>
+            {CATEGORIES.map((c) => (
+              <DropdownMenuItem key={c} onClick={() => set("category", c)}>
+                {c}
+                {c === values.category && <Check className="ml-auto" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
+        </Chip>
+      )}
 
       {values.severity && (
         <Chip
@@ -232,7 +253,7 @@ function Chip({
           <span className="font-medium">{value}</span>
           <ChevronDown className="size-3 opacity-60" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-44">
+        <DropdownMenuContent align="start" className="w-fit min-w-44">
           {children}
         </DropdownMenuContent>
       </DropdownMenu>

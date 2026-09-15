@@ -11,6 +11,9 @@
  * `size` is "full" or "half", matching the prototype's grid.
  */
 
+import { APP_DETAILS } from "@/data/report-details-apps"
+import type { Category } from "@/lib/filters"
+
 export type Kpi = {
   label: string
   value: string
@@ -75,6 +78,12 @@ export type ReportDetail = {
   summary: string
   examplePrompts: string[]
   about: { blurb: string; questions: string[] } | null
+  /**
+   * Dashboard-level filters the report carries beyond the date range — AA's
+   * Application Category Dashboard is scoped to one category, for instance.
+   * These seed the filter bar with a chip that can be changed but not removed.
+   */
+  filters?: { category: Category }
   widgets: Widget[]
 }
 
@@ -4833,9 +4842,15 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
   }
 }
 
+/** The Application Events dashboards live in their own file; same shape. */
+const ALL_DETAILS: Record<string, Omit<ReportDetail, "id">> = {
+  ...DETAILS,
+  ...APP_DETAILS,
+}
+
 export const getReportDetail = (id: string): ReportDetail | undefined => {
-  const detail = DETAILS[id]
+  const detail = ALL_DETAILS[id]
   return detail ? { id, ...detail } : undefined
 }
 
-export const hasReportDetail = (id: string) => id in DETAILS
+export const hasReportDetail = (id: string) => id in ALL_DETAILS

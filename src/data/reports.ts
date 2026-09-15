@@ -77,6 +77,21 @@ export const REPORTS: Report[] = [
     desc: "Risky users across intentional behavior, data loss, and cloud threats · last 7 days",
     folder: "Insider Threat",
   },
+  /* The two Application Events dashboards from Advanced Analytics. The folder
+     is deliberately "Application Events", not "Applications": the folder name
+     is a routing keyword, and "applications" appears in ordinary questions. */
+  {
+    id: "app-activity",
+    title: "Application Activity Summary",
+    desc: "Files uploaded/downloaded, top users, activities, alert trend · last 90 days",
+    folder: "Application Events",
+  },
+  {
+    id: "app-category",
+    title: "Application Category Dashboard",
+    desc: "Top apps per category, managed vs. unmanaged, risky traffic, policy hits · last 7 days",
+    folder: "Application Events",
+  },
 ]
 
 /**
@@ -150,4 +165,6 @@ export const REPORT_KEYWORDS: Record<string, string[]> = {
   "genai-admin": ["genai", "ai usage", "artificial intelligence", "llm", "copilot"],
   "insider-threat": ["insider", "risky user", "uba", "watchlist"],
   "security-engineer": ["security engineer", "posture", "dspm"],
+  "app-activity": ["app activity", "application activity", "uploads and downloads", "file activity"],
+  "app-category": ["app category", "application category", "category dashboard", "cloud storage apps"],
 }
