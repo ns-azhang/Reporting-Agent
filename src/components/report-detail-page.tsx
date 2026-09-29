@@ -36,9 +36,8 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import {
   downloadBytes,
-  downloadText,
   reportBundle,
-  reportCSV,
+  reportCSVBundle,
   reportPDFLines,
   slug,
   toPDF,
@@ -265,7 +264,9 @@ export function ReportDetailPage({
     if (format === "JSON") {
       downloadBytes(`${base}.zip`, reportBundle(report, shownWidgets), "application/zip")
     } else if (format === "CSV") {
-      downloadText(`${base}.csv`, reportCSV(report, shownWidgets), "text/csv")
+      // As in AA: one CSV per widget, zipped — a single widget's ⋮ →
+      // Download… → CSV is the same file on its own.
+      downloadBytes(`${base}-csv.zip`, reportCSVBundle(report, shownWidgets), "application/zip")
     } else {
       downloadBytes(`${base}.pdf`, toPDF(reportPDFLines(report, shownWidgets)), "application/pdf")
     }

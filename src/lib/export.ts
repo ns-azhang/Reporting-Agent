@@ -518,6 +518,24 @@ export function reportBundle(report: ReportDetail, widgets: Widget[]): Uint8Arra
 }
 
 /** One CSV, a section per widget, blank line between. */
+/**
+ * Advanced Analytics' whole-dashboard CSV: not one file but one CSV per
+ * widget, zipped — each opens cleanly in a spreadsheet with its own header
+ * row, and a widget's file is exactly what its own Download… → CSV gives.
+ * Files are numbered in canvas order so the folder reads top to bottom.
+ */
+export function reportCSVBundle(report: ReportDetail, widgets: Widget[]): Uint8Array {
+  const dir = slug(report.title)
+  const files: Record<string, Uint8Array> = {}
+  widgets.forEach((w, i) => {
+    const title = w.title ?? (w.type === "kpi" ? "Key metrics" : w.type)
+    const name = `${String(i + 1).padStart(2, "0")}-${slug(title)}.csv`
+    files[`${dir}/${name}`] = strToU8(toCSV(widgetTable(w)))
+  })
+  return zipSync(files)
+}
+
+/** The single-file variant: every widget as a commented section. */
 export function reportCSV(report: ReportDetail, widgets: Widget[]): string {
   const sections = widgets.map((w) => {
     const t = widgetTable(w)
