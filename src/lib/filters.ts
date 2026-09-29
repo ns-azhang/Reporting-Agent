@@ -254,13 +254,19 @@ export function extractFilters(prompt: string, ctx?: FilterContext): FilterInten
   // without a value ("add a filter on application") adds the chip, waiting.
   if (ctx) {
     const dims: Record<string, string> = {}
+    // A value that lives in several dimensions ("ChatGPT" is an Application
+    // and a Site) sets only one — the first dimension that holds it, and the
+    // context lists richer dimensions first — otherwise one word would narrow
+    // the report twice.
+    const claimed = new Map<string, { dim: string; value: string }>()
     for (const dim of ctx.dimensions) {
       const hit = [...dim.values]
         .filter((v) => v.length >= 3)
         .sort((a, b) => b.length - a.length)
         .find((v) => new RegExp(`(?<![\\w@.])${escapeRe(v.toLowerCase())}(?![\\w@.])`).test(t))
       if (hit) {
-        dims[dim.name] = hit
+        if (!claimed.has(hit.toLowerCase()))
+          claimed.set(hit.toLowerCase(), { dim: dim.name, value: hit })
         continue
       }
       const named = new RegExp(
@@ -268,6 +274,7 @@ export function extractFilters(prompt: string, ctx?: FilterContext): FilterInten
       )
       if (named.test(t)) dims[dim.name] = ""
     }
+    for (const { dim, value } of claimed.values()) dims[dim] = value
     if (Object.keys(dims).length) values.dimensions = dims
   }
 
