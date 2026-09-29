@@ -4,150 +4,119 @@ import { Check, ChevronDown, Plus, Sparkle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   CATEGORIES,
   DATE_RANGES,
-  FILTER_LABELS,
   REGIONS,
   SEVERITIES,
-  filterValueLabel,
+  activeChips,
+  chipLabel,
+  chipValue,
+  dimKey,
+  dimName,
   isDefaultFilters,
-  type FilterKey,
+  removeFilter,
+  setFilter,
+  setScope,
+  type ChipKey,
+  type Dimension,
   type FilterSource,
   type FilterState,
+  type Scope,
 } from "@/lib/filters"
 import { cn } from "@/lib/utils"
 
 /**
- * The report's global filter bar — where the assistant's assumptions become
+ * The report's filter bar — where the assistant's assumptions become
  * ordinary controls.
  *
- * Every chip is a menu: click "Date: Last 7 days" and pick Last 30 days
- * instead, no prompt needed. A chip the assistant set carries a sparkle and
- * flashes once as it lands, so it is clear which constraints came from the
- * conversation and which from a click. Filters persist across prompts until
- * removed here or cleared — the conversation narrows the view, it doesn't
- * reset it each turn.
+ * Every chip is a menu: its values on top, and beneath them "Applies to" —
+ * all widgets, or a chosen few — which is how one bar covers both of Advanced
+ * Analytics' tiers. A chip the assistant set carries a sparkle and flashes
+ * once as it lands. "+ Add filter" is built from the report itself: the
+ * dimensions its tables and charts actually carry, with their real values,
+ * so nothing is offered that the canvas can't answer.
  */
 export function FilterBar({
   state,
   defaults,
+  dimensions,
+  widgets,
   onChange,
   flashKey,
 }: {
   state: FilterState
   defaults: FilterState
+  /** Discovered on this report — what "+ Add filter" suggests. */
+  dimensions: Dimension[]
+  /** Canvas order, for "Applies to". */
+  widgets: { index: number; title: string }[]
   /** A change made in the bar itself, so it is always user-sourced. */
   onChange: (next: FilterState) => void
   /** Bumped when the assistant applies filters — restarts the flash. */
   flashKey: number
 }) {
-  const { values, sources } = state
+  const { values, sources, scopes } = state
 
-  const set = <K extends FilterKey>(key: K, value: FilterState["values"][K]) =>
-    onChange({
-      values: { ...values, [key]: value },
-      sources: { ...sources, [key]: "user" },
-    })
-  const remove = (key: "severity" | "region") => {
-    const next = { ...values }
-    delete next[key]
-    const nextSources = { ...sources }
-    delete nextSources[key]
-    onChange({ values: next, sources: nextSources })
+  const optionsFor = (key: ChipKey): string[] => {
+    const name = dimName(key)
+    if (name !== undefined) return dimensions.find((d) => d.name === name)?.values ?? []
+    if (key === "date") return DATE_RANGES.map((d) => d.label)
+    if (key === "severity") return [...SEVERITIES]
+    if (key === "region") return [...REGIONS]
+    return [...CATEGORIES]
   }
+  // Date options are shown by label but stored by id.
+  const storeValue = (key: ChipKey, option: string) =>
+    key === "date" ? DATE_RANGES.find((d) => d.label === option)?.id ?? option : option
 
-  const canAdd = !values.severity || !values.region
+  const unsetDimensions = dimensions.filter((d) => !(d.name in (values.dimensions ?? {})))
+  const canAdd = !values.severity || !values.region || unsetDimensions.length > 0
 
   return (
     // No leading filter icon: the chips name themselves ("Date:", "Severity:"),
     // and a bare icon at the head of a row looks like a control that does
     // nothing. The row is labelled for assistive tech instead.
     <div className="flex flex-wrap items-center gap-2" aria-label="Report filters">
-      <Chip
-        label={FILTER_LABELS.date}
-        value={filterValueLabel("date", values)!}
-        source={sources.date}
-        flashKey={flashKey}
-      >
-        <DropdownMenuGroup>
-          {DATE_RANGES.map((d) => (
-            <DropdownMenuItem key={d.id} onClick={() => set("date", d.id)}>
-              {d.label}
-              {d.id === values.date && <Check className="ml-auto" />}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </Chip>
-
-      {/* A report scoped to a category always has one — changeable, never
-          removed, like the date. */}
-      {values.category && (
-        <Chip
-          label={FILTER_LABELS.category}
-          value={values.category}
-          source={sources.category}
-          flashKey={flashKey}
-        >
-          <DropdownMenuGroup>
-            {CATEGORIES.map((c) => (
-              <DropdownMenuItem key={c} onClick={() => set("category", c)}>
-                {c}
-                {c === values.category && <Check className="ml-auto" />}
+      {activeChips(state).map((key) => {
+        const current = chipValue(key, values)
+        const removable = key !== "date" && key !== "category"
+        return (
+          <Chip
+            key={key}
+            label={chipLabel(key)}
+            value={current || undefined}
+            source={sources[key]}
+            scope={scopes?.[key]}
+            widgets={widgets}
+            flashKey={flashKey}
+            onRemove={removable ? () => onChange(removeFilter(state, key)) : undefined}
+            onScope={(scope) => onChange(setScope(state, key, scope))}
+          >
+            {optionsFor(key).map((option) => (
+              <DropdownMenuItem
+                key={option}
+                onClick={() => onChange(setFilter(state, key, storeValue(key, option)))}
+              >
+                {option}
+                {option === current && <Check className="ml-auto" />}
               </DropdownMenuItem>
             ))}
-          </DropdownMenuGroup>
-        </Chip>
-      )}
+          </Chip>
+        )
+      })}
 
-      {values.severity && (
-        <Chip
-          label={FILTER_LABELS.severity}
-          value={values.severity}
-          source={sources.severity}
-          flashKey={flashKey}
-          onRemove={() => remove("severity")}
-        >
-          <DropdownMenuGroup>
-            {SEVERITIES.map((s) => (
-              <DropdownMenuItem key={s} onClick={() => set("severity", s)}>
-                {s}
-                {s === values.severity && <Check className="ml-auto" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuGroup>
-        </Chip>
-      )}
-
-      {values.region && (
-        <Chip
-          label={FILTER_LABELS.region}
-          value={values.region}
-          source={sources.region}
-          flashKey={flashKey}
-          onRemove={() => remove("region")}
-        >
-          <DropdownMenuGroup>
-            {REGIONS.map((r) => (
-              <DropdownMenuItem key={r} onClick={() => set("region", r)}>
-                {r}
-                {r === values.region && <Check className="ml-auto" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuGroup>
-        </Chip>
-      )}
-
-      {/* Manual additions, so the bar isn't only writable through the chat.
-          Flat groups rather than submenus: two short lists don't need a
-          second level. */}
       {canAdd && (
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -162,27 +131,55 @@ export function FilterBar({
             <Plus />
             Add filter
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-44">
-            {!values.severity && (
+          <DropdownMenuContent align="start" className="w-fit min-w-48">
+            {unsetDimensions.length > 0 && (
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Severity</DropdownMenuLabel>
-                {SEVERITIES.map((s) => (
-                  <DropdownMenuItem key={s} onClick={() => set("severity", s)}>
-                    {s}
-                  </DropdownMenuItem>
+                {/* Read off this report's own columns and chart categories,
+                    so every suggestion has data behind it. */}
+                <DropdownMenuLabel>Suggested for this report</DropdownMenuLabel>
+                {unsetDimensions.map((dim) => (
+                  <DropdownMenuSub key={dim.name}>
+                    <DropdownMenuSubTrigger>{dim.name}</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-fit min-w-44">
+                      {dim.values.map((v) => (
+                        <DropdownMenuItem
+                          key={v}
+                          onClick={() => onChange(setFilter(state, dimKey(dim.name), v))}
+                        >
+                          {v}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                 ))}
               </DropdownMenuGroup>
             )}
-            {!values.severity && !values.region && <DropdownMenuSeparator />}
+            {unsetDimensions.length > 0 && (!values.severity || !values.region) && (
+              <DropdownMenuSeparator />
+            )}
+            {!values.severity && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Severity</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-fit min-w-40">
+                  {SEVERITIES.map((s) => (
+                    <DropdownMenuItem key={s} onClick={() => onChange(setFilter(state, "severity", s))}>
+                      {s}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
             {!values.region && (
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Region</DropdownMenuLabel>
-                {REGIONS.map((r) => (
-                  <DropdownMenuItem key={r} onClick={() => set("region", r)}>
-                    {r}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Region</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-fit min-w-40">
+                  {REGIONS.map((r) => (
+                    <DropdownMenuItem key={r} onClick={() => onChange(setFilter(state, "region", r))}>
+                      {r}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -202,32 +199,58 @@ export function FilterBar({
   )
 }
 
+/** "· widgets 1, 2" — how a scoped chip says where it reaches. */
+function scopeText(scope: Scope | undefined, total: number) {
+  if (!scope || scope.length === 0 || scope.length >= total) return undefined
+  if (scope.length === 1) return `widget ${scope[0] + 1}`
+  if (scope.length <= 3) return `widgets ${scope.map((i) => i + 1).join(", ")}`
+  return `${scope.length} widgets`
+}
+
 /**
- * One filter as a pill: "Label: Value ⌄" opens its menu; the ✕ (when the
- * filter is optional) removes it. `key`ed on flashKey so an assistant-set chip
- * re-runs its landing animation each time a prompt touches it.
+ * One filter as a pill: "Label: Value ⌄" opens its menu — values, then
+ * "Applies to"; the ✕ (when the filter is optional) removes it. A chip with no
+ * value yet ("add a filter on application") shows "Choose…" until it has one.
+ * `key`ed on flashKey so an assistant-set chip re-runs its landing animation
+ * each time a prompt touches it.
  */
 function Chip({
   label,
   value,
   source,
+  scope,
+  widgets,
   flashKey,
   onRemove,
+  onScope,
   children,
 }: {
   label: string
-  value: string
+  value?: string
   source?: FilterSource
+  scope?: Scope
+  widgets: { index: number; title: string }[]
   flashKey: number
   onRemove?: () => void
+  onScope: (scope: Scope | undefined) => void
   children: React.ReactNode
 }) {
   const byAi = source === "ai"
+  const pending = !value
+  const where = scopeText(scope, widgets.length)
+  const toggleWidget = (index: number) => {
+    const current = scope ?? []
+    const next = current.includes(index)
+      ? current.filter((i) => i !== index)
+      : [...current, index].sort((a, b) => a - b)
+    onScope(next.length ? next : undefined)
+  }
   return (
     <div
       key={byAi ? flashKey : -1}
       className={cn(
-        "inline-flex h-7 items-center rounded-full border border-border bg-background text-xs shadow-xs",
+        "inline-flex h-7 items-center rounded-full border bg-background text-xs shadow-xs",
+        pending ? "border-dashed border-ring" : "border-border",
         byAi && "animate-filter-flash"
       )}
     >
@@ -250,11 +273,37 @@ function Chip({
             />
           )}
           <span className="text-muted-foreground">{label}:</span>
-          <span className="font-medium">{value}</span>
+          <span className={cn("font-medium", pending && "font-normal text-muted-foreground italic")}>
+            {value ?? "Choose…"}
+          </span>
+          {where && <span className="text-muted-foreground">· {where}</span>}
           <ChevronDown className="size-3 opacity-60" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-fit min-w-44">
-          {children}
+        <DropdownMenuContent align="start" className="w-fit min-w-48">
+          <DropdownMenuGroup>{children}</DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            {/* One bar, both of AA's tiers: a chip reaches every widget until
+                you point it at some. */}
+            <DropdownMenuLabel>Applies to</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem
+              checked={!scope || scope.length === 0}
+              onCheckedChange={() => onScope(undefined)}
+            >
+              All widgets
+            </DropdownMenuCheckboxItem>
+            {widgets.map((w) => (
+              <DropdownMenuCheckboxItem
+                key={w.index}
+                checked={!!scope?.includes(w.index)}
+                onCheckedChange={() => toggleWidget(w.index)}
+                closeOnClick={false}
+              >
+                <span className="text-muted-foreground tabular-nums">{w.index + 1}</span>
+                <span className="max-w-56 truncate">{w.title}</span>
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
       {onRemove && (

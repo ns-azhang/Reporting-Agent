@@ -93,7 +93,7 @@ export const APP_DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         type: "line",
         size: "half",
-        title: "Trend of Files Uploaded/Downloaded (GB) — past 14 weeks",
+        title: "Trend of Files Uploaded/Downloaded (GB)",
         xLabels: [
           "Jun 8", "Jun 15", "Jun 22", "Jun 29", "Jul 6", "Jul 13", "Jul 20",
           "Jul 27", "Aug 3", "Aug 10", "Aug 17", "Aug 24", "Aug 31", "Sep 7",
@@ -124,7 +124,7 @@ export const APP_DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         type: "line",
         size: "half",
-        title: "Trend of Alerts — past 14 weeks",
+        title: "Trend of Alerts",
         xLabels: [
           "Jun 8", "Jun 15", "Jun 22", "Jun 29", "Jul 6", "Jul 13", "Jul 20",
           "Jul 27", "Aug 3", "Aug 10", "Aug 17", "Aug 24", "Aug 31", "Sep 7",
@@ -243,7 +243,7 @@ export const APP_DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         type: "line",
         size: "half",
-        title: "Trend of Application Usage — past 7 days",
+        title: "Trend of Application Usage",
         xLabels: ["Sep 1", "Sep 2", "Sep 3", "Sep 4", "Sep 5", "Sep 6", "Sep 7"],
         series: [
           {

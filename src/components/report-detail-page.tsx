@@ -44,11 +44,17 @@ import {
 } from "@/lib/export"
 import { cn } from "@/lib/utils"
 import { filterWidget } from "@/lib/filter-data"
+import { deriveDimensions } from "@/lib/filter-dimensions"
 import {
   applyIntent,
+  chipLabel,
+  chipValue,
   defaultFilters,
   describeFilters,
+  effectiveValues,
   extractFilters,
+  scopedChipsFor,
+  type FilterContext,
   type FilterState,
 } from "@/lib/filters"
 import { getReportDetail, type Widget } from "@/data/report-details"
@@ -201,11 +207,29 @@ export function ReportDetailPage({
     refresh()
   }
 
+  /**
+   * What this report can be filtered by, read off its own widgets, and the
+   * widget list a prompt can point a filter at. Charts saved from chat count
+   * too, so the list stays in step with the canvas.
+   */
+  const widgetCount = (report?.widgets.length ?? 0) + extraWidgets.length
+  const filterContext = React.useMemo<FilterContext>(() => {
+    const all = report ? [...report.widgets, ...extraWidgets] : []
+    return {
+      dimensions: deriveDimensions(all, fixedCategory ? ["Category"] : []),
+      widgets: all.map((w, index) => ({
+        index,
+        title: w.title ?? (w.type === "kpi" ? "Key metrics" : w.type),
+      })),
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on what changes the widget set
+  }, [reportId, widgetCount, fixedCategory])
+
   /** Answer the prompt, and expose whatever scope it set. */
   const sendPrompt = (text: string, responseId?: string) => {
     if (!text.trim() || thinking) return
     onSend(text, responseId)
-    const intent = extractFilters(text)
+    const intent = extractFilters(text, filterContext)
     if (!intent) return
     // Land with the answer, not before it: the chat's thinking beat is 800ms.
     window.setTimeout(() => {
@@ -215,7 +239,7 @@ export function ReportDetailPage({
       onNote?.(
         intent.kind === "clear"
           ? "Cleared all filters"
-          : `Applied filters — ${describeFilters(intent.values)}`
+          : `Applied filters — ${describeFilters(intent.values, intent.scope)}`
       )
     }, 1_000)
   }
@@ -255,9 +279,19 @@ export function ReportDetailPage({
   const allWidgets = report ? [...report.widgets, ...extraWidgets] : []
   // What the canvas shows under the current filters — and what exports carry,
   // so the file matches the screen.
-  const shownWidgets = allWidgets.map((w) =>
-    filterWidget(w, filters.values, filterDefaults.values)
+  // Each widget sees only the chips whose scope reaches it.
+  const shownWidgets = allWidgets.map((w, i) =>
+    filterWidget(
+      w,
+      effectiveValues(filters, filterDefaults, i),
+      filterDefaults.values,
+      filterContext.dimensions
+    )
   )
+  const marksFor = (i: number) =>
+    scopedChipsFor(filters, i).map(
+      (key) => `${chipLabel(key)}: ${chipValue(key, filters.values) ?? "—"}`
+    )
   const exportAs = (format: ExportFormat) => {
     if (!report) return
     const base = slug(report.title)
@@ -416,6 +450,8 @@ export function ReportDetailPage({
             <FilterBar
               state={filters}
               defaults={filterDefaults}
+              dimensions={filterContext.dimensions}
+              widgets={filterContext.widgets}
               onChange={changeFilters}
               flashKey={filterFlash}
             />
@@ -476,7 +512,7 @@ export function ReportDetailPage({
                 key={i}
                 className={widget.size === "full" ? "sm:col-span-2" : undefined}
               >
-                <ReportWidget widget={widget} downloadable />
+                <ReportWidget widget={widget} downloadable filtered={marksFor(i)} />
               </div>
             ))}
           </div>

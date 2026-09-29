@@ -1,5 +1,7 @@
 import * as React from "react"
-import { Sparkle, TrendingDown, TrendingUp } from "lucide-react"
+import { CalendarClock, ListFilter, Sparkle, TrendingDown, TrendingUp } from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
 import {
   Bar,
   BarChart,
@@ -64,6 +66,8 @@ type Chrome = {
   bare?: boolean
   /** Top-right control, e.g. the per-widget download menu on the canvas. */
   menu?: React.ReactNode
+  /** Small badges beside the menu: a fixed period, filters scoped to this widget. */
+  marks?: React.ReactNode
 }
 
 function WidgetShell({
@@ -73,12 +77,19 @@ function WidgetShell({
   className,
   bare,
   menu,
+  marks,
 }: {
   title?: string
   children: React.ReactNode
   insight: string
   className?: string
 } & Chrome) {
+  const controls = (menu || marks) && (
+    <div className="flex shrink-0 items-center gap-2">
+      {marks}
+      {menu}
+    </div>
+  )
   return (
     <section
       className={cn(
@@ -88,14 +99,17 @@ function WidgetShell({
         className
       )}
     >
-      {/* With a title the menu shares its row. Without one (the KPI strip) a
-          header row would only hold the menu and push the figures down, so the
-          menu floats in the corner over the top padding instead. */}
+      {/* With a title the controls share its row. Without one (the KPI strip)
+          a header row would only hold the menu and push the figures down, so
+          the menu floats in the corner over the top padding instead — unless
+          there are marks to show, which earn the row. */}
       {title ? (
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-sm font-semibold leading-snug">{title}</h3>
-          {menu}
+          {controls}
         </div>
+      ) : marks ? (
+        <div className="-mb-1 flex justify-end">{controls}</div>
       ) : (
         menu && <div className="absolute top-3 right-4">{menu}</div>
       )}
@@ -108,11 +122,11 @@ function WidgetShell({
   )
 }
 
-function KpiRow({ widget, bare, menu }: { widget: KpiWidget } & Chrome) {
+function KpiRow({ widget, bare, menu, marks }: { widget: KpiWidget } & Chrome) {
   return (
     <WidgetShell
       insight={widget.insight}
-      bare={bare} menu={menu}
+      bare={bare} menu={menu} marks={marks}
       className={bare ? undefined : "sm:col-span-2"}
     >
       {/* The floating ⋮ sits over this strip's top-right corner; keep the last
@@ -153,9 +167,9 @@ function KpiRow({ widget, bare, menu }: { widget: KpiWidget } & Chrome) {
   )
 }
 
-function DataTable({ widget, bare, menu }: { widget: TableWidget } & Chrome) {
+function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chrome) {
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -263,6 +277,7 @@ function TrendChart({
   widget,
   bare,
   menu,
+  marks,
   onDrill,
 }: {
   widget: LineWidget
@@ -314,7 +329,7 @@ function TrendChart({
         )
 
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       {/* Extra headroom so a marker's label isn't clipped by the plot edge. */}
       <ChartContainer config={config} className="h-[220px] w-full">
         <LineChart data={data} margin={{ left: 4, right: 8, top: anomalies.length ? 24 : 8 }}>
@@ -389,12 +404,12 @@ function TrendChart({
   )
 }
 
-function HorizontalBars({ widget, bare, menu }: { widget: HBarWidget } & Chrome) {
+function HorizontalBars({ widget, bare, menu, marks }: { widget: HBarWidget } & Chrome) {
   const data = widget.bars.map((b) => ({ ...b, short: truncate(b.label, 28) }))
   const config: ChartConfig = { value: { label: "Incidents" } }
 
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       <ChartContainer
         config={config}
         className="w-full"
@@ -428,14 +443,14 @@ function HorizontalBars({ widget, bare, menu }: { widget: HBarWidget } & Chrome)
 }
 
 
-function DonutChart({ widget, bare, menu }: { widget: DonutWidget } & Chrome) {
+function DonutChart({ widget, bare, menu, marks }: { widget: DonutWidget } & Chrome) {
   const total = widget.slices.reduce((sum, s) => sum + s.value, 0)
   const config: ChartConfig = Object.fromEntries(
     widget.slices.map((s) => [s.label, { label: s.label, color: s.color }])
   )
 
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       <div className="flex flex-wrap items-center gap-4">
         <ChartContainer config={config} className="h-[180px] w-[180px] shrink-0">
           <PieChart>
@@ -476,10 +491,10 @@ function DonutChart({ widget, bare, menu }: { widget: DonutWidget } & Chrome) {
   )
 }
 
-function Gauge({ widget, bare, menu }: { widget: GaugeWidget } & Chrome) {
+function Gauge({ widget, bare, menu, marks }: { widget: GaugeWidget } & Chrome) {
   const config: ChartConfig = { value: { label: widget.label ?? "Value" } }
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       <div className="relative">
         <ChartContainer config={config} className="h-[180px] w-full">
           <RadialBarChart
@@ -516,11 +531,12 @@ function UnsupportedChart({
   widget,
   bare,
   menu,
+  marks,
 }: {
   widget: UnsupportedWidget
 } & Chrome) {
   return (
-    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu}>
+    <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       <div className="flex h-[160px] items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
         {widget.type === "map" ? "Map" : "Sankey"} chart not ported yet
       </div>
@@ -536,6 +552,7 @@ export function ReportWidget({
   bare,
   onDrill,
   downloadable,
+  filtered,
 }: {
   widget: Widget
   bare?: boolean
@@ -543,12 +560,44 @@ export function ReportWidget({
   onDrill?: (text: string, responseId?: string) => void
   /** Show the per-widget ⋮ Download menu. Only meaningful on the canvas. */
   downloadable?: boolean
+  /**
+   * Filters pointed at this widget specifically ("Date: Last 60 days"), so a
+   * widget that differs from its neighbours says why. Bar-wide filters aren't
+   * listed — the bar already shows them.
+   */
+  filtered?: string[]
 }) {
   // The wrapper is how the menu finds this widget's SVG for the PNG export —
   // `display: contents` keeps it out of the grid layout.
   const host = React.useRef<HTMLDivElement>(null)
+  const marks =
+    !bare && (widget.fixedPeriod || filtered?.length) ? (
+      <>
+        {widget.fixedPeriod && (
+          <Badge
+            variant="outline"
+            className="text-muted-foreground"
+            title="This widget keeps its own period; the Date filter doesn't apply to it."
+          >
+            <CalendarClock />
+            {widget.fixedPeriod}
+          </Badge>
+        )}
+        {filtered && filtered.length > 0 && (
+          <Badge
+            variant="outline"
+            className="text-muted-foreground"
+            title={filtered.join("\n")}
+          >
+            <ListFilter />
+            {filtered.length === 1 ? filtered[0] : `${filtered.length} filters`}
+          </Badge>
+        )}
+      </>
+    ) : undefined
   const chrome: Chrome = {
     bare,
+    marks,
     menu:
       downloadable && !bare ? (
         <WidgetMenu

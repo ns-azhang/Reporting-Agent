@@ -5,11 +5,13 @@ import type {
   TableWidget,
   Widget,
 } from "@/data/report-details"
+import { dimensionOfColumn, dimensionOfTitle } from "@/lib/filter-dimensions"
 import {
   REGIONS,
   SEVERITIES,
   type Category,
   type DateRange,
+  type Dimension,
   type FilterValues,
   type Region,
   type Severity,
@@ -34,6 +36,7 @@ const RANGE_DAYS: Record<DateRange, number> = {
   "24h": 1,
   "7d": 7,
   "30d": 30,
+  "60d": 60,
   "90d": 90,
   "12m": 365,
 }
@@ -43,9 +46,13 @@ const BUCKETS: Record<DateRange, { days: number; points: number }> = {
   "24h": { days: 1 / 24, points: 24 },
   "7d": { days: 1, points: 7 },
   "30d": { days: 1, points: 30 },
+  "60d": { days: 7, points: 9 },
   "90d": { days: 7, points: 13 },
   "12m": { days: 365 / 12, points: 12 },
 }
+
+/** A value's share of its dimension when the report can't tell us — a third. */
+const UNKNOWN_SHARE = 0.35
 
 /** Rough share of incident volume by band — the usual pyramid. */
 const SEVERITY_SHARE: Record<Severity, number> = {
@@ -138,9 +145,21 @@ function hash01(s: string): number {
 /** A little spread around 1 so scaled figures don't all share one ratio. */
 const jitter = (seed: string, spread = 0.08) => 1 + (hash01(seed) * 2 - 1) * spread
 
-type Factors = { date: number; severity: number; region: number; category: number }
+type Factors = {
+  date: number
+  severity: number
+  region: number
+  category: number
+  /** Per dimension name: that value's share of the dimension. */
+  dimensions: Record<string, number>
+}
 
-function factorsFor(values: FilterValues, defaults: FilterValues): Factors {
+function factorsFor(values: FilterValues, defaults: FilterValues, dims: Dimension[]): Factors {
+  const dimensions: Record<string, number> = {}
+  for (const [name, value] of Object.entries(values.dimensions ?? {})) {
+    if (!value) continue
+    dimensions[name] = dims.find((d) => d.name === name)?.share[value] ?? UNKNOWN_SHARE
+  }
   return {
     date: RANGE_DAYS[values.date] / RANGE_DAYS[defaults.date],
     severity: values.severity ? SEVERITY_SHARE[values.severity] : 1,
@@ -149,16 +168,23 @@ function factorsFor(values: FilterValues, defaults: FilterValues): Factors {
       values.category && defaults.category
         ? CATEGORY_SHARE[values.category] / CATEGORY_SHARE[defaults.category]
         : 1,
+    dimensions,
   }
 }
 
-const product = (f: Factors) => f.date * f.severity * f.region * f.category
+const product = (f: Factors) =>
+  f.date *
+  f.severity *
+  f.region *
+  f.category *
+  Object.values(f.dimensions).reduce((a, b) => a * b, 1)
 
 const isDefaultView = (values: FilterValues, defaults: FilterValues) =>
   values.date === defaults.date &&
   values.category === defaults.category &&
   !values.severity &&
-  !values.region
+  !values.region &&
+  !Object.values(values.dimensions ?? {}).some(Boolean)
 
 /** Text re-cast for the chosen category, or as-is when there isn't one. */
 const recast = (text: string, values: FilterValues, defaults: FilterValues) =>
@@ -177,6 +203,8 @@ const NUMBER = /^([^\d-]*?)(-?\d(?:[\d,]*\d)?)(\.\d+)?(.*)$/
  * shares, not volumes, and pass through unchanged.
  */
 export function scaleNumberString(text: string, factor: number): string {
+  // A filter that only kept rows leaves their figures exactly as they were.
+  if (factor === 1) return text
   const m = NUMBER.exec(text.trim())
   if (!m) return text
   const [, prefix, whole, frac = "", suffix] = m
@@ -251,7 +279,7 @@ function axisLabels(range: DateRange, endLabel: string | undefined): string[] {
       const d = new Date(end.getFullYear(), end.getMonth() - (points - 1 - i), 1)
       return MONTHS[d.getMonth()]
     })
-  const step = range === "90d" ? 7 : 1
+  const step = range === "90d" || range === "60d" ? 7 : 1
   return Array.from({ length: points }, (_, i) => {
     const d = new Date(end)
     d.setDate(end.getDate() - (points - 1 - i) * step)
@@ -306,7 +334,8 @@ const labelMatches = (label: string, value: string) =>
 function filterByLabels<T extends { label: string }>(
   items: T[],
   values: FilterValues,
-  f: Factors
+  f: Factors,
+  title: string | undefined
 ): { items: T[]; factor: number } {
   let kept = items
   let factor = product(f)
@@ -326,7 +355,25 @@ function filterByLabels<T extends { label: string }>(
       factor /= f.region
     }
   }
+  // A chart *of* the filtered dimension ("Top Policies" under Policy = X)
+  // keeps the matching category rather than shrinking all of them.
+  const chartDim = dimensionOfTitle(title)
+  const dimValue = chartDim ? values.dimensions?.[chartDim] : undefined
+  if (chartDim && dimValue) {
+    const matching = kept.filter((i) => valueMatches(i.label, dimValue))
+    if (matching.length) {
+      kept = matching
+      factor /= f.dimensions[chartDim] ?? 1
+    }
+  }
   return { items: kept, factor }
+}
+
+/** A dimension value against a cell or label: whole match, or the cell truncated ("ChatGPT Ent…"). */
+const valueMatches = (cell: string, value: string) => {
+  const a = cell.trim().toLowerCase()
+  const b = value.trim().toLowerCase()
+  return a === b || a.replace(/…$/, "").length >= 6 && b.startsWith(a.replace(/…$/, "")) || labelMatches(cell, escapeRe(value))
 }
 
 /** Headers whose cells are not volumes, whatever they look like. */
@@ -358,6 +405,18 @@ function filterTable(
       factor /= f.region
     }
   }
+  // Dimension chips: a table with that column keeps the matching rows and
+  // doesn't also take the share; one without the column takes the share.
+  for (const [name, value] of Object.entries(values.dimensions ?? {})) {
+    if (!value) continue
+    const col = w.columns.findIndex((c) => dimensionOfColumn(c) === name)
+    if (col < 0) continue
+    const kept = rows.filter((r) => valueMatches(r[col] ?? "", value))
+    if (kept.length) {
+      rows = kept
+      factor /= f.dimensions[name] ?? 1
+    }
+  }
 
   const scalable = w.columns.map((c) => !NON_VOLUME_COLUMN.test(c))
   rows = rows.map((r) =>
@@ -371,7 +430,7 @@ function filterTable(
 }
 
 function filterLine(w: LineWidget, values: FilterValues, defaults: FilterValues, f: Factors): LineWidget {
-  const band = f.severity * f.region
+  const band = product(f) / f.date
 
   if (values.date === defaults.date) {
     // Same window, narrower band: the shape holds, the level drops.
@@ -409,7 +468,7 @@ function filterBars(
   defaults: FilterValues,
   f: Factors
 ): HBarWidget {
-  const { items, factor } = filterByLabels(w.bars, values, f)
+  const { items, factor } = filterByLabels(w.bars, values, f, w.title)
   return {
     ...w,
     bars: items.map((b) => ({
@@ -427,7 +486,7 @@ function filterDonut(
   defaults: FilterValues,
   f: Factors
 ): DonutWidget {
-  const { items, factor } = filterByLabels(w.slices, values, f)
+  const { items, factor } = filterByLabels(w.slices, values, f, w.title)
   return {
     ...w,
     slices: items.map((s) => ({
@@ -439,10 +498,20 @@ function filterDonut(
   }
 }
 
-/** The widget as it looks under these filters; the default view is itself. */
-export function filterWidget(widget: Widget, values: FilterValues, defaults: FilterValues): Widget {
+/**
+ * The widget as it looks under these filters; the default view is itself.
+ * A fixed-period widget (quarter over quarter) ignores the Date chip — the
+ * period is its subject — but still takes every other filter.
+ */
+export function filterWidget(
+  widget: Widget,
+  values: FilterValues,
+  defaults: FilterValues,
+  dims: Dimension[] = []
+): Widget {
+  if (widget.fixedPeriod) values = { ...values, date: defaults.date }
   if (isDefaultView(values, defaults)) return widget
-  const f = factorsFor(values, defaults)
+  const f = factorsFor(values, defaults, dims)
   switch (widget.type) {
     case "kpi": {
       const factor = product(f)

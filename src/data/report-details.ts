@@ -25,7 +25,17 @@ export type Kpi = {
   neutral?: boolean
 }
 
-type Base = { size?: string; insight: string; title?: string }
+type Base = {
+  size?: string
+  insight: string
+  title?: string
+  /**
+   * Set when the period *is* the subject — a quarter-over-quarter compare —
+   * so the widget keeps its own window rather than following the Date filter,
+   * and says so on the canvas.
+   */
+  fixedPeriod?: string
+}
 
 export type KpiWidget = Base & { type: "kpi"; kpis: Kpi[] }
 export type TableWidget = Base & {
@@ -131,7 +141,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
             "invertColor": true
           },
           {
-            "label": "Resolved / closed (7d)",
+            "label": "Resolved / closed",
             "value": "0"
           }
         ]
@@ -577,7 +587,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "hbar",
         "size": "full",
         "insight": "",
-        "title": "Top policies — last 7 days",
+        "title": "Top policies",
         "bars": [
           {
             "label": "Confidential — Customer PII",
@@ -618,7 +628,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "line",
         "size": "full",
         "insight": "",
-        "title": "30-day trend — top 4 policies",
+        "title": "Trend of top 4 policies",
         "series": [
           {
             "name": "Customer PII",
@@ -803,6 +813,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "size": "full",
         "insight": "",
         "title": "This quarter vs. last quarter",
+        "fixedPeriod": "Quarter over quarter",
         "bars": [
           {
             "label": "Customer PII (Q2)",
@@ -1132,7 +1143,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "donut",
         "size": "1/3",
         "insight": "",
-        "title": "Severity mix — 7 days",
+        "title": "Severity mix",
         "slices": [
           {
             "label": "Critical",
@@ -1773,7 +1784,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "donut",
         "size": "half",
         "insight": "Security Assessment events (69%) dominate total alert volume — these are largely automated scan findings rather than active threats. Policy alerts (25%) and DLP (5%) are the two actionable categories requiring analyst review. Malware and malsite signals together account for less than 0.1% of volume.",
-        "title": "Total Alerts Breakdown by Type — Jun 2025",
+        "title": "Total Alerts Breakdown by Type",
         "slices": [
           {
             "label": "Security Assessment",
@@ -1811,7 +1822,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "line",
         "size": "half",
         "insight": "Threat volume spiked the week of Apr 6 (+195% vs. prior week) then partially recovered, before climbing again through June. Users and Applications show steady organic growth. Policy count grew 79% over 12 weeks, indicating active security rule expansion keeping pace with adoption.",
-        "title": "Trend of Threats & Adoption — past 12 weeks",
+        "title": "Trend of Threats & Adoption",
         "series": [
           {
             "name": "Threats",
@@ -1953,7 +1964,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "line",
         "size": "half",
         "insight": "DLP alert volume has climbed steadily since late March, with Browser Access as the dominant access method. The Apr 6–13 spike (+85% week-over-week) aligns with a policy expansion. The Jun 15 week shows the highest weekly DLP volume this quarter across all access methods.",
-        "title": "Trend of DLP Alerts — past 90 days",
+        "title": "Trend of DLP Alerts",
         "anomalies": [
           {
             "index": 13,
@@ -2317,7 +2328,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "hbar",
         "size": "full",
         "insight": "[Web] Block DoH at 9,847 hits is the single noisiest policy — DNS-over-HTTPS blocking generates high volume with low actionable signal. [Context DLP] High sensitivity (892) and [EmailSecurity] Block (387) are the highest-fidelity signals and should be the focus of analyst triage.",
-        "title": "Top Policies Triggered — Jun 2025",
+        "title": "Top Policies Triggered",
         "bars": [
           {
             "label": "[Web] Block DoH",
@@ -2375,7 +2386,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "line",
         "size": "half",
         "insight": "Allowed traffic has grown steadily from ~38 GB/week in late March to ~95 GB/week in early June — a 150% increase reflecting user and application growth. Blocked traffic remains below 0.15 GB/week throughout, confirming that security controls are intercepting policy violations without impacting legitimate traffic flow.",
-        "title": "Trend of Allowed / Blocked Traffic — past 90 days",
+        "title": "Trend of Allowed / Blocked Traffic",
         "series": [
           {
             "name": "Allowed Traffic (GB)",
@@ -2768,7 +2779,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "line",
         "size": "full",
         "insight": "Poor CCL app uploads spiked to 424 MB the week of May 25 — 10× the prior week and the largest single-week data movement to risky apps in the 90-day period. Medium CCL uploads peaked at 101 MB in the Jun 1 week. Both spikes warrant investigation into which specific apps and users drove the volume.",
-        "title": "Trend of Uploads to Non-Enterprise Apps by CCL — last 90 days",
+        "title": "Trend of Uploads to Non-Enterprise Apps by CCL",
         "anomalies": [
           {
             "index": 9,
@@ -3037,7 +3048,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "line",
         "size": "full",
         "insight": "DLP alert volume peaked the week of Mar 30 at 1,473, likely coinciding with a policy expansion. May 11 shows a secondary peak (1,121). The Jun 15 partial week shows 390 alerts — on pace for a lower-volume month if the trend holds, though this could reflect incomplete data rather than genuine improvement.",
-        "title": "DLP Policy Alerts — Trend Over Time (last 90 days)",
+        "title": "DLP Policy Alerts — Trend Over Time",
         "anomalies": [
           {
             "index": 1,
@@ -3402,7 +3413,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "line",
         "size": "full",
         "insight": "Both malware and malsite signals are trending upward through June — each hitting their 90-day high in the Jun 15 week. While absolute numbers remain low, a consistent week-over-week increase in both categories warrants attention. If the trend continues at this rate, July could see 10+ malware events per week.",
-        "title": "Trend of Malware & Malicious Sites — last 90 days",
+        "title": "Trend of Malware & Malicious Sites",
         "series": [
           {
             "name": "Malware Detected",
@@ -4291,7 +4302,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
         "type": "line",
         "size": "full",
         "insight": "Daily users of risky AI apps ranged from 0 to 4 this week, peaking at 4 on July 17. The zero-usage day mid-week suggests access is bursty rather than continuous, so point-in-time snapshots understate how many distinct users touch these apps over a full week.",
-        "title": "Number of Users Accessing Risky AI Apps — last 7 days",
+        "title": "Number of Users Accessing Risky AI Apps",
         "anomalies": [
           {
             "index": 4,
