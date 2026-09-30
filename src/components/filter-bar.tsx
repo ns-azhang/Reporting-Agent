@@ -4,7 +4,6 @@ import { Check, ChevronDown, Plus, Sparkle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -28,7 +27,6 @@ import {
   isDefaultFilters,
   removeFilter,
   setFilter,
-  setScope,
   type ChipKey,
   type Dimension,
   type FilterSource,
@@ -107,10 +105,9 @@ export function FilterBar({
             value={current || undefined}
             source={sources[key]}
             scope={scopes?.[key]}
-            widgets={widgets}
+            widgetCount={widgets.length}
             flashKey={flashKey}
             onRemove={removable ? () => onChange(removeFilter(state, key)) : undefined}
-            onScope={(scope) => onChange(setScope(state, key, scope))}
           >
             {optionsFor(key).map((option) => (
               <DropdownMenuItem
@@ -227,32 +224,23 @@ function Chip({
   value,
   source,
   scope,
-  widgets,
+  widgetCount,
   flashKey,
   onRemove,
-  onScope,
   children,
 }: {
   label: string
   value?: string
   source?: FilterSource
   scope?: Scope
-  widgets: { index: number; title: string }[]
+  widgetCount: number
   flashKey: number
   onRemove?: () => void
-  onScope: (scope: Scope | undefined) => void
   children: React.ReactNode
 }) {
   const byAi = source === "ai"
   const pending = !value
-  const where = scopeText(scope, widgets.length)
-  const toggleWidget = (index: number) => {
-    const current = scope ?? []
-    const next = current.includes(index)
-      ? current.filter((i) => i !== index)
-      : [...current, index].sort((a, b) => a - b)
-    onScope(next.length ? next : undefined)
-  }
+  const where = scopeText(scope, widgetCount)
   return (
     <div
       key={byAi ? flashKey : -1}
@@ -287,31 +275,11 @@ function Chip({
           {where && <span className="text-muted-foreground">· {where}</span>}
           <ChevronDown className="size-3 opacity-60" />
         </DropdownMenuTrigger>
+        {/* Values only. Pointing the date at particular widgets is done by
+            asking ("apply last 30 days to widgets 1 and 2"); the chip then
+            says where it reaches, and each widget's mark can take it off. */}
         <DropdownMenuContent align="start" className="w-fit min-w-48">
           <DropdownMenuGroup>{children}</DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            {/* One bar, both of AA's tiers: a chip reaches every widget until
-                you point it at some. */}
-            <DropdownMenuLabel>Applies to</DropdownMenuLabel>
-            <DropdownMenuCheckboxItem
-              checked={!scope || scope.length === 0}
-              onCheckedChange={() => onScope(undefined)}
-            >
-              All widgets
-            </DropdownMenuCheckboxItem>
-            {widgets.map((w) => (
-              <DropdownMenuCheckboxItem
-                key={w.index}
-                checked={!!scope?.includes(w.index)}
-                onCheckedChange={() => toggleWidget(w.index)}
-                closeOnClick={false}
-              >
-                <span className="text-muted-foreground tabular-nums">{w.index + 1}</span>
-                <span className="max-w-56 truncate">{w.title}</span>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
       {onRemove && (
