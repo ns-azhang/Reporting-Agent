@@ -283,7 +283,9 @@ export function ReportDetailPage({
       } Each carries a filter mark you can take off.`
     }
     if (shared && !where) {
-      return `Applied ${what} across the report. Change it from the chip, point it at specific widgets under “Applies to”, or say “clear all filters”.`
+      return `Applied ${what} across the report. Change it from the chip, or ask for it on particular widgets — “${dateLabel(
+        intent.values.date ?? filters.values.date
+      ).toLowerCase()} for widgets 1 and 2”.`
     }
     const all = where!.length === filterContext.widgets.length
     if (all) {
@@ -568,7 +570,6 @@ export function ReportDetailPage({
                 the assistant assumed on the user's behalf. */}
             <FilterBar
               state={filters}
-              defaults={filterDefaults}
               dimensions={filterContext.dimensions}
               widgets={filterContext.widgets}
               onChange={changeFilters}

@@ -24,7 +24,6 @@ import {
   chipValue,
   dimKey,
   dimName,
-  isDefaultFilters,
   removeFilter,
   setFilter,
   type ChipKey,
@@ -48,7 +47,6 @@ import { cn } from "@/lib/utils"
  */
 export function FilterBar({
   state,
-  defaults,
   dimensions,
   widgets,
   onChange,
@@ -56,7 +54,6 @@ export function FilterBar({
   allowAdd = false,
 }: {
   state: FilterState
-  defaults: FilterState
   /** Discovered on this report — what "+ Add filter" suggests. */
   dimensions: Dimension[]
   /** Canvas order, for "Applies to". */
@@ -190,16 +187,9 @@ export function FilterBar({
         </DropdownMenu>
       )}
 
-      {!isDefaultFilters(state, defaults) && (
-        <Button
-          variant="link"
-          size="xs"
-          className="text-muted-foreground hover:text-foreground"
-          onClick={() => onChange(defaults)}
-        >
-          Clear all
-        </Button>
-      )}
+      {/* No "Clear all": with only the date shared, resetting is picking the
+          default range again; widget-level filters come off from their marks
+          or by asking ("clear all filters"). */}
     </div>
   )
 }
