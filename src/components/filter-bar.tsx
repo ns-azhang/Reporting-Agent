@@ -55,6 +55,7 @@ export function FilterBar({
   widgets,
   onChange,
   flashKey,
+  allowAdd = false,
 }: {
   state: FilterState
   defaults: FilterState
@@ -66,6 +67,13 @@ export function FilterBar({
   onChange: (next: FilterState) => void
   /** Bumped when the assistant applies filters — restarts the flash. */
   flashKey: number
+  /**
+   * Show "+ Add filter". Off by default: the bar exposes what the
+   * conversation set, and adding is done by asking ("add a filter on
+   * policy") — a second, parallel way in was one control too many beside
+   * the date chip. The menu is kept for when that changes.
+   */
+  allowAdd?: boolean
 }) {
   const { values, sources, scopes } = state
 
@@ -117,7 +125,7 @@ export function FilterBar({
         )
       })}
 
-      {canAdd && (
+      {allowAdd && canAdd && (
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
