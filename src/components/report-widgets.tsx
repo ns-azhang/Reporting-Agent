@@ -1,7 +1,17 @@
 import * as React from "react"
-import { CalendarClock, ListFilter, Sparkle, TrendingDown, TrendingUp, X } from "lucide-react"
+import {
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  ListFilter,
+  Sparkle,
+  TrendingDown,
+  TrendingUp,
+  X,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Bar,
   BarChart,
@@ -167,51 +177,45 @@ function KpiRow({ widget, bare, menu, marks }: { widget: KpiWidget } & Chrome) {
   )
 }
 
-/** Rows a table shows before it asks; enough to read the shape of the data. */
-const TABLE_PREVIEW_ROWS = 8
+/** Rows per page; enough to read the shape of the data, short enough to fit a card. */
+const TABLE_PAGE_ROWS = 8
 /** Beta returns at most this many rows per table. */
 const TABLE_ROW_CAP = 100
 
 /**
- * A table widget shows its top rows and says how many there are; "Show all"
- * expands it in place into a scrolling region with the header pinned, so the
- * card grows to a bounded height and the insight stays where it was — under
- * the table, summarising the whole of it, not the visible slice. No paging:
- * ranked rows lose their context when split across pages, and 100 rows is a
- * short scroll.
+ * A table widget pages through its rows eight at a time: "1–8 of 100" with
+ * ‹ › beneath. The card never changes size — the first page's height is
+ * held, so a short last page doesn't shrink it — and the position is always
+ * stated, which an expanding scroller lost. The insight stays under the
+ * table, summarising the whole of it, not the page.
  */
 function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chrome) {
-  const [expanded, setExpanded] = React.useState(false)
+  const [page, setPage] = React.useState(0)
   const total = widget.rows.length
-  const long = total > TABLE_PREVIEW_ROWS
-  const rows = long && !expanded ? widget.rows.slice(0, TABLE_PREVIEW_ROWS) : widget.rows
+  const pages = Math.max(1, Math.ceil(total / TABLE_PAGE_ROWS))
+  const paged = total > TABLE_PAGE_ROWS
+  const current = Math.min(page, pages - 1)
+  const start = current * TABLE_PAGE_ROWS
+  const rows = paged ? widget.rows.slice(start, start + TABLE_PAGE_ROWS) : widget.rows
   const capped = total >= TABLE_ROW_CAP
 
-  /**
-   * Expanding must not change the card's height — a taller card breaks the
-   * row it sits in. So the preview's height is measured as it expands and
-   * the scrolling region is held at exactly that: the eight visible rows
-   * become a scroller of the same size, and the neighbours stay aligned.
-   */
+  // Hold the first page's height so every page — including a short last one
+  // — leaves the card the same size and the row it sits in aligned.
   const region = React.useRef<HTMLDivElement>(null)
   const [held, setHeld] = React.useState<number>()
-  const toggle = () => {
-    if (!expanded && region.current) setHeld(region.current.offsetHeight)
-    setExpanded((e) => !e)
-  }
+  React.useLayoutEffect(() => {
+    if (paged && held === undefined && region.current) setHeld(region.current.offsetHeight)
+  }, [paged, held])
 
   return (
     <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       <div
         ref={region}
-        style={expanded && held ? { height: held } : undefined}
-        className={cn(
-          "overflow-x-auto",
-          expanded && "overflow-y-auto rounded-md ring-1 ring-border"
-        )}
+        style={held ? { minHeight: held } : undefined}
+        className="overflow-x-auto"
       >
         <Table>
-          <TableHeader className={cn(expanded && "sticky top-0 z-10 bg-card shadow-[0_1px_0_0_var(--border)]")}>
+          <TableHeader>
             <TableRow>
               {widget.columns.map((col) => (
                 <TableHead key={col} className="text-xs whitespace-nowrap">
@@ -233,19 +237,35 @@ function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chro
           </TableBody>
         </Table>
       </div>
-      {long && (
+      {paged && (
         <div className="-mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            {expanded ? `${total} rows` : `Showing ${TABLE_PREVIEW_ROWS} of ${total} rows`}
-            {capped && expanded && " · first 100 returned"}
+          <span title={capped ? `Beta returns the first ${TABLE_ROW_CAP} rows` : undefined}>
+            {start + 1}–{Math.min(start + TABLE_PAGE_ROWS, total)} of {total}
+            {capped && <span className="text-muted-foreground/70"> · first {TABLE_ROW_CAP} returned</span>}
           </span>
-          <button
-            type="button"
-            onClick={toggle}
-            className="font-medium text-foreground underline-offset-2 outline-none hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {expanded ? "Show less" : `Show all ${total}`}
-          </button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Previous page"
+              disabled={current === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              <ChevronLeft />
+            </Button>
+            <span className="tabular-nums">
+              {current + 1} / {pages}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Next page"
+              disabled={current >= pages - 1}
+              onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
+            >
+              <ChevronRight />
+            </Button>
+          </div>
         </div>
       )}
     </WidgetShell>
