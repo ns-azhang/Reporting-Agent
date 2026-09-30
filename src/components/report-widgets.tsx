@@ -167,12 +167,36 @@ function KpiRow({ widget, bare, menu, marks }: { widget: KpiWidget } & Chrome) {
   )
 }
 
+/** Rows a table shows before it asks; enough to read the shape of the data. */
+const TABLE_PREVIEW_ROWS = 8
+/** Beta returns at most this many rows per table. */
+const TABLE_ROW_CAP = 100
+
+/**
+ * A table widget shows its top rows and says how many there are; "Show all"
+ * expands it in place into a scrolling region with the header pinned, so the
+ * card grows to a bounded height and the insight stays where it was — under
+ * the table, summarising the whole of it, not the visible slice. No paging:
+ * ranked rows lose their context when split across pages, and 100 rows is a
+ * short scroll.
+ */
 function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chrome) {
+  const [expanded, setExpanded] = React.useState(false)
+  const total = widget.rows.length
+  const long = total > TABLE_PREVIEW_ROWS
+  const rows = long && !expanded ? widget.rows.slice(0, TABLE_PREVIEW_ROWS) : widget.rows
+  const capped = total >= TABLE_ROW_CAP
+
   return (
     <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
-      <div className="overflow-x-auto">
+      <div
+        className={cn(
+          "overflow-x-auto",
+          expanded && "max-h-[22rem] overflow-y-auto rounded-md ring-1 ring-border"
+        )}
+      >
         <Table>
-          <TableHeader>
+          <TableHeader className={cn(expanded && "sticky top-0 z-10 bg-card shadow-[0_1px_0_0_var(--border)]")}>
             <TableRow>
               {widget.columns.map((col) => (
                 <TableHead key={col} className="text-xs whitespace-nowrap">
@@ -182,7 +206,7 @@ function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {widget.rows.map((row, i) => (
+            {rows.map((row, i) => (
               <TableRow key={i}>
                 {row.map((cell, j) => (
                   <TableCell key={j} className="text-xs">
@@ -194,6 +218,21 @@ function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chro
           </TableBody>
         </Table>
       </div>
+      {long && (
+        <div className="-mt-1 flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {expanded ? `${total} rows` : `Showing ${TABLE_PREVIEW_ROWS} of ${total} rows`}
+            {capped && expanded && " · first 100 returned"}
+          </span>
+          <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            className="font-medium text-foreground underline-offset-2 outline-none hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {expanded ? "Show less" : `Show all ${total}`}
+          </button>
+        </div>
+      )}
     </WidgetShell>
   )
 }

@@ -11,6 +11,7 @@
  * `size` is "full" or "half", matching the prototype's grid.
  */
 
+import { expandRows } from "@/data/expand-rows"
 import { APP_DETAILS } from "@/data/report-details-apps"
 import type { Category } from "@/lib/filters"
 
@@ -4861,7 +4862,8 @@ const ALL_DETAILS: Record<string, Omit<ReportDetail, "id">> = {
 
 export const getReportDetail = (id: string): ReportDetail | undefined => {
   const detail = ALL_DETAILS[id]
-  return detail ? { id, ...detail } : undefined
+  // Detail tables are filled out to beta's 100-row cap on the way out.
+  return detail ? { id, ...detail, widgets: detail.widgets.map(expandRows) } : undefined
 }
 
 export const hasReportDetail = (id: string) => id in ALL_DETAILS
