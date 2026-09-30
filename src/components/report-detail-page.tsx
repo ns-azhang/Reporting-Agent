@@ -45,7 +45,7 @@ import {
 } from "@/lib/export"
 import { cn } from "@/lib/utils"
 import { filterWidget } from "@/lib/filter-data"
-import { deriveDimensions } from "@/lib/filter-dimensions"
+import { deriveDimensions, widgetsResponsiveTo } from "@/lib/filter-dimensions"
 import {
   applyIntent,
   chipLabel,
@@ -57,10 +57,12 @@ import {
   effectiveValues,
   extractFilters,
   isFilterCommand,
-  scopedChipsFor,
+  marksFor,
+  removeFromWidget,
   type FilterContext,
   type FilterIntent,
   type FilterState,
+  type Scope,
 } from "@/lib/filters"
 import { WIDGET_DOWNLOAD_ENABLED } from "@/data/beta-scope"
 import { getReportDetail, type Widget } from "@/data/report-details"
@@ -242,39 +244,71 @@ export function ReportDetailPage({
    * filters: what it set, where it applies, what the rest of the report is
    * still on, and how to undo it without typing.
    */
-  const filterReply = (intent: FilterIntent): string => {
+  /**
+   * Where a prompt's widget-level filter lands when it names no widgets: the
+   * widgets that have the field. Time isn't decided here — it is shared, and
+   * reaches every widget unless the prompt says otherwise.
+   */
+  const landingScope = (intent: FilterIntent): Scope | undefined => {
+    if (intent.kind !== "set" || intent.scope) return undefined
+    const { date, category, ...rest } = intent.values
+    void date
+    void category
+    const widgetLevel = rest.severity || rest.region || Object.values(rest.dimensions ?? {}).some(Boolean)
+    return widgetLevel ? widgetsResponsiveTo(rest, allWidgets) : undefined
+  }
+
+  const filterReply = (intent: FilterIntent, scope: Scope | undefined): string => {
     if (intent.kind === "clear") {
       return `Cleared all filters. The report is back on ${dateLabel(filterDefaults.values.date)}${
         filterDefaults.values.category ? `, ${filterDefaults.values.category}` : ""
       }.`
     }
-    const what = describeFilters(intent.values)
-    const pending = Object.values(intent.values.dimensions ?? {}).some((v) => v === "")
-    if (pending) {
-      return `Added the filter to the bar — pick a value from the chip and the report will narrow to it.`
+    const pending = Object.entries(intent.values.dimensions ?? {}).filter(([, v]) => v === "")
+    if (pending.length && !Object.values(intent.values.dimensions ?? {}).some(Boolean)) {
+      const [name] = pending[0]
+      const examples = filterContext.dimensions.find((d) => d.name === name)?.values.slice(0, 2) ?? []
+      return `Which ${name.toLowerCase()}? ${
+        examples.length ? `Try “only ${examples[0]}”${examples[1] ? ` or “only ${examples[1]}”` : ""}, ` : ""
+      }and I'll adjust the widgets that have that field.`
     }
+    const what = describeFilters(intent.values)
+    const shared = !!(intent.values.date || intent.values.category)
+    const where = intent.scope ?? scope
+
     if (intent.scope) {
       const rest = filterContext.widgets.length - intent.scope.length
-      return `Applied ${what} to ${describeScope(intent.scope, filterContext.widgets)}. ${
-        rest > 0
-          ? `The other ${rest} widget${rest === 1 ? "" : "s"} stay on ${dateLabel(filters.values.date)}.`
-          : ""
-      } Each of those widgets now carries a filter mark; change or remove it from the chip.`.replace(/\s+/g, " ")
+      return `Applied ${what} to ${describeScope(intent.scope, filterContext.widgets)}.${
+        rest > 0 ? ` The other ${rest} widget${rest === 1 ? "" : "s"} are unchanged.` : ""
+      } Each carries a filter mark you can take off.`
     }
-    return `Applied ${what} across the report. Change it from the chip, point it at specific widgets under “Applies to”, or say “clear all filters”.`
+    if (shared && !where) {
+      return `Applied ${what} across the report. Change it from the chip, point it at specific widgets under “Applies to”, or say “clear all filters”.`
+    }
+    const all = where!.length === filterContext.widgets.length
+    if (all) {
+      return `Applied ${what} to every widget — nothing on this report has that field on its own, so each takes the share. Take it off any widget from its filter mark.`
+    }
+    const one = where!.length === 1
+    return `Applied ${what} to ${describeScope(where, filterContext.widgets)} — the ${
+      one ? "widget" : "widgets"
+    } with that field. The rest of the report is unchanged; take it off ${
+      one ? "the widget" : "any widget"
+    } from its filter mark.`
   }
 
   /** Answer the prompt, and expose whatever scope it set. */
   const sendPrompt = (text: string, responseId?: string) => {
     if (!text.trim() || thinking) return
     const intent = responseId ? null : extractFilters(text, filterContext)
+    const scope = intent ? landingScope(intent) : undefined
 
     // An instruction to the filters is answered with what changed, not with
-    // an analysis it didn't ask for. The chips land as the reply does.
+    // an analysis it didn't ask for. The filters land as the reply does.
     if (intent && onAck && isFilterCommand(text)) {
-      onAck(text, filterReply(intent))
+      onAck(text, filterReply(intent, scope))
       window.setTimeout(() => {
-        setFilters((current) => applyIntent(current, intent, filterDefaults, "ai"))
+        setFilters((current) => applyIntent(current, intent, filterDefaults, "ai", scope))
         setFilterFlash((k) => k + 1)
         refresh()
       }, 800)
@@ -283,16 +317,16 @@ export function ReportDetailPage({
 
     onSend(text, responseId)
     if (!intent) return
-    // A question that also narrows: answer it, then land the chips with a
+    // A question that also narrows: answer it, then land the filters with a
     // note. The chat's thinking beat is 800ms.
     window.setTimeout(() => {
-      setFilters((current) => applyIntent(current, intent, filterDefaults, "ai"))
+      setFilters((current) => applyIntent(current, intent, filterDefaults, "ai", scope))
       setFilterFlash((k) => k + 1)
       refresh()
       onNote?.(
         intent.kind === "clear"
           ? "Cleared all filters"
-          : `Applied filters — ${describeFilters(intent.values, intent.scope)}`
+          : `Applied filters — ${describeFilters(intent.values, intent.scope ?? scope)}`
       )
     }, 1_000)
   }
@@ -303,14 +337,19 @@ export function ReportDetailPage({
    * these nobody would know the bar listens to the chat.
    */
   const filterPrompts = React.useMemo(() => {
-    const [first, second] = filterContext.dimensions
+    const [first] = filterContext.dimensions
     const prompts: string[] = []
     if (first?.values[0]) prompts.push(`Show only ${first.values[0]}`)
     if (filterContext.widgets.length >= 2) {
       const range = filterDefaults.values.date === "30d" ? "last 90 days" : "last 30 days"
       prompts.push(`Apply ${range} to widgets 1 and 2`)
     }
-    if (second) prompts.push(`Add a filter on ${second.name.toLowerCase()}`)
+    // A short value, or nothing: "Filter widget 2 to Detect Credit card or
+    // GDPR info in managed ChatGPT Enterprise" is not an opener.
+    const short = filterContext.dimensions
+      .flatMap((d) => d.values)
+      .find((v) => v.length <= 24 && v !== first?.values[0])
+    if (short) prompts.push(`Only ${short} in widget 2`)
     return prompts
   }, [filterContext, filterDefaults])
 
@@ -358,10 +397,14 @@ export function ReportDetailPage({
       filterContext.dimensions
     )
   )
-  const marksFor = (i: number) =>
-    scopedChipsFor(filters, i).map(
-      (key) => `${chipLabel(key)}: ${chipValue(key, filters.values) ?? "—"}`
-    )
+  // A widget's marks: widget-level filters that reach it, and shared ones
+  // pointed at it. Each can be taken off this widget; a shared filter is only
+  // un-scoped by that, never removed.
+  const widgetMarks = (i: number) =>
+    marksFor(filters, i).map((key) => ({
+      label: `${chipLabel(key)}: ${chipValue(key, filters.values) ?? "—"}`,
+      onRemove: () => changeFilters(removeFromWidget(filters, key, i)),
+    }))
   const exportAs = (format: ExportFormat) => {
     if (!report) return
     const base = slug(report.title)
@@ -589,7 +632,7 @@ export function ReportDetailPage({
                 <ReportWidget
                   widget={widget}
                   downloadable={WIDGET_DOWNLOAD_ENABLED}
-                  filtered={marksFor(i)}
+                  filtered={widgetMarks(i)}
                 />
               </div>
             ))}

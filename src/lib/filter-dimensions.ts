@@ -1,5 +1,11 @@
 import type { Widget } from "@/data/report-details"
-import { REGIONS, SEVERITIES, type Dimension } from "@/lib/filters"
+import {
+  REGIONS,
+  SEVERITIES,
+  type Dimension,
+  type FilterValues,
+  type Scope,
+} from "@/lib/filters"
 
 /**
  * Discover what a report can be filtered by, from the report itself.
@@ -61,6 +67,36 @@ const isCategorical = (cell: string) =>
   !/^\d{4}-\d{2}-\d{2}$/.test(cell.trim())
 
 const MAX_VALUES = 8
+
+const hasBand = (labels: string[], band: readonly string[]) =>
+  band.some((b) => labels.some((l) => new RegExp(`\\b${b}\\b`, "i").test(l)))
+
+/**
+ * Which widgets can honour a widget-level filter: a table with that column, a
+ * chart whose categories are that dimension, a severity or region field. That
+ * is where a prompt's filter lands when it doesn't name widgets itself. When
+ * nothing on the canvas has the field, every widget takes the share instead —
+ * better than a filter that silently does nothing.
+ */
+export function widgetsResponsiveTo(values: Partial<FilterValues>, widgets: Widget[]): Scope {
+  const hits = new Set<number>()
+  widgets.forEach((w, i) => {
+    const columns = w.type === "table" ? w.columns : []
+    const labels =
+      w.type === "hbar" ? w.bars.map((b) => b.label)
+      : w.type === "donut" ? w.slices.map((s) => s.label)
+      : w.type === "table" ? w.rows.flat()
+      : []
+    const chartDim = w.type === "hbar" || w.type === "donut" ? dimensionOfTitle(w.title) : undefined
+
+    if (values.severity && (columns.some((c) => /severity/i.test(c)) || hasBand(labels, SEVERITIES))) hits.add(i)
+    if (values.region && (columns.some((c) => /region/i.test(c)) || hasBand(labels, REGIONS))) hits.add(i)
+    for (const name of Object.keys(values.dimensions ?? {})) {
+      if (columns.some((c) => dimensionOfColumn(c) === name) || chartDim === name) hits.add(i)
+    }
+  })
+  return hits.size ? [...hits].sort((a, b) => a - b) : widgets.map((_, i) => i)
+}
 
 /**
  * The dimensions a report offers, most useful first: the ones with more

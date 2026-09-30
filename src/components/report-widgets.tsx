@@ -1,5 +1,5 @@
 import * as React from "react"
-import { CalendarClock, ListFilter, Sparkle, TrendingDown, TrendingUp } from "lucide-react"
+import { CalendarClock, ListFilter, Sparkle, TrendingDown, TrendingUp, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -561,11 +561,12 @@ export function ReportWidget({
   /** Show the per-widget ⋮ Download menu. Only meaningful on the canvas. */
   downloadable?: boolean
   /**
-   * Filters pointed at this widget specifically ("Date: Last 60 days"), so a
-   * widget that differs from its neighbours says why. Bar-wide filters aren't
-   * listed — the bar already shows them.
+   * Filters that reach this widget in particular — a widget-level one set by
+   * prompt ("Application: ChatGPT"), or a shared one pointed here — so a
+   * widget that differs from its neighbours says why. Each mark can be taken
+   * off this widget. Bar-wide filters aren't listed; the bar shows them.
    */
-  filtered?: string[]
+  filtered?: { label: string; onRemove?: () => void }[]
 }) {
   // The wrapper is how the menu finds this widget's SVG for the PNG export —
   // `display: contents` keeps it out of the grid layout.
@@ -583,16 +584,26 @@ export function ReportWidget({
             {widget.fixedPeriod}
           </Badge>
         )}
-        {filtered && filtered.length > 0 && (
+        {filtered?.map((mark) => (
           <Badge
+            key={mark.label}
             variant="outline"
-            className="text-muted-foreground"
-            title={filtered.join("\n")}
+            className={cn("text-muted-foreground", mark.onRemove && "pr-0.5")}
           >
             <ListFilter />
-            {filtered.length === 1 ? filtered[0] : `${filtered.length} filters`}
+            {mark.label}
+            {mark.onRemove && (
+              <button
+                type="button"
+                aria-label={`Remove ${mark.label} from this widget`}
+                onClick={mark.onRemove}
+                className="ml-0.5 flex size-4 items-center justify-center rounded-full outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <X className="size-3" />
+              </button>
+            )}
           </Badge>
-        )}
+        ))}
       </>
     ) : undefined
   const chrome: Chrome = {

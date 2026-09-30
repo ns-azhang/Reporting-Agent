@@ -315,24 +315,35 @@ const touchedKeys = (values: Partial<FilterValues>): ChipKey[] => [
  * Apply an intent to the current state, marking touched filters with `source`.
  * A category only lands on a report that has a category to begin with —
  * "show me the generative AI apps" on the DLP report is a question, not a
- * filter it can honour. A prompt that names widgets scopes what it set to
- * them; one that doesn't applies to all, clearing any earlier scope.
+ * filter it can honour.
+ *
+ * Scope: a shared filter (time) reaches every widget unless the prompt named
+ * some. A widget-level filter always has a scope — the widgets the prompt
+ * named, else `widgetScope`, the widgets that can answer it. A dimension
+ * named without a value ("add a filter on application") sets nothing; the
+ * reply asks for the value instead.
  */
 export function applyIntent(
   state: FilterState,
   intent: FilterIntent,
   defaults: FilterState,
-  source: FilterSource
+  source: FilterSource,
+  widgetScope?: Scope
 ): FilterState {
   if (intent.kind === "clear") return defaults
   const next: Partial<FilterValues> = { ...intent.values }
   if (next.category && !defaults.values.category) delete next.category
+  if (next.dimensions) {
+    next.dimensions = Object.fromEntries(Object.entries(next.dimensions).filter(([, v]) => v))
+    if (!Object.keys(next.dimensions).length) delete next.dimensions
+  }
 
   const sources = { ...state.sources }
   const scopes = { ...state.scopes }
   for (const key of touchedKeys(next)) {
     sources[key] = source
-    if (intent.scope) scopes[key] = intent.scope
+    const scope = intent.scope ?? (isSharedKey(key) ? undefined : widgetScope)
+    if (scope) scopes[key] = scope
     else delete scopes[key]
   }
   const { dimensions, ...rest } = next
@@ -382,15 +393,44 @@ export function setScope(state: FilterState, key: ChipKey, scope: Scope | undefi
   return { ...state, scopes }
 }
 
-/** Every chip the bar should show, in a stable order. */
-export function activeChips(state: FilterState): ChipKey[] {
+/**
+ * Take a filter off one widget — the ✕ on its mark. The last widget going
+ * removes the filter altogether; a shared filter is only ever un-scoped.
+ */
+export function removeFromWidget(state: FilterState, key: ChipKey, widgetIndex: number): FilterState {
+  const scope = state.scopes?.[key]
+  if (!scope) return isSharedKey(key) ? state : removeFilter(state, key)
+  const rest = scope.filter((i) => i !== widgetIndex)
+  if (rest.length) return setScope(state, key, rest)
+  return isSharedKey(key) ? setScope(state, key, undefined) : removeFilter(state, key)
+}
+
+/**
+ * The filters the whole report shares — the ones the bar shows. Time is the
+ * only thing every widget answers to the same way (plus the category a
+ * category-scoped report is defined by). Everything else is set by asking and
+ * lives on the widgets it applies to, as a mark on each, never as a global
+ * chip: a "Severity" filter on a dashboard mixing incidents and alerts means
+ * something different in each, so it is applied where it can be honoured.
+ */
+export const SHARED_KEYS: readonly ChipKey[] = ["date", "category"]
+export const isSharedKey = (key: ChipKey) => SHARED_KEYS.includes(key)
+
+/** Every filter in play, shared or widget-level, in a stable order. */
+export function allChips(state: FilterState): ChipKey[] {
   const keys: ChipKey[] = ["date"]
   if (state.values.category) keys.push("category")
   if (state.values.severity) keys.push("severity")
   if (state.values.region) keys.push("region")
-  for (const name of Object.keys(state.values.dimensions ?? {})) keys.push(dimKey(name))
+  for (const [name, value] of Object.entries(state.values.dimensions ?? {})) {
+    if (value) keys.push(dimKey(name))
+  }
   return keys
 }
+
+/** The chips the bar shows: only the shared ones. */
+export const activeChips = (state: FilterState): ChipKey[] =>
+  allChips(state).filter(isSharedKey)
 
 /**
  * The filters one widget actually sees: chips scoped elsewhere fall back to
@@ -420,9 +460,17 @@ export function effectiveValues(
   return out
 }
 
-/** Chips that reach this widget by an explicit scope — what its marker lists. */
-export function scopedChipsFor(state: FilterState, widgetIndex: number): ChipKey[] {
-  return activeChips(state).filter((key) => state.scopes?.[key]?.includes(widgetIndex))
+/**
+ * What a widget's marks list: every widget-level filter that reaches it, and
+ * any shared filter pointed at it specifically. Shared filters on every
+ * widget aren't listed — the bar already shows them.
+ */
+export function marksFor(state: FilterState, widgetIndex: number): ChipKey[] {
+  return allChips(state).filter((key) => {
+    const scope = state.scopes?.[key]
+    if (scope) return scope.includes(widgetIndex)
+    return !isSharedKey(key)
+  })
 }
 
 /** True when nothing differs from the report's own defaults. */
