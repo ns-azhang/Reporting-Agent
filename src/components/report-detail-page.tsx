@@ -366,12 +366,25 @@ export function ReportDetailPage({
       const range = filterDefaults.values.date === "30d" ? "last 90 days" : "last 30 days"
       prompts.push(`Apply ${range} to ${a.title} and ${b.title}`)
     }
-    // A short value, or nothing: "…to Detect Credit card or GDPR info in
-    // managed ChatGPT Enterprise" is not an opener.
-    const short = filterContext.dimensions
-      .flatMap((d) => d.values)
-      .find((v) => v.length <= 24 && v !== first?.values[0])
-    if (short && a) prompts.push(`Only ${short} in ${a.title}`)
+    // A short value, on a widget that actually has that field — "…in Weekly
+    // Incident Count" for an application makes no sense. Nothing if neither
+    // exists: "…to Detect Credit card or GDPR info in managed ChatGPT
+    // Enterprise" is not an opener.
+    // Built here rather than from `allWidgets`, which is declared further
+    // down the component and isn't initialised when this memo first runs.
+    const canvas = report ? [...report.widgets, ...extraWidgets] : []
+    for (const dim of filterContext.dimensions) {
+      const value = dim.values.find(
+        (v) => v.length <= 24 && !/[—–·]/.test(v) && v !== first?.values[0]
+      )
+      if (!value) continue
+      const scope = widgetsResponsiveTo({ dimensions: { [dim.name]: value } }, canvas)
+      const target = scope.map((i) => filterContext.widgets[i]).find((w) => w && w.title !== "Key metrics")
+      if (target && scope.length < canvas.length) {
+        prompts.push(`Only ${value} in ${target.title}`)
+        break
+      }
+    }
     return prompts
     // eslint-disable-next-line react-hooks/exhaustive-deps -- namedWidgets derives from filterContext
   }, [filterContext, filterDefaults])

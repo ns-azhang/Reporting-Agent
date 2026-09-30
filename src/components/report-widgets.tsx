@@ -187,12 +187,27 @@ function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chro
   const rows = long && !expanded ? widget.rows.slice(0, TABLE_PREVIEW_ROWS) : widget.rows
   const capped = total >= TABLE_ROW_CAP
 
+  /**
+   * Expanding must not change the card's height — a taller card breaks the
+   * row it sits in. So the preview's height is measured as it expands and
+   * the scrolling region is held at exactly that: the eight visible rows
+   * become a scroller of the same size, and the neighbours stay aligned.
+   */
+  const region = React.useRef<HTMLDivElement>(null)
+  const [held, setHeld] = React.useState<number>()
+  const toggle = () => {
+    if (!expanded && region.current) setHeld(region.current.offsetHeight)
+    setExpanded((e) => !e)
+  }
+
   return (
     <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       <div
+        ref={region}
+        style={expanded && held ? { height: held } : undefined}
         className={cn(
           "overflow-x-auto",
-          expanded && "max-h-[22rem] overflow-y-auto rounded-md ring-1 ring-border"
+          expanded && "overflow-y-auto rounded-md ring-1 ring-border"
         )}
       >
         <Table>
@@ -226,7 +241,7 @@ function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chro
           </span>
           <button
             type="button"
-            onClick={() => setExpanded((e) => !e)}
+            onClick={toggle}
             className="font-medium text-foreground underline-offset-2 outline-none hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {expanded ? "Show less" : `Show all ${total}`}

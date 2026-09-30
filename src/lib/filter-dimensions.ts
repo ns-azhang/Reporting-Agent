@@ -119,7 +119,9 @@ export function deriveDimensions(widgets: Widget[], exclude: string[] = []): Dim
       w.columns.forEach((header, i) => {
         const dim = dimensionOfColumn(header)
         if (!dim) return
-        for (const row of w.rows) bump(dim, row[i] ?? "")
+        // Top rows only: a ranked table's tail is long and noisy, and the
+        // values worth suggesting are the ones at the top.
+        for (const row of w.rows.slice(0, 10)) bump(dim, row[i] ?? "")
       })
     } else if (w.type === "hbar" || w.type === "donut") {
       const dim = dimensionOfTitle(w.title)

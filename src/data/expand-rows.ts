@@ -12,8 +12,15 @@ import type { TableWidget, Widget } from "@/data/report-details"
  * A "Top N" table fills to N. Breakdowns (by status, by action, by region,
  * disclaimers) are left alone — a hundred statuses is not a thing.
  */
+/** Tables filled to a specific count rather than the cap. */
+const FILL_COUNTS: Record<string, number> = {
+  // 72 weeks of history — a believable number, not a round one.
+  "Weekly Incident Count": 72,
+}
+
 const FILL_TITLES = new Set([
   // dlp-overview
+  "Weekly Incident Count",
   "DLP Incidents by Application",
   "DLP Severity by App Instance",
   "Top Open DLP Incidents",
@@ -163,7 +170,8 @@ type Kind = "date" | "email" | "id" | "pool" | "numeric" | "categorical"
 function classify(header: string, cells: string[]): { kind: Kind; pool?: string[] } {
   const h = header.toLowerCase()
   const sample = cells.filter((c) => c && !/^[∅\-–—]/.test(c))
-  if (/date|week/.test(h)) return { kind: "date" }
+  // A date column holds dates — "% Change From Previous Week" does not.
+  if (/date|week/.test(h) && sample.some((c) => /^\d{4}-\d{2}-\d{2}$/.test(c))) return { kind: "date" }
   if (sample.some((c) => c.includes("@"))) return { kind: "email" }
   if (/incident id|instance id|^id$|workspace/.test(h) || sample.some((c) => /^workspace_|^\d{6,}/.test(c))) return { kind: "id" }
   if (sample.length && sample.every((c) => parseNumber(c) && !/^\d{4}-\d{2}/.test(c))) return { kind: "numeric" }
@@ -209,7 +217,10 @@ function fillTable(widget: TableWidget, total: number): TableWidget {
     return { header, kind, pool, cells, min, like, emailDomain, oldest }
   })
 
-  // Rows per day for date columns: spread the fill over the report's week.
+  // A table with one row per week is a time series, not a ranking: its
+  // dates step back a week at a time and its counts wander around the
+  // seeded level instead of falling.
+  const weekly = columns.some((c) => c.kind === "date" && /week/i.test(c.header))
   const perDay = Math.ceil(need / 7)
   const rows: string[][] = []
   for (let i = 0; i < need; i++) {
@@ -219,7 +230,7 @@ function fillTable(widget: TableWidget, total: number): TableWidget {
         switch (col.kind) {
           case "date": {
             const d = new Date(col.oldest)
-            d.setDate(col.oldest.getDate() - Math.floor(i / perDay))
+            d.setDate(col.oldest.getDate() - (weekly ? 7 * (i + 1) : Math.floor(i / perDay)))
             return isoDate(d)
           }
           case "email":
@@ -232,6 +243,12 @@ function fillTable(widget: TableWidget, total: number): TableWidget {
           }
           case "numeric": {
             if (!col.like) return "0"
+            if (weekly) {
+              // Around the seeded level, ±35%, so the series reads as history.
+              const mean = col.cells.map(parseNumber).filter(Boolean).reduce((a, n) => a + n!.value, 0) /
+                Math.max(1, col.cells.filter(parseNumber).length)
+              return formatNumber(Math.max(0, mean * (0.65 + rand() * 0.7)), col.like)
+            }
             // Continue the ranking: from just under the seeded minimum down
             // towards a fifth of it, with a little wobble — never above the
             // seeded minimum, so a table that bottoms out at 0.00 GB stays there.
@@ -254,11 +271,31 @@ function fillTable(widget: TableWidget, total: number): TableWidget {
       })
     )
   }
-  return { ...widget, rows: [...seeded, ...rows] }
+  if (!weekly) return { ...widget, rows: [...seeded, ...rows] }
+
+  // Weekly: newest first, and a "% change" column computed from the week
+  // before it rather than drawn from the seeded mix.
+  const dateCol = columns.findIndex((c) => c.kind === "date")
+  const countCol = columns.findIndex((c) => c.kind === "numeric")
+  const changeCol = columns.findIndex((c) => /% ?change/i.test(c.header))
+  const all = [...seeded, ...rows].sort((a, b) => (a[dateCol] < b[dateCol] ? 1 : -1))
+  if (changeCol >= 0 && countCol >= 0) {
+    for (let i = 0; i < all.length; i++) {
+      const cur = parseNumber(all[i][countCol])?.value
+      const prev = parseNumber(all[i + 1]?.[countCol] ?? "")?.value
+      all[i] = [...all[i]]
+      all[i][changeCol] =
+        cur === undefined || prev === undefined || prev === 0
+          ? "∅"
+          : `${cur >= prev ? "+" : "−"}${Math.round((Math.abs(cur - prev) / prev) * 100)}%`
+    }
+  }
+  return { ...widget, rows: all }
 }
 
-/** How many rows a titled table should hold: its "Top N", else the cap. */
+/** How many rows a titled table should hold: a set count, its "Top N", else the cap. */
 const targetRows = (title: string) => {
+  if (FILL_COUNTS[title]) return FILL_COUNTS[title]
   const n = /\btop (\d+)\b/i.exec(title)
   return n ? Math.min(ROW_CAP, Number(n[1])) : ROW_CAP
 }
