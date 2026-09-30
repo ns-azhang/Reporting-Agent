@@ -61,7 +61,7 @@ import type {
 /** Every widget closes with its own insight paragraph, as in the prototype. */
 function Insight({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2 border-t border-border pt-3">
+    <div className="mt-auto flex gap-2 border-t border-border pt-3">
       {/* One four-point sparkle: the "AI wrote this" cue without the cluster. */}
       <Sparkle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
       <p className="text-xs leading-relaxed text-muted-foreground">{children}</p>
@@ -103,7 +103,10 @@ function WidgetShell({
   return (
     <section
       className={cn(
-        "relative flex flex-col gap-3",
+        // h-full: fill the grid row, so two cards side by side are the same
+        // height whatever they hold; the insight then sits at the bottom of
+        // both (mt-auto), and the empty space is inside the card, not under it.
+        "relative flex h-full flex-col gap-3",
         !bare &&
           "rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10",
         className
@@ -177,8 +180,11 @@ function KpiRow({ widget, bare, menu, marks }: { widget: KpiWidget } & Chrome) {
   )
 }
 
-/** Rows per page; enough to read the shape of the data, short enough to fit a card. */
-const TABLE_PAGE_ROWS = 8
+/**
+ * Rows per page. Five, so a table card comes out the same height as the
+ * chart card beside it (a 220px plot plus legend) instead of towering over it.
+ */
+const TABLE_PAGE_ROWS = 5
 
 /**
  * A table widget pages through its rows eight at a time: "1–8 of 100" with
