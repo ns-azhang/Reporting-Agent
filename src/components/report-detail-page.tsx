@@ -61,6 +61,7 @@ import {
   isFilterCommand,
   marksFor,
   removeFromWidget,
+  withoutTimeSpan,
   type FilterContext,
   type FilterIntent,
   type FilterState,
@@ -494,11 +495,14 @@ export function ReportDetailPage({
                   </Badge>
                 </div>
                 <p className="max-w-2xl text-sm text-muted-foreground">
-                  {/* A category-scoped report names its category here; keep
+                  {/* The Date chip states the window, so the sentence doesn't.
+                      A category-scoped report names its category here; keep
                       that in step with the chip. */}
-                  {fixedCategory && filters.values.category
-                    ? report.description.replace(fixedCategory, filters.values.category)
-                    : report.description}
+                  {withoutTimeSpan(
+                    fixedCategory && filters.values.category
+                      ? report.description.replace(fixedCategory, filters.values.category)
+                      : report.description
+                  )}
                 </p>
               </div>
               {/* Actions stack above the freshness line rather than sharing a

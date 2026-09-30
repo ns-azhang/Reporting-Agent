@@ -151,6 +151,33 @@ export function defaultFilters(
   return { values, sources }
 }
 
+/**
+ * The description without its time span — "… and resolution over the last 7
+ * days." becomes "… and resolution." The Date chip states the window now, so
+ * the sentence under the title shouldn't also, and would be wrong the moment
+ * the chip changes. The seeded text keeps the span, since `defaultFilters`
+ * reads the report's default range from it.
+ */
+export function withoutTimeSpan(description: string): string {
+  return (
+    description
+      // "— last 7 days." / "for the last 90 days." / "over the last 7 days."
+      .replace(/\s*[—–-]\s*(?:over |for |in )?(?:the )?last \d+ (?:days|months)\.?$/i, ".")
+      .replace(/\s+(?:over|for|in) the last \d+ (?:days|months)\b/gi, "")
+      // ". Last 7 days." at the end, or ". Last 7 days, X category."
+      .replace(/\.\s*Last \d+ (?:days|months)\.$/i, ".")
+      .replace(/\.\s*Last \d+ (?:days|months),\s*/i, ". ")
+      // "for June 2025."
+      .replace(/\s+for (?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec) \d{4}\./i, ".")
+      // "30-day trend" → "trend"; "… based on the last 30, …" → "…, …"
+      .replace(/\b\d+-day (trend)\b/gi, "$1")
+      .replace(/\s+based on the last \d+\b/i, "")
+      .replace(/\s+\./g, ".")
+      .replace(/\.\.+$/, ".")
+      .trim()
+  )
+}
+
 /* ------------------------------- extraction ------------------------------- */
 
 /** Ways people refer to a category that aren't its display name. */
