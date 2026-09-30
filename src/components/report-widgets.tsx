@@ -179,15 +179,14 @@ function KpiRow({ widget, bare, menu, marks }: { widget: KpiWidget } & Chrome) {
 
 /** Rows per page; enough to read the shape of the data, short enough to fit a card. */
 const TABLE_PAGE_ROWS = 8
-/** Beta returns at most this many rows per table. */
-const TABLE_ROW_CAP = 100
 
 /**
  * A table widget pages through its rows eight at a time: "1–8 of 100" with
  * ‹ › beneath. The card never changes size — the first page's height is
  * held, so a short last page doesn't shrink it — and the position is always
  * stated, which an expanding scroller lost. The insight stays under the
- * table, summarising the whole of it, not the page.
+ * table, summarising the whole of it, not the page. Beta's 100-row cap is a
+ * property of the data, not something the widget announces.
  */
 function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chrome) {
   const [page, setPage] = React.useState(0)
@@ -197,7 +196,6 @@ function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chro
   const current = Math.min(page, pages - 1)
   const start = current * TABLE_PAGE_ROWS
   const rows = paged ? widget.rows.slice(start, start + TABLE_PAGE_ROWS) : widget.rows
-  const capped = total >= TABLE_ROW_CAP
 
   // Hold the first page's height so every page — including a short last one
   // — leaves the card the same size and the row it sits in aligned.
@@ -239,9 +237,8 @@ function DataTable({ widget, bare, menu, marks }: { widget: TableWidget } & Chro
       </div>
       {paged && (
         <div className="-mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span title={capped ? `Beta returns the first ${TABLE_ROW_CAP} rows` : undefined}>
+          <span>
             {start + 1}–{Math.min(start + TABLE_PAGE_ROWS, total)} of {total}
-            {capped && <span className="text-muted-foreground/70"> · first {TABLE_ROW_CAP} returned</span>}
           </span>
           <div className="flex items-center gap-1">
             <Button
