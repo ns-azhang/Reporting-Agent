@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   ChevronDown,
   Check,
-  FileDown,
   MessageSquare,
   PanelRightClose,
   RefreshCw,
@@ -30,6 +29,8 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
@@ -454,35 +455,39 @@ export function ReportDetailPage({
                     {showSaved ? <Check /> : <Save />}
                     {showSaved ? "Saved" : "Save"}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={refresh}
-                    disabled={refreshing}
-                  >
-                    <RefreshCw
-                      className={refreshing ? "animate-spin" : undefined}
-                    />
-                    Refresh
-                  </Button>
-                  {/* Off for now, like Copy share link on the card menu.
-                      Kept in place rather than removed so the header keeps its
-                      shape — a plain Button, so `disabled` reaches the element
-                      and its own variants grey it out and stop the clicks. */}
-                  <Button variant="outline" size="sm" disabled>
-                    <Share2 />
-                    Share
-                  </Button>
+                  {/* Save is the one control whose state matters — it changes
+                      when there is unsaved work — so it stays out. Refresh,
+                      Share and Export are occasional, so they share one menu.
+                      A labelled "More" rather than a bare ⋮: the same 32px
+                      button as its neighbours to hit, not a 16px glyph. */}
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={<Button variant="outline" size="sm" />}
                     >
-                      <FileDown />
-                      Export
+                      More
                       <ChevronDown className="opacity-60" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuContent align="end" className="w-52">
                       <DropdownMenuGroup>
+                        <DropdownMenuItem onClick={refresh} disabled={refreshing}>
+                          <RefreshCw
+                            className={refreshing ? "animate-spin" : undefined}
+                          />
+                          Refresh
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {refreshing ? "Running…" : freshness}
+                          </span>
+                        </DropdownMenuItem>
+                        {/* Off for beta, like Copy share link on the card menu;
+                            listed so the shape of the menu is already right. */}
+                        <DropdownMenuItem disabled>
+                          <Share2 />
+                          Share
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel>Export</DropdownMenuLabel>
                         {(["JSON", "PDF", "CSV"] as const).map((format) => (
                           <DropdownMenuItem
                             key={format}
