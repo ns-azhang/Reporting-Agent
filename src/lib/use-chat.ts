@@ -169,6 +169,24 @@ export function useChat(
   const note = (text: string, link?: { reportId: string; label: string }) =>
     push({ role: "note", text, link })
 
+  /**
+   * A prompt that is an instruction, not a question — "apply last 60 days to
+   * widgets 1 and 2". The user's line lands, the assistant thinks for a beat,
+   * and answers with what it did rather than with an analysis nobody asked
+   * for. Intent classification is bypassed entirely.
+   */
+  const ack = (text: string, reply: string) => {
+    const prompt = text.trim()
+    if (!prompt || thinking) return
+    push({ role: "user", text: prompt })
+    setThinking(true)
+    clearTimers()
+    after(THINKING_MS, () => {
+      setThinking(false)
+      push({ role: "note", text: reply })
+    })
+  }
+
   /** Start over, or drop into a session restored from history. */
   const reset = (seed: ChatTurn[] = []) => {
     clearTimers()
@@ -178,5 +196,5 @@ export function useChat(
     setTurns(seed)
   }
 
-  return { turns, thinking, send, note, reset }
+  return { turns, thinking, send, note, ack, reset }
 }

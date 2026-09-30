@@ -193,6 +193,7 @@ export function App() {
               extraWidgets={savedWidgets[openReportId] ?? []}
               savableReports={savableReports}
               onNote={reportChat.note}
+              onAck={reportChat.ack}
               onSaveWidget={saveWidgets}
               onOpenReport={(id) => openReport(id, "my-reports")}
             />

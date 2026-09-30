@@ -49,12 +49,16 @@ import {
   applyIntent,
   chipLabel,
   chipValue,
+  dateLabel,
   defaultFilters,
   describeFilters,
+  describeScope,
   effectiveValues,
   extractFilters,
+  isFilterCommand,
   scopedChipsFor,
   type FilterContext,
+  type FilterIntent,
   type FilterState,
 } from "@/lib/filters"
 import { getReportDetail, type Widget } from "@/data/report-details"
@@ -106,6 +110,11 @@ type ReportDetailPageProps = {
   onOpenReport?: (reportId: string) => void
   /** Record a finished ⋮ action in the thread. */
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
+  /**
+   * Answer an instruction with a confirmation instead of an analysis — a
+   * prompt that only sets filters gets told what changed, not a chart.
+   */
+  onAck?: (text: string, reply: string) => void
   /** Add a chart to a report, so the note's link tells the truth. */
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
 }
@@ -123,6 +132,7 @@ export function ReportDetailPage({
   extraWidgets = [],
   onOpenReport,
   onNote,
+  onAck,
   onSaveWidget,
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
@@ -225,13 +235,54 @@ export function ReportDetailPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on what changes the widget set
   }, [reportId, widgetCount, fixedCategory])
 
+  /**
+   * What the assistant says back when a prompt was an instruction to the
+   * filters: what it set, where it applies, what the rest of the report is
+   * still on, and how to undo it without typing.
+   */
+  const filterReply = (intent: FilterIntent): string => {
+    if (intent.kind === "clear") {
+      return `Cleared all filters. The report is back on ${dateLabel(filterDefaults.values.date)}${
+        filterDefaults.values.category ? `, ${filterDefaults.values.category}` : ""
+      }.`
+    }
+    const what = describeFilters(intent.values)
+    const pending = Object.values(intent.values.dimensions ?? {}).some((v) => v === "")
+    if (pending) {
+      return `Added the filter to the bar — pick a value from the chip and the report will narrow to it.`
+    }
+    if (intent.scope) {
+      const rest = filterContext.widgets.length - intent.scope.length
+      return `Applied ${what} to ${describeScope(intent.scope, filterContext.widgets)}. ${
+        rest > 0
+          ? `The other ${rest} widget${rest === 1 ? "" : "s"} stay on ${dateLabel(filters.values.date)}.`
+          : ""
+      } Each of those widgets now carries a filter mark; change or remove it from the chip.`.replace(/\s+/g, " ")
+    }
+    return `Applied ${what} across the report. Change it from the chip, point it at specific widgets under “Applies to”, or say “clear all filters”.`
+  }
+
   /** Answer the prompt, and expose whatever scope it set. */
   const sendPrompt = (text: string, responseId?: string) => {
     if (!text.trim() || thinking) return
+    const intent = responseId ? null : extractFilters(text, filterContext)
+
+    // An instruction to the filters is answered with what changed, not with
+    // an analysis it didn't ask for. The chips land as the reply does.
+    if (intent && onAck && isFilterCommand(text)) {
+      onAck(text, filterReply(intent))
+      window.setTimeout(() => {
+        setFilters((current) => applyIntent(current, intent, filterDefaults, "ai"))
+        setFilterFlash((k) => k + 1)
+        refresh()
+      }, 800)
+      return
+    }
+
     onSend(text, responseId)
-    const intent = extractFilters(text, filterContext)
     if (!intent) return
-    // Land with the answer, not before it: the chat's thinking beat is 800ms.
+    // A question that also narrows: answer it, then land the chips with a
+    // note. The chat's thinking beat is 800ms.
     window.setTimeout(() => {
       setFilters((current) => applyIntent(current, intent, filterDefaults, "ai"))
       setFilterFlash((k) => k + 1)
@@ -243,6 +294,23 @@ export function ReportDetailPage({
       )
     }, 1_000)
   }
+
+  /**
+   * Openers that show the filters are conversational, built from this report:
+   * a real value to narrow to, a scoped date, a dimension to add. Without
+   * these nobody would know the bar listens to the chat.
+   */
+  const filterPrompts = React.useMemo(() => {
+    const [first, second] = filterContext.dimensions
+    const prompts: string[] = []
+    if (first?.values[0]) prompts.push(`Show only ${first.values[0]}`)
+    if (filterContext.widgets.length >= 2) {
+      const range = filterDefaults.values.date === "30d" ? "last 90 days" : "last 30 days"
+      prompts.push(`Apply ${range} to widgets 1 and 2`)
+    }
+    if (second) prompts.push(`Add a filter on ${second.name.toLowerCase()}`)
+    return prompts
+  }, [filterContext, filterDefaults])
 
   /**
    * Save tracks unsaved work, not ownership.
@@ -581,6 +649,25 @@ export function ReportDetailPage({
                     {prompt}
                   </button>
                 ))}
+
+                {/* The same shape as Try asking, so it reads as "you can also
+                    say this" rather than as a separate control. */}
+                {filterPrompts.length > 0 && (
+                  <>
+                    <span className="mt-2 text-xs font-medium text-muted-foreground">
+                      Try filtering
+                    </span>
+                    {filterPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => sendPrompt(prompt)}
+                        className="rounded-md border border-border px-3 py-2 text-left text-xs outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
             )}
 
