@@ -408,7 +408,9 @@ function TrendChart({
   return (
     <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       {/* Extra headroom so a marker's label isn't clipped by the plot edge. */}
-      <ChartContainer config={config} className="h-[220px] w-full">
+      {/* Same idea as the bar chart: fill the card's remaining height, so a
+          trend beside a table or a taller chart doesn't leave a gap. */}
+      <ChartContainer config={config} className="min-h-[220px] w-full flex-1">
         <LineChart data={data} margin={{ left: 4, right: 8, top: anomalies.length ? 24 : 8 }}>
           {/* Solid hairline, not dashed: a dashed grid adds texture that
               competes with the data for attention. Recessive is the job. */}
@@ -487,11 +489,17 @@ function HorizontalBars({ widget, bare, menu, marks }: { widget: HBarWidget } & 
 
   return (
     <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
-      <ChartContainer
-        config={config}
-        className="w-full"
-        style={{ height: Math.max(160, data.length * 30) }}
+      {/* The plot fills whatever height the card has left rather than sizing
+          to its bar count, so two bar charts side by side — 5 bars and 9 —
+          both fill their cards instead of one leaving a gap under the plot.
+          Bars spread to the space; maxBarSize keeps a 3-bar chart from
+          turning into slabs. */}
+      <div
+        className="flex flex-1 flex-col"
+        // Never below 26px a bar, so every label keeps its line.
+        style={{ minHeight: Math.max(180, data.length * 26) }}
       >
+        <ChartContainer config={config} className="h-full w-full flex-1">
         <BarChart data={data} layout="vertical" margin={{ left: 4, right: 24 }}>
           {/* Solid hairline — see the note on the trend chart's grid. */}
           <CartesianGrid horizontal={false} />
@@ -503,18 +511,20 @@ function HorizontalBars({ widget, bare, menu, marks }: { widget: HBarWidget } & 
             axisLine={false}
             width={150}
             fontSize={11}
+            interval={0}
           />
           {/* nameKey points the tooltip at the untruncated label. */}
           <ChartTooltip
             content={<ChartTooltipContent nameKey="label" />}
           />
-          <Bar dataKey="value" radius={4}>
+          <Bar dataKey="value" radius={4} maxBarSize={28}>
             {data.map((bar) => (
               <Cell key={bar.label} fill={bar.color ?? "#94a3b8"} />
             ))}
           </Bar>
         </BarChart>
-      </ChartContainer>
+        </ChartContainer>
+      </div>
     </WidgetShell>
   )
 }
