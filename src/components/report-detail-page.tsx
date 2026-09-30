@@ -4,6 +4,7 @@ import {
   ChevronDown,
   Check,
   MessageSquare,
+  MoreVertical,
   PanelRightClose,
   RefreshCw,
   Save,
@@ -522,8 +523,9 @@ export function ReportDetailPage({
                   {/* Save and Refresh stay at the first level: Save because
                       its state matters, Refresh because it is the one action
                       used often. Share and Export are occasional, so they
-                      share one menu. A labelled "More" rather than a bare ⋮:
-                      the same 32px button as its neighbours to hit. */}
+                      share one menu behind a ⋮ — outlined and 32px square, so
+                      it has the same height and hit area as its neighbours
+                      rather than being a bare glyph. */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -537,10 +539,15 @@ export function ReportDetailPage({
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      render={<Button variant="outline" size="sm" />}
+                      render={
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          aria-label="More actions"
+                        />
+                      }
                     >
-                      More
-                      <ChevronDown className="opacity-60" />
+                      <MoreVertical />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuGroup>
