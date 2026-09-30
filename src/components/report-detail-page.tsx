@@ -283,9 +283,9 @@ export function ReportDetailPage({
       } Each carries a filter mark you can take off.`
     }
     if (shared && !where) {
-      return `Applied ${what} across the report. Change it from the chip, or ask for it on particular widgets — “${dateLabel(
-        intent.values.date ?? filters.values.date
-      ).toLowerCase()} for widgets 1 and 2”.`
+      const [a, b] = namedWidgets
+      const example = a && b ? ` — “${dateLabel(intent.values.date ?? filters.values.date).toLowerCase()} for ${a.title} and ${b.title}”` : ""
+      return `Applied ${what} across the report. Change it from the chip, or ask for it on particular widgets${example}.`
     }
     const all = where!.length === filterContext.widgets.length
     if (all) {
@@ -307,7 +307,7 @@ export function ReportDetailPage({
 
     // An instruction to the filters is answered with what changed, not with
     // an analysis it didn't ask for. The filters land as the reply does.
-    if (intent && onAck && isFilterCommand(text)) {
+    if (intent && onAck && isFilterCommand(text, filterContext)) {
       onAck(text, filterReply(intent, scope))
       window.setTimeout(() => {
         setFilters((current) => applyIntent(current, intent, filterDefaults, "ai", scope))
@@ -338,21 +338,25 @@ export function ReportDetailPage({
    * a real value to narrow to, a scoped date, a dimension to add. Without
    * these nobody would know the bar listens to the chat.
    */
+  /** Widgets addressed by name — numbers appear nowhere on the canvas. */
+  const namedWidgets = filterContext.widgets.filter((w) => w.title !== "Key metrics")
   const filterPrompts = React.useMemo(() => {
     const [first] = filterContext.dimensions
+    const [a, b] = namedWidgets
     const prompts: string[] = []
     if (first?.values[0]) prompts.push(`Show only ${first.values[0]}`)
-    if (filterContext.widgets.length >= 2) {
+    if (a && b) {
       const range = filterDefaults.values.date === "30d" ? "last 90 days" : "last 30 days"
-      prompts.push(`Apply ${range} to widgets 1 and 2`)
+      prompts.push(`Apply ${range} to ${a.title} and ${b.title}`)
     }
-    // A short value, or nothing: "Filter widget 2 to Detect Credit card or
-    // GDPR info in managed ChatGPT Enterprise" is not an opener.
+    // A short value, or nothing: "…to Detect Credit card or GDPR info in
+    // managed ChatGPT Enterprise" is not an opener.
     const short = filterContext.dimensions
       .flatMap((d) => d.values)
       .find((v) => v.length <= 24 && v !== first?.values[0])
-    if (short) prompts.push(`Only ${short} in widget 2`)
+    if (short && a) prompts.push(`Only ${short} in ${a.title}`)
     return prompts
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- namedWidgets derives from filterContext
   }, [filterContext, filterDefaults])
 
   /**

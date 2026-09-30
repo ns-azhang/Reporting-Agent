@@ -102,7 +102,7 @@ export function FilterBar({
             value={current || undefined}
             source={sources[key]}
             scope={scopes?.[key]}
-            widgetCount={widgets.length}
+            widgets={widgets}
             flashKey={flashKey}
             onRemove={removable ? () => onChange(removeFilter(state, key)) : undefined}
           >
@@ -194,12 +194,22 @@ export function FilterBar({
   )
 }
 
-/** "· widgets 1, 2" — how a scoped chip says where it reaches. */
-function scopeText(scope: Scope | undefined, total: number) {
-  if (!scope || scope.length === 0 || scope.length >= total) return undefined
-  if (scope.length === 1) return `widget ${scope[0] + 1}`
-  if (scope.length <= 3) return `widgets ${scope.map((i) => i + 1).join(", ")}`
-  return `${scope.length} widgets`
+/**
+ * How a scoped chip says where it reaches — by name, since widgets carry no
+ * numbers on the canvas: one widget's title, or "2 widgets" with the titles
+ * on hover.
+ */
+function scopeText(
+  scope: Scope | undefined,
+  widgets: { index: number; title: string }[]
+): { text: string; title: string } | undefined {
+  if (!scope || scope.length === 0 || scope.length >= widgets.length) return undefined
+  const names = scope.map((i) => widgets.find((w) => w.index === i)?.title ?? `widget ${i + 1}`)
+  const text =
+    names.length === 1
+      ? names[0].length > 28 ? `${names[0].slice(0, 27)}…` : names[0]
+      : `${names.length} widgets`
+  return { text, title: names.join("\n") }
 }
 
 /**
@@ -214,7 +224,7 @@ function Chip({
   value,
   source,
   scope,
-  widgetCount,
+  widgets,
   flashKey,
   onRemove,
   children,
@@ -223,14 +233,14 @@ function Chip({
   value?: string
   source?: FilterSource
   scope?: Scope
-  widgetCount: number
+  widgets: { index: number; title: string }[]
   flashKey: number
   onRemove?: () => void
   children: React.ReactNode
 }) {
   const byAi = source === "ai"
   const pending = !value
-  const where = scopeText(scope, widgetCount)
+  const where = scopeText(scope, widgets)
   return (
     <div
       key={byAi ? flashKey : -1}
@@ -262,7 +272,11 @@ function Chip({
           <span className={cn("font-medium", pending && "font-normal text-muted-foreground italic")}>
             {value ?? "Choose…"}
           </span>
-          {where && <span className="text-muted-foreground">· {where}</span>}
+          {where && (
+            <span className="text-muted-foreground" title={where.title}>
+              · {where.text}
+            </span>
+          )}
           <ChevronDown className="size-3 opacity-60" />
         </DropdownMenuTrigger>
         {/* Values only. Pointing the date at particular widgets is done by

@@ -289,8 +289,11 @@ export function extractFilters(prompt: string, ctx?: FilterContext): FilterInten
  * "Why did critical incidents spike this week?" wants an answer (and the
  * filter as a side effect). Questions win when both readings are possible.
  */
-export function isFilterCommand(prompt: string): boolean {
-  const t = prompt.toLowerCase()
+export function isFilterCommand(prompt: string, ctx?: FilterContext): boolean {
+  let t = prompt.toLowerCase()
+  // Widget titles are addresses, not questions: "Trend of DLP Incidents by
+  // Creation Date" must not read as asking about a trend.
+  for (const w of ctx?.widgets ?? []) t = t.replace(w.title.toLowerCase(), " ")
   if (/\b(why|what|which|who|how|compare|forecast|predict|explain|summari[sz]e|break ?down|drill|trend|top \d+)\b|\?/.test(t))
     return false
   return /\b(apply|filter|filters|only|set|switch|change|narrow|limit|restrict|scope|clear|reset|remove|add a|show (?:me )?(?:only|just)|for widgets?)\b/.test(t)
