@@ -507,16 +507,58 @@ export function ReportDetailPage({
                       : reportBadgeLabel(origin, owned)}
                   </Badge>
                 </div>
-                <p className="max-w-2xl text-sm text-muted-foreground">
-                  {/* The Date chip states the window, so the sentence doesn't.
-                      A category-scoped report names its category here; keep
-                      that in step with the chip. */}
-                  {withoutTimeSpan(
-                    fixedCategory && filters.values.category
-                      ? report.description.replace(fixedCategory, filters.values.category)
-                      : report.description
+                {/* The description and "About this report" are one thing —
+                    what the report is — so the disclosure sits inline at the
+                    end of the sentence and opens beneath it, above the filter
+                    bar, which then divides "what it is" from "what it shows". */}
+                <Collapsible className="flex flex-col gap-2">
+                  <p className="max-w-2xl text-sm text-muted-foreground">
+                    {/* The Date chip states the window, so the sentence
+                        doesn't. A category-scoped report names its category
+                        here; keep that in step with the chip. */}
+                    {withoutTimeSpan(
+                      fixedCategory && filters.values.category
+                        ? report.description.replace(fixedCategory, filters.values.category)
+                        : report.description
+                    )}
+                    {report.about && (
+                      <>
+                        {" "}
+                        <CollapsibleTrigger
+                          render={
+                            <button
+                              type="button"
+                              className="group inline-flex items-center gap-1 align-baseline whitespace-nowrap text-foreground/80 underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
+                            />
+                          }
+                        >
+                          About this report
+                          <ChevronDown className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-180" />
+                        </CollapsibleTrigger>
+                      </>
+                    )}
+                  </p>
+                  {report.about && (
+                    <CollapsibleContent>
+                      <div className="flex flex-col gap-2 pl-1">
+                        <p className="max-w-2xl text-sm text-muted-foreground">
+                          {report.about.blurb}
+                        </p>
+                        <ul className="flex flex-col gap-1">
+                          {report.about.questions.map((q: string) => (
+                            <li
+                              key={q}
+                              className="flex gap-2 text-sm text-muted-foreground"
+                            >
+                              <span aria-hidden>•</span>
+                              {q}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </CollapsibleContent>
                   )}
-                </p>
+                </Collapsible>
               </div>
               {/* Actions stack above the freshness line rather than sharing a
                   row with it: three labelled buttons plus a timestamp is more
@@ -619,45 +661,6 @@ export function ReportDetailPage({
               flashKey={filterFlash}
             />
 
-            {/* About this report — collapsed by default so it doesn't push the
-                data below the fold. */}
-            {report.about && (
-            <Collapsible>
-              {/* Reads as a disclosure, not a stray line of text: link styling
-                  so it underlines on hover, and the chevron after the label
-                  where a disclosure's arrow belongs — turning over when open. */}
-              <CollapsibleTrigger
-                render={
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="group -ml-2.5 w-fit gap-1.5 text-muted-foreground hover:text-foreground"
-                  />
-                }
-              >
-                About this report
-                <ChevronDown className="transition-transform duration-200 group-aria-expanded:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="flex flex-col gap-2 pt-2 pl-1">
-                  <p className="max-w-2xl text-sm text-muted-foreground">
-                    {report.about.blurb}
-                  </p>
-                  <ul className="flex flex-col gap-1">
-                    {report.about.questions.map((q: string) => (
-                      <li
-                        key={q}
-                        className="flex gap-2 text-sm text-muted-foreground"
-                      >
-                        <span aria-hidden>•</span>
-                        {q}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-            )}
           </div>
 
           {/* KPI row spans both columns; the rest sit half-width, as in v5.
