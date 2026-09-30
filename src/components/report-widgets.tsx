@@ -408,9 +408,10 @@ function TrendChart({
   return (
     <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
       {/* Extra headroom so a marker's label isn't clipped by the plot edge. */}
-      {/* Same idea as the bar chart: fill the card's remaining height, so a
-          trend beside a table or a taller chart doesn't leave a gap. */}
-      <ChartContainer config={config} className="min-h-[220px] w-full flex-1">
+      {/* A fixed plot height, not fill: a trend reads best at one consistent
+          size across the report, and 220px is it. Any slack in the card sits
+          between plot and insight. */}
+      <ChartContainer config={config} className="h-[220px] w-full">
         <LineChart data={data} margin={{ left: 4, right: 8, top: anomalies.length ? 24 : 8 }}>
           {/* Solid hairline, not dashed: a dashed grid adds texture that
               competes with the data for attention. Recessive is the job. */}
