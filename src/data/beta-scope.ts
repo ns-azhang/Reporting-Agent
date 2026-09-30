@@ -31,6 +31,14 @@ export const isHiddenResponse = (id: string | undefined): boolean =>
   !!id && HIDDEN_RESPONSE_IDS.has(id)
 
 /**
+ * The per-widget ⋮ → Download… menu (AA's dialog: format, results, values,
+ * rows). Off for beta by the same rule — it takes data out. The report-level
+ * Export stays. Flip to true to bring the menu back; the dialog and the
+ * serializers are untouched.
+ */
+export const WIDGET_DOWNLOAD_ENABLED = false
+
+/**
  * A response with its out-of-scope follow-ups stripped, so a chip can never
  * offer a route to something beta doesn't have. Reached only through here and
  * `classifyPrompt`, which are the two ways a response is ever selected.

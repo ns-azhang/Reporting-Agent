@@ -61,6 +61,7 @@ import {
   type FilterIntent,
   type FilterState,
 } from "@/lib/filters"
+import { WIDGET_DOWNLOAD_ENABLED } from "@/data/beta-scope"
 import { getReportDetail, type Widget } from "@/data/report-details"
 import {
   SHARED_ACCESS,
@@ -580,7 +581,11 @@ export function ReportDetailPage({
                 key={i}
                 className={widget.size === "full" ? "sm:col-span-2" : undefined}
               >
-                <ReportWidget widget={widget} downloadable filtered={marksFor(i)} />
+                <ReportWidget
+                  widget={widget}
+                  downloadable={WIDGET_DOWNLOAD_ENABLED}
+                  filtered={marksFor(i)}
+                />
               </div>
             ))}
           </div>
