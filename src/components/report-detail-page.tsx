@@ -498,11 +498,22 @@ export function ReportDetailPage({
                     {showSaved ? <Check /> : <Save />}
                     {showSaved ? "Saved" : "Save"}
                   </Button>
-                  {/* Save is the one control whose state matters — it changes
-                      when there is unsaved work — so it stays out. Refresh,
-                      Share and Export are occasional, so they share one menu.
-                      A labelled "More" rather than a bare ⋮: the same 32px
-                      button as its neighbours to hit, not a 16px glyph. */}
+                  {/* Save and Refresh stay at the first level: Save because
+                      its state matters, Refresh because it is the one action
+                      used often. Share and Export are occasional, so they
+                      share one menu. A labelled "More" rather than a bare ⋮:
+                      the same 32px button as its neighbours to hit. */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refresh}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw
+                      className={refreshing ? "animate-spin" : undefined}
+                    />
+                    Refresh
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={<Button variant="outline" size="sm" />}
@@ -510,17 +521,8 @@ export function ReportDetailPage({
                       More
                       <ChevronDown className="opacity-60" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={refresh} disabled={refreshing}>
-                          <RefreshCw
-                            className={refreshing ? "animate-spin" : undefined}
-                          />
-                          Refresh
-                          <span className="ml-auto text-xs text-muted-foreground">
-                            {refreshing ? "Running…" : freshness}
-                          </span>
-                        </DropdownMenuItem>
                         {/* Off for beta, like Copy share link on the card menu;
                             listed so the shape of the menu is already right. */}
                         <DropdownMenuItem disabled>
