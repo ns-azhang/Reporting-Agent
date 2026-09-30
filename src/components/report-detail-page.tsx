@@ -14,6 +14,7 @@ import {
 
 import { Conversation } from "@/components/conversation"
 import { FilterBar } from "@/components/filter-bar"
+import { WidgetNames } from "@/components/widget-names"
 import { ReportWidget } from "@/components/report-widgets"
 import type { SavableReport } from "@/components/card-menu"
 import type { ChatTurn } from "@/lib/use-chat"
@@ -340,6 +341,20 @@ export function ReportDetailPage({
    */
   /** Widgets addressed by name — numbers appear nowhere on the canvas. */
   const namedWidgets = filterContext.widgets.filter((w) => w.title !== "Key metrics")
+
+  /**
+   * A widget name in the chat is a reference to something on the left. It is
+   * set in bold so it reads as one, and hovering it lights that widget up on
+   * the canvas — so "Weekly Incident Count" never has to be found by eye.
+   */
+  const [highlighted, setHighlighted] = React.useState<number | null>(null)
+  const renderText = React.useCallback(
+    (text: string) => (
+      <WidgetNames text={text} widgets={namedWidgets} onHover={setHighlighted} />
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- namedWidgets derives from filterContext
+    [filterContext]
+  )
   const filterPrompts = React.useMemo(() => {
     const [first] = filterContext.dimensions
     const [a, b] = namedWidgets
@@ -634,7 +649,11 @@ export function ReportDetailPage({
             {shownWidgets.map((widget, i) => (
               <div
                 key={i}
-                className={widget.size === "full" ? "sm:col-span-2" : undefined}
+                className={cn(
+                  "rounded-xl transition-shadow",
+                  widget.size === "full" && "sm:col-span-2",
+                  highlighted === i && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background"
+                )}
               >
                 <ReportWidget
                   widget={widget}
@@ -691,6 +710,7 @@ export function ReportDetailPage({
                 onNote={onNote}
                 onSaveWidget={onSaveWidget}
                 onOpenReport={onOpenReport}
+                renderText={renderText}
               />
             )}
 
@@ -723,7 +743,7 @@ export function ReportDetailPage({
                         onClick={() => sendPrompt(prompt)}
                         className="rounded-md border border-border px-3 py-2 text-left text-xs outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                       >
-                        {prompt}
+                        {renderText(prompt)}
                       </button>
                     ))}
                   </>

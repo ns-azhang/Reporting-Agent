@@ -95,11 +95,14 @@ function widgetToSave(response: Response, widgets: Widget[]): Widget | undefined
   return { ...primary, title: response.title, insight: response.summary }
 }
 
-function UserBubble({ text }: { text: string }) {
+/** How a page wants plain chat text drawn — e.g. with widget names in bold. */
+export type RenderText = (text: string) => React.ReactNode
+
+function UserBubble({ text, renderText }: { text: string; renderText?: RenderText }) {
   return (
     <div className="flex justify-end">
       <p className="max-w-[80%] rounded-xl bg-primary px-4 py-2.5 text-sm text-primary-foreground">
-        {text}
+        {renderText ? renderText(text) : text}
       </p>
     </div>
   )
@@ -203,16 +206,18 @@ function NoteCard({
   text,
   link,
   onOpenReport,
+  renderText,
 }: {
   text: string
   link?: { reportId: string; label: string }
   onOpenReport?: (reportId: string) => void
+  renderText?: RenderText
 }) {
   return (
     <div className="flex items-start gap-2.5 rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10">
       <Sparkles className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <p className="text-sm leading-relaxed">
-        {text}
+        {renderText ? renderText(text) : text}
         {link && (
           <>
             {" "}
@@ -483,11 +488,14 @@ export function Conversation({
   onNote,
   onSaveWidget,
   onOpenReport,
+  renderText,
 }: {
   turns: ChatTurn[]
   thinking?: boolean
   onPickFollowUp?: (text: string, responseId?: string) => void
   onAnswerClarify?: (label: string) => void
+  /** Draw plain user and note text — used to set widget names in bold. */
+  renderText?: RenderText
   /** Reports the Save to menu can save a chart into. */
   savableReports?: SavableReport[]
   /** The report this thread sits beside, offered first as "currently open". */
@@ -503,7 +511,7 @@ export function Conversation({
     <div className="flex flex-col gap-5">
       {turns.map((turn, i) => {
         if (turn.role === "user") {
-          return <UserBubble key={i} text={turn.text} />
+          return <UserBubble key={i} text={turn.text} renderText={renderText} />
         }
         if (turn.role === "clarify") {
           return (
@@ -524,6 +532,7 @@ export function Conversation({
               text={turn.text}
               link={turn.link}
               onOpenReport={onOpenReport}
+              renderText={renderText}
             />
           )
         }
