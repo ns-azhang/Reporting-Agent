@@ -2,13 +2,27 @@ import * as React from "react"
 import {
   ArrowLeft,
   EllipsisVertical,
+  ExternalLink,
   History,
   LibraryBig,
+  LogOut,
+  Moon,
   Plus,
+  Sun,
   User,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useTheme } from "@/components/theme-provider"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Sidebar,
   SidebarContent,
@@ -180,22 +194,87 @@ export function AppSidebar({
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="h-auto gap-2 p-2">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-300 text-sm text-foreground">
-                {USER.initials}
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
-                <span className="truncate text-sm font-semibold">
-                  {USER.name}
-                </span>
-                <span className="truncate text-xs">{USER.email}</span>
-              </span>
-              <EllipsisVertical className="shrink-0" />
-            </SidebarMenuButton>
+            <UserMenu />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+  )
+}
+
+/**
+ * The account menu off the footer's ⋮ — the same shape as the Marketplace
+ * prototype's: who you are, a light/dark switch, the account links, log out.
+ * The switch lives here rather than in the nav because it is a preference,
+ * not a destination, and this is where the other preferences will go.
+ */
+function UserMenu() {
+  const { theme, setTheme } = useTheme()
+  const dark =
+    theme === "dark" ||
+    (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={<SidebarMenuButton className="h-auto gap-2 p-2" />}
+      >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-300 text-sm text-foreground dark:bg-blue-400/60">
+          {USER.initials}
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+          <span className="truncate text-sm font-semibold">{USER.name}</span>
+          <span className="truncate text-xs">{USER.email}</span>
+        </span>
+        <EllipsisVertical className="shrink-0" />
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent side="top" align="start" className="w-72">
+        <div className="flex items-center gap-3 px-2 py-2">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-300 text-base text-foreground dark:bg-blue-400/60">
+            {USER.initials}
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate text-sm font-semibold">{USER.name}</span>
+            <span className="truncate text-xs text-muted-foreground">{USER.email}</span>
+          </span>
+          {/* Light / dark, as a plain button so the menu stays open while you
+              compare. The icon shows what you would switch to. */}
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-pressed={dark}
+            onClick={() => setTheme(dark ? "light" : "dark")}
+          >
+            {dark ? <Sun /> : <Moon />}
+          </Button>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem>Account</DropdownMenuItem>
+          <DropdownMenuItem>
+            Documentation
+            <ExternalLink className="ml-auto text-muted-foreground" />
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            Settings
+            <ExternalLink className="ml-auto text-muted-foreground" />
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            Help
+            <ExternalLink className="ml-auto text-muted-foreground" />
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem>
+            <LogOut />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
