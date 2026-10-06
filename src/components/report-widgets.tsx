@@ -484,23 +484,28 @@ function TrendChart({
   )
 }
 
+/** Bar chart rhythm, shared by every bar chart: band per bar, bar within it, room for the x axis. */
+const BAR_PITCH = 34
+const BAR_SIZE = 20
+const BAR_AXIS_HEIGHT = 36
+
 function HorizontalBars({ widget, bare, menu, marks }: { widget: HBarWidget } & Chrome) {
   const data = widget.bars.map((b) => ({ ...b, short: truncate(b.label, 28) }))
   const config: ChartConfig = { value: { label: "Incidents" } }
 
   return (
     <WidgetShell title={widget.title} insight={widget.insight} bare={bare} menu={menu} marks={marks}>
-      {/* The plot fills whatever height the card has left rather than sizing
-          to its bar count, so two bar charts side by side — 5 bars and 9 —
-          both fill their cards instead of one leaving a gap under the plot.
-          Bars spread to the space; maxBarSize keeps a 3-bar chart from
-          turning into slabs. */}
-      <div
-        className="flex flex-1 flex-col"
-        // Never below 26px a bar, so every label keeps its line.
-        style={{ minHeight: Math.max(180, data.length * 26) }}
-      >
-        <ChartContainer config={config} className="h-full w-full flex-1">
+      {/* One pitch for every bar chart on the platform: 34px a bar, 20px of
+          it bar, so a 4-bar chart and a 10-bar chart space their bars the
+          same way. The plot is sized to its bars and centred in whatever
+          height the card has left, so neighbours stay equal and the slack
+          splits above and below rather than pooling under the plot. */}
+      <div className="flex flex-1 flex-col justify-center">
+        <ChartContainer
+          config={config}
+          className="w-full"
+          style={{ height: data.length * BAR_PITCH + BAR_AXIS_HEIGHT }}
+        >
         <BarChart data={data} layout="vertical" margin={{ left: 4, right: 24 }}>
           {/* Solid hairline — see the note on the trend chart's grid. */}
           <CartesianGrid horizontal={false} />
@@ -518,7 +523,7 @@ function HorizontalBars({ widget, bare, menu, marks }: { widget: HBarWidget } & 
           <ChartTooltip
             content={<ChartTooltipContent nameKey="label" />}
           />
-          <Bar dataKey="value" radius={4} maxBarSize={28}>
+          <Bar dataKey="value" radius={4} barSize={BAR_SIZE}>
             {data.map((bar) => (
               <Cell key={bar.label} fill={bar.color ?? "#94a3b8"} />
             ))}
