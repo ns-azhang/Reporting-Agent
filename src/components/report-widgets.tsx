@@ -375,14 +375,6 @@ function TrendChart({
   const anomalies = widget.anomalies ?? []
 
   /**
-   * A series that is zero throughout (the resolution rate, when nothing has
-   * been resolved) gives the axis no range, and Recharts invents one — 0 to 4
-   * with four empty gridlines measuring nothing. Pin it to 0–1 instead: the
-   * flat line sits on the floor with one honest line above it.
-   */
-  const flatZero = widget.series.every((s) => s.values.every((v) => v === 0))
-
-  /**
    * Which line does a called-out point sit on? The data records the index and
    * the value but not the series, so match on the value at that index — the dot
    * has to be the colour of the line it lands on, or it reads as a stray mark.
@@ -435,14 +427,7 @@ function TrendChart({
             tickMargin={8}
             fontSize={11}
           />
-          <YAxis
-            tickLine={false}
-            axisLine={false}
-            width={28}
-            fontSize={11}
-            domain={flatZero ? [0, 1] : undefined}
-            ticks={flatZero ? [0, 1] : undefined}
-          />
+          <YAxis tickLine={false} axisLine={false} width={28} fontSize={11} />
           <ChartTooltip
             content={
               <ChartTooltipContent
