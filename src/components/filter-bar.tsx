@@ -246,7 +246,7 @@ function Chip({
       key={byAi ? flashKey : -1}
       className={cn(
         "inline-flex h-7 items-center rounded-full border bg-background text-xs shadow-xs",
-        pending ? "border-dashed border-ring" : "border-border",
+        pending ? "border-dashed border-ring" : "border-input",
         byAi && "animate-filter-flash"
       )}
     >
