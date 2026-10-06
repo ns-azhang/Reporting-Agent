@@ -113,7 +113,7 @@ export function AppSidebar({
             <SidebarMenuItem>
               <SidebarMenuButton className="h-8">
                 <ArrowLeft />
-                <span className="truncate text-lg font-bold">Reporting</span>
+                <span className="truncate text-lg font-semibold">Reporting</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
