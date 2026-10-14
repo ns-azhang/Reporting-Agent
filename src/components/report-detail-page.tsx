@@ -146,6 +146,14 @@ export function ReportDetailPage({
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
   const [chatOpen, setChatOpen] = React.useState(true)
+  /**
+   * About this report opens by itself only in the moment its questions are
+   * fresh — right after the report has been generated (here: first saved as
+   * the user's own copy) or its questions rewritten — and is collapsed on
+   * every ordinary visit, so it never costs the fold.
+   */
+  const [aboutOpen, setAboutOpen] = React.useState(false)
+  React.useEffect(() => setAboutOpen(false), [reportId])
   const [draft, setDraft] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const threadEnd = React.useRef<HTMLDivElement>(null)
@@ -421,8 +429,12 @@ export function ReportDetailPage({
   const showSaved = savedAt !== null && !dirty
   const save = () => {
     if (!dirty) return
+    const becomingMine = origin === "library" && !owned
     onSaveReport(reportId)
     setSavedAt(changeCount)
+    // A report that just became yours: show the questions it was built to
+    // answer, since this is when you would want to check or change them.
+    if (becomingMine) setAboutOpen(true)
   }
 
   /**
@@ -690,7 +702,7 @@ export function ReportDetailPage({
                 they change. Editable (the questions drive generation), so it
                 stays on the canvas rather than behind the ⋮. */}
             {report.about && (
-              <Collapsible>
+              <Collapsible open={aboutOpen} onOpenChange={setAboutOpen}>
                 <CollapsibleTrigger
                   render={
                     <button
@@ -726,7 +738,10 @@ export function ReportDetailPage({
                         variant="ghost"
                         size="xs"
                         className="text-muted-foreground"
-                        onClick={refresh}
+                        onClick={() => {
+                          refresh()
+                          setAboutOpen(true)
+                        }}
                         disabled={refreshing}
                       >
                         <AiMark />

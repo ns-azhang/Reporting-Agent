@@ -555,6 +555,8 @@ export function summaryUnderFilters(
       (m) => (/^(over|for|in) /i.test(m) ? `${m.split(" ")[0]} the ${rangeLabel}` : `the ${rangeLabel}`)
     )
   }
+  // A range swapped in at the head of a sentence keeps the capital.
+  text = text.replace(/(^|[.!?]\s+)([a-z])/g, (_, lead, ch) => lead + ch.toUpperCase())
   if (isDefaultView(values, defaults)) return text
   const f = factorsFor(values, defaults, dims)
   return scaleText(recast(text, values, defaults), product(f))
