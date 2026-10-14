@@ -10,11 +10,10 @@ import {
   Save,
   Send,
   Share2,
-  Sparkle,
-  Sparkles,
 } from "lucide-react"
 
 import { Conversation } from "@/components/conversation"
+import { AiMark } from "@/components/ai-mark"
 import { FilterBar } from "@/components/filter-bar"
 import { KeyFigures } from "@/components/key-figures"
 import { WidgetNames } from "@/components/widget-names"
@@ -647,7 +646,7 @@ export function ReportDetailPage({
                   widget insights don't repeat it. */}
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <Sparkle className="size-3.5" />
+                  <AiMark className="size-3.5" />
                   Summary
                 </span>
                 <span aria-hidden>·</span>
@@ -758,7 +757,7 @@ export function ReportDetailPage({
         <aside className="flex w-[380px] shrink-0 flex-col border-l border-border bg-background">
           <div className="flex items-center justify-between gap-2 px-4 py-3">
             <span className="flex items-center gap-2 text-sm font-semibold">
-              <Sparkles className="size-4 text-muted-foreground" />
+              <AiMark className="size-4 text-muted-foreground" />
               AI Assistant
             </span>
             <Button

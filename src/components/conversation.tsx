@@ -2,12 +2,13 @@ import * as React from "react"
 import {
   Check,
   Copy,
-  Sparkles,
   ThumbsDown,
   ThumbsUp,
   X,
   Zap,
 } from "lucide-react"
+
+import { AiMark } from "@/components/ai-mark"
 
 import { ActionPanel } from "@/components/action-panel"
 import { CardMenu, type SavableReport } from "@/components/card-menu"
@@ -112,7 +113,7 @@ function UserBubble({ text, renderText }: { text: string; renderText?: RenderTex
 export function ThinkingBubble() {
   return (
     <div className="flex w-fit items-center gap-2.5 rounded-xl bg-card px-4 py-3 shadow-xs ring-1 ring-foreground/10">
-      <Sparkles className="size-4 text-muted-foreground" />
+      <AiMark className="size-4 text-muted-foreground" />
       <span className="text-sm text-muted-foreground">Thinking</span>
       <span className="flex gap-1">
         {[0, 150, 300].map((delay) => (
@@ -215,7 +216,7 @@ function NoteCard({
 }) {
   return (
     <div className="flex items-start gap-2.5 rounded-xl bg-card p-4 text-card-foreground shadow-xs ring-1 ring-foreground/10">
-      <Sparkles className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <AiMark className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <p className="text-sm leading-relaxed">
         {renderText ? renderText(text) : text}
         {link && (
@@ -370,7 +371,7 @@ function ResponseCard({
         {isAction ? (
           <Zap className="size-4 shrink-0 text-muted-foreground" />
         ) : (
-          <Sparkles className="size-4 shrink-0 text-muted-foreground" />
+          <AiMark className="size-4 shrink-0 text-muted-foreground" />
         )}
         <div className="flex min-w-0 flex-1 flex-col">
           <h3 className="truncate text-sm font-semibold leading-snug">
@@ -442,7 +443,7 @@ function ResponseCard({
         {/* Sentence case. tracking-wide went with it — the extra letter-spacing
             is there to make all-caps readable, and just looks loose without it. */}
         <span className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-          <Sparkles className="size-3" />
+          <AiMark className="size-3" />
           Insight
         </span>
         <p className="text-xs leading-relaxed">{response.summary}</p>

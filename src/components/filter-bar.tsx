@@ -1,5 +1,7 @@
 import * as React from "react"
-import { Check, ChevronDown, Plus, Sparkle, X } from "lucide-react"
+import { Check, ChevronDown, Plus, X } from "lucide-react"
+
+import { AiMark } from "@/components/ai-mark"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -263,7 +265,7 @@ function Chip({
           }
         >
           {byAi && (
-            <Sparkle
+            <AiMark
               className="size-3 text-primary"
               aria-label="Applied from your prompt"
             />
