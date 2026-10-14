@@ -624,11 +624,16 @@ export function ReportDetailPage({
                 words, before the controls and the widgets. It follows the
                 filters — figures scale with the widgets and the window it names
                 is the Date chip's — so it never contradicts the canvas. */}
-            <section aria-label="Summary" className="flex max-w-3xl flex-col gap-1.5">
-              {/* Plain text at reading width, like the description above it —
-                  not a full-width band, which left a hole to the right of the
-                  measure. One sparkle, inline with the label, is the page's
-                  single "generated" cue; the widget insights don't repeat it. */}
+            <section
+              aria-label="Summary"
+              className="flex max-w-3xl flex-col gap-1.5 rounded-xl bg-muted/50 px-4 py-3.5"
+            >
+              {/* A tinted block, so the first thing to read is also the first
+                  thing the eye lands on — sized to the text's reading width
+                  rather than the full canvas, which left a hole to the right
+                  of the measure. One sparkle, inline with the label, is the
+                  page's single "generated" cue; the widget insights don't
+                  repeat it. */}
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5 font-medium">
                   <Sparkle className="size-3.5" />
