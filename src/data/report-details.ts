@@ -114,7 +114,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       "points": [
         { "title": "Volume rising again", "text": "Weekly volume rose 18% to 147 after two weeks of decline (225 → 186 → 125)." },
         { "title": "Nothing triaged", "text": "Every incident is still in 'new' with no assignee; zero were resolved or closed this period." },
-        { "title": "One app, two rules", "text": "ChatGPT accounts for 117 incidents on the managed Enterprise workspace, driven by EU-name and PAN detection rules." }
+        { "title": "One policy drives it", "text": "'Detect Credit card or GDPR info in managed ChatGPT Enterprise' holds 117 of the 147 open incidents (80%), matched mostly by the EU-Name-Phone and PAN rules." }
       ]
     },
     "examplePrompts": [
