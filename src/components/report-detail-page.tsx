@@ -654,7 +654,7 @@ export function ReportDetailPage({
                 /* Structured: a one-line lead, then short key points side by
                    side. Fills the width with content rather than line length. */
                 <div className="flex flex-col gap-3">
-                  <p className="text-sm font-medium leading-relaxed text-foreground">
+                  <p className="text-xs font-medium leading-relaxed text-foreground">
                     <KeyFigures text={summarize(report.summaryPoints.lead)} />
                   </p>
                   {/* Hairlines between the points — vertical side by side,
@@ -667,7 +667,7 @@ export function ReportDetailPage({
                         className="flex min-w-0 flex-col gap-0.5 py-3 first:pt-0 last:pb-0 sm:px-6 sm:py-0 sm:first:pl-0 sm:last:pr-0"
                       >
                         <span className="text-xs font-medium text-muted-foreground">{pt.title}</span>
-                        <p className="text-sm leading-relaxed text-foreground/90">
+                        <p className="text-xs leading-relaxed text-foreground/90">
                           <KeyFigures text={summarize(pt.text)} />
                         </p>
                       </div>
@@ -675,7 +675,7 @@ export function ReportDetailPage({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm leading-relaxed text-foreground/90">
+                <p className="text-xs leading-relaxed text-foreground/90">
                   <KeyFigures text={summarize(report.summary)} />
                 </p>
               )}
@@ -690,7 +690,7 @@ export function ReportDetailPage({
                 they change. Editable (the questions drive generation), so it
                 stays on the canvas rather than behind the ⋮. */}
             {report.about && (
-              <Collapsible className="-mt-3">
+              <Collapsible>
                 <CollapsibleTrigger
                   render={
                     <button
@@ -707,27 +707,6 @@ export function ReportDetailPage({
                 <CollapsibleContent>
                   <div className="flex max-w-3xl flex-col gap-2 pt-2 pl-5">
                     <p className="text-sm text-muted-foreground">{report.about.blurb}</p>
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Questions this report answers
-                      </span>
-                      <div className="-mr-2 flex items-center gap-1">
-                        <Button variant="ghost" size="xs" className="text-muted-foreground">
-                          <Pencil />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          className="text-muted-foreground"
-                          onClick={refresh}
-                          disabled={refreshing}
-                        >
-                          <AiMark />
-                          Rewrite with AI
-                        </Button>
-                      </div>
-                    </div>
                     <ul className="flex flex-col gap-1">
                       {report.about.questions.map((q: string) => (
                         <li key={q} className="flex gap-2 text-sm text-muted-foreground">
@@ -736,6 +715,24 @@ export function ReportDetailPage({
                         </li>
                       ))}
                     </ul>
+                    {/* The actions close the section, under the text they
+                        change — where a block's own controls belong. */}
+                    <div className="-ml-2 flex items-center gap-1 pt-1">
+                      <Button variant="ghost" size="xs" className="text-muted-foreground">
+                        <Pencil />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        className="text-muted-foreground"
+                        onClick={refresh}
+                        disabled={refreshing}
+                      >
+                        <AiMark />
+                        Rewrite with AI
+                      </Button>
+                    </div>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
