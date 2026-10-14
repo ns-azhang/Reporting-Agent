@@ -640,10 +640,9 @@ export function ReportDetailPage({
             >
               {/* A tinted block the full width of the canvas, so the first
                   thing to read is also the first thing the eye lands on. The
-                  paragraph is one column with a generous cap on its measure —
-                  columns are a print device, not a SaaS one — so on a very
-                  wide canvas the box may carry some air to the right, which
-                  reads as padding rather than as a hole. One sparkle, inline
+                  prose summary runs the width of the block; the structured
+                  one (lead + points) is the shape that fills width best and
+                  is where the reports are heading. One sparkle, inline
                   with the label, is the page's single "generated" cue; the
                   widget insights don't repeat it. */}
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
@@ -679,7 +678,7 @@ export function ReportDetailPage({
                   </div>
                 </div>
               ) : (
-                <p className="max-w-[100ch] text-sm leading-relaxed text-foreground/90">
+                <p className="text-sm leading-relaxed text-foreground/90">
                   <KeyFigures text={summarize(report.summary)} />
                 </p>
               )}
