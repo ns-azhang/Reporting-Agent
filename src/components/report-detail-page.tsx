@@ -1,8 +1,8 @@
 import * as React from "react"
 import {
   ArrowLeft,
-  ChevronDown,
   Check,
+  Info,
   MessageSquare,
   MoreVertical,
   PanelRightClose,
@@ -10,6 +10,7 @@ import {
   Save,
   Send,
   Share2,
+  Sparkle,
   Sparkles,
 } from "lucide-react"
 
@@ -22,10 +23,12 @@ import type { ChatTurn } from "@/lib/use-chat"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +49,7 @@ import {
   toPDF,
 } from "@/lib/export"
 import { cn } from "@/lib/utils"
-import { filterWidget } from "@/lib/filter-data"
+import { filterWidget, summaryUnderFilters } from "@/lib/filter-data"
 import { deriveDimensions, widgetsResponsiveTo } from "@/lib/filter-dimensions"
 import {
   applyIntent,
@@ -144,6 +147,7 @@ export function ReportDetailPage({
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
   const [chatOpen, setChatOpen] = React.useState(true)
+  const [aboutOpen, setAboutOpen] = React.useState(false)
   const [draft, setDraft] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const threadEnd = React.useRef<HTMLDivElement>(null)
@@ -507,58 +511,16 @@ export function ReportDetailPage({
                       : reportBadgeLabel(origin, owned)}
                   </Badge>
                 </div>
-                {/* The description and "About this report" are one thing —
-                    what the report is — so the disclosure sits inline at the
-                    end of the sentence and opens beneath it, above the filter
-                    bar, which then divides "what it is" from "what it shows". */}
-                <Collapsible className="flex flex-col gap-2">
-                  <p className="max-w-2xl text-sm text-muted-foreground">
-                    {/* The Date chip states the window, so the sentence
-                        doesn't. A category-scoped report names its category
-                        here; keep that in step with the chip. */}
-                    {withoutTimeSpan(
-                      fixedCategory && filters.values.category
-                        ? report.description.replace(fixedCategory, filters.values.category)
-                        : report.description
-                    )}
-                    {report.about && (
-                      <>
-                        {" "}
-                        <CollapsibleTrigger
-                          render={
-                            <button
-                              type="button"
-                              className="group inline-flex items-center gap-1 align-baseline whitespace-nowrap text-foreground/80 underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
-                            />
-                          }
-                        >
-                          About this report
-                          <ChevronDown className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-180" />
-                        </CollapsibleTrigger>
-                      </>
-                    )}
-                  </p>
-                  {report.about && (
-                    <CollapsibleContent>
-                      <div className="flex flex-col gap-2 pl-1">
-                        <p className="max-w-2xl text-sm text-muted-foreground">
-                          {report.about.blurb}
-                        </p>
-                        <ul className="flex flex-col gap-1">
-                          {report.about.questions.map((q: string) => (
-                            <li
-                              key={q}
-                              className="flex gap-2 text-sm text-muted-foreground"
-                            >
-                              <span aria-hidden>•</span>
-                              {q}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </CollapsibleContent>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  {/* The Date chip states the window, so the sentence doesn't.
+                      A category-scoped report names its category here; keep
+                      that in step with the chip. */}
+                  {withoutTimeSpan(
+                    fixedCategory && filters.values.category
+                      ? report.description.replace(fixedCategory, filters.values.category)
+                      : report.description
                   )}
-                </Collapsible>
+                </p>
               </div>
               {/* Actions stack above the freshness line rather than sharing a
                   row with it: three labelled buttons plus a timestamp is more
@@ -616,6 +578,12 @@ export function ReportDetailPage({
                           <Share2 />
                           Share
                         </DropdownMenuItem>
+                        {report.about && (
+                          <DropdownMenuItem onClick={() => setAboutOpen(true)}>
+                            <Info />
+                            About this report
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuGroup>
                       <DropdownMenuSeparator />
                       <DropdownMenuGroup>
@@ -650,6 +618,29 @@ export function ReportDetailPage({
                 </span>
               </div>
             </div>
+
+            {/* The headline: what the data shows right now, in the assistant's
+                words, before the controls and the widgets. It follows the
+                filters — figures scale with the widgets and the window it names
+                is the Date chip's — so it never contradicts the canvas. */}
+            <section
+              aria-label="Summary"
+              className="flex gap-3 rounded-xl bg-muted/50 px-4 py-3.5"
+            >
+              <Sparkle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Summary</span>
+                <p className="max-w-3xl text-sm leading-relaxed">
+                  {summaryUnderFilters(
+                    report.summary,
+                    filters.values,
+                    filterDefaults.values,
+                    filterContext.dimensions,
+                    dateLabel(filters.values.date).toLowerCase()
+                  )}
+                </p>
+              </div>
+            </section>
 
             {/* What the canvas is scoped to, always visible — including what
                 the assistant assumed on the user's behalf. */}
@@ -693,6 +684,33 @@ export function ReportDetailPage({
         </div>
       </div>
 
+      {/* What the report is for — the blurb and the questions it answers.
+          Reference material, so it lives behind the ⋮ rather than on the
+          canvas; the summary above the widgets is what you read first. */}
+      {report.about && (
+        <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
+          <DialogContent className="ring-0 shadow-xl sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>About this report</DialogTitle>
+              <DialogDescription>{report.about.blurb}</DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-muted-foreground">
+                Questions this report answers
+              </span>
+              <ul className="flex flex-col gap-1.5">
+                {report.about.questions.map((q: string) => (
+                  <li key={q} className="flex gap-2 text-sm text-muted-foreground">
+                    <span aria-hidden>•</span>
+                    {q}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Chat pane */}
       {chatOpen && (
         <aside className="flex w-[380px] shrink-0 flex-col border-l border-border bg-background">
@@ -713,12 +731,6 @@ export function ReportDetailPage({
           <Separator />
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-            {/* Seeded assistant turn — the report's own summary, so the pane
-                opens with analysis rather than an empty box. */}
-            <div className="flex flex-col gap-2 rounded-xl bg-muted p-3">
-              <p className="text-xs leading-relaxed">{report.summary}</p>
-            </div>
-
             {/* The thread that brought you here, and everything since. */}
             {turns.length > 0 && (
               <Conversation

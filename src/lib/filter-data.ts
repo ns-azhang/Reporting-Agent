@@ -534,3 +534,28 @@ export function filterWidget(
       return widget
   }
 }
+
+/**
+ * The report's summary as it reads under the current filters: figures scaled
+ * the same way the widgets are, apps re-cast for a changed category, and the
+ * window it names ("for the last 7 days") replaced with the range the Date
+ * chip shows — so the headline never contradicts the canvas beneath it.
+ */
+export function summaryUnderFilters(
+  summary: string,
+  values: FilterValues,
+  defaults: FilterValues,
+  dims: Dimension[] = [],
+  rangeLabel?: string
+): string {
+  let text = summary
+  if (rangeLabel) {
+    text = text.replace(
+      /\b(?:over |for |in )?the (?:last|past) \d+ (?:days|weeks|months)\b|\b(?:june|jun) 2025\b/i,
+      (m) => (/^(over|for|in) /i.test(m) ? `${m.split(" ")[0]} the ${rangeLabel}` : `the ${rangeLabel}`)
+    )
+  }
+  if (isDefaultView(values, defaults)) return text
+  const f = factorsFor(values, defaults, dims)
+  return scaleText(recast(text, values, defaults), product(f))
+}
