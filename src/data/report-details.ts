@@ -87,6 +87,12 @@ export type ReportDetail = {
   title: string
   description: string
   summary: string
+  /**
+   * The summary as structure rather than prose: a one-line lead and a few
+   * short key points that sit side by side, so the block fills any width
+   * with content instead of line length. Reports without it show `summary`.
+   */
+  summaryPoints?: { lead: string; points: { title: string; text: string }[] }
   examplePrompts: string[]
   about: { blurb: string; questions: string[] } | null
   /**
@@ -103,6 +109,14 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
     "title": "DLP Incidents Status Monitoring",
     "description": "Track open and outstanding DLP incidents through their lifecycle — status, assignment, and resolution over the last 7 days.",
     "summary": "Here's your DLP incident status for the last 7 days. 147 incidents are open across 95 objects with violations — every one still in 'new' status with no assignee. Weekly volume rose 18% to 147 after two weeks of decline (225 → 186 → 125). ChatGPT dominates by application (117 low/high-severity incidents on the managed Enterprise workspace), driven by EU-name and PAN detection rules. Nothing was resolved or closed this period — the triage pipeline hasn't started, so assignment is the single biggest lever.",
+    "summaryPoints": {
+      "lead": "147 DLP incidents are open across 95 objects and none have been resolved this period — assignment is the single biggest lever.",
+      "points": [
+        { "title": "Volume rising again", "text": "Weekly volume rose 18% to 147 after two weeks of decline (225 → 186 → 125)." },
+        { "title": "Nothing triaged", "text": "Every incident is still in 'new' with no assignee; zero were resolved or closed this period." },
+        { "title": "One app, two rules", "text": "ChatGPT accounts for 117 incidents on the managed Enterprise workspace, driven by EU-name and PAN detection rules." }
+      ]
+    },
     "examplePrompts": [
       "Which policies have the most open incidents?",
       "Show only the Critical incidents",

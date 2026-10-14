@@ -307,6 +307,16 @@ export function ReportDetailPage({
     } from its filter mark.`
   }
 
+  /** Summary text as it reads under the current filters. */
+  const summarize = (text: string) =>
+    summaryUnderFilters(
+      text,
+      filters.values,
+      filterDefaults.values,
+      filterContext.dimensions,
+      dateLabel(filters.values.date).toLowerCase()
+    )
+
   /** Answer the prompt, and expose whatever scope it set. */
   const sendPrompt = (text: string, responseId?: string) => {
     if (!text.trim() || thinking) return
@@ -644,17 +654,29 @@ export function ReportDetailPage({
                 <span aria-hidden>·</span>
                 <span>{refreshing ? "Generating…" : `Generated ${freshness}`}</span>
               </div>
-              <p className="max-w-[100ch] text-sm leading-relaxed text-foreground/90">
-                <KeyFigures
-                  text={summaryUnderFilters(
-                    report.summary,
-                    filters.values,
-                    filterDefaults.values,
-                    filterContext.dimensions,
-                    dateLabel(filters.values.date).toLowerCase()
-                  )}
-                />
-              </p>
+              {report.summaryPoints ? (
+                /* Structured: a one-line lead, then short key points side by
+                   side. Fills the width with content rather than line length. */
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm font-medium leading-relaxed text-foreground">
+                    <KeyFigures text={summarize(report.summaryPoints.lead)} />
+                  </p>
+                  <div className="grid gap-x-6 gap-y-3 sm:grid-cols-3">
+                    {report.summaryPoints.points.map((pt) => (
+                      <div key={pt.title} className="flex min-w-0 flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground">{pt.title}</span>
+                        <p className="text-sm leading-relaxed text-foreground/90">
+                          <KeyFigures text={summarize(pt.text)} />
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="max-w-[100ch] text-sm leading-relaxed text-foreground/90">
+                  <KeyFigures text={summarize(report.summary)} />
+                </p>
+              )}
             </section>
 
             {/* What the canvas is scoped to, always visible — including what
