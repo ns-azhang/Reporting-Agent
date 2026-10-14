@@ -655,9 +655,7 @@ export function ReportDetailPage({
             >
               {/* A tinted block the full width of the canvas, so the first
                   thing to read is also the first thing the eye lands on. The
-                  prose summary runs the width of the block; the structured
-                  one (lead + points) is the shape that fills width best and
-                  is where the reports are heading. One sparkle, inline
+                  paragraph runs the width of the block. One sparkle, inline
                   with the label, is the page's single "generated" cue; the
                   widget insights don't repeat it. */}
               {/* One clock on the page — the header's "Updated". The summary
@@ -674,35 +672,10 @@ export function ReportDetailPage({
                   </>
                 )}
               </div>
-              {report.summaryPoints ? (
-                /* Structured: a one-line lead, then short key points side by
-                   side. Fills the width with content rather than line length. */
-                <div className="flex flex-col gap-3">
-                  <p className="text-xs font-medium leading-relaxed text-foreground">
-                    <KeyFigures text={summarize(report.summaryPoints.lead)} />
-                  </p>
-                  {/* Hairlines between the points — vertical side by side,
-                      horizontal when they stack — so three findings read as
-                      three, not as one run of text. */}
-                  <div className="grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                    {report.summaryPoints.points.map((pt) => (
-                      <div
-                        key={pt.title}
-                        className="flex min-w-0 flex-col gap-0.5 py-3 first:pt-0 last:pb-0 sm:px-6 sm:py-0 sm:first:pl-0 sm:last:pr-0"
-                      >
-                        <span className="text-xs font-medium text-muted-foreground">{pt.title}</span>
-                        <p className="text-xs leading-relaxed text-foreground/90">
-                          <KeyFigures text={summarize(pt.text)} />
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs leading-relaxed text-foreground/90">
-                  <KeyFigures text={summarize(report.summary)} />
-                </p>
-              )}
+              {/* Figures in bold so it scans like a headline. */}
+              <p className="text-xs leading-relaxed text-foreground/90">
+                <KeyFigures text={summarize(report.summary)} />
+              </p>
 
             </section>
 
