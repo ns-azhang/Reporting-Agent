@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ListFilter,
-  Sparkle,
   TrendingDown,
   TrendingUp,
   X,
@@ -61,9 +60,10 @@ import type {
 /** Every widget closes with its own insight paragraph, as in the prototype. */
 function Insight({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-auto flex gap-2 border-t border-border pt-3">
-      {/* One four-point sparkle: the "AI wrote this" cue without the cluster. */}
-      <Sparkle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+    // No icon: the page says "generated" once, at the summary. Down here the
+    // position — under a rule, below the chart, in muted type — says
+    // "commentary" on its own; a glyph on every card would be texture.
+    <div className="mt-auto border-t border-border pt-3">
       <p className="text-xs leading-relaxed text-muted-foreground">{children}</p>
     </div>
   )

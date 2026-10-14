@@ -624,33 +624,30 @@ export function ReportDetailPage({
                 words, before the controls and the widgets. It follows the
                 filters — figures scale with the widgets and the window it names
                 is the Date chip's — so it never contradicts the canvas. */}
-            <section
-              aria-label="Summary"
-              className="flex gap-3 rounded-xl bg-muted/50 px-4 py-3.5"
-            >
-              <Sparkle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                {/* Labelled as generated, and when — the same stamp Refresh
-                    keeps, since a filter change re-runs the summary too. */}
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-xs font-medium text-muted-foreground">Summary</span>
-                  <span className="text-xs whitespace-nowrap text-muted-foreground">
-                    {refreshing ? "Generating…" : `Generated ${freshness}`}
-                  </span>
-                </div>
-                {/* Figures in bold so it scans like a headline. */}
-                <p className="max-w-3xl text-sm leading-relaxed text-foreground/90">
-                  <KeyFigures
-                    text={summaryUnderFilters(
-                      report.summary,
-                      filters.values,
-                      filterDefaults.values,
-                      filterContext.dimensions,
-                      dateLabel(filters.values.date).toLowerCase()
-                    )}
-                  />
-                </p>
+            <section aria-label="Summary" className="flex max-w-3xl flex-col gap-1.5">
+              {/* Plain text at reading width, like the description above it —
+                  not a full-width band, which left a hole to the right of the
+                  measure. One sparkle, inline with the label, is the page's
+                  single "generated" cue; the widget insights don't repeat it. */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Sparkle className="size-3.5" />
+                  Summary
+                </span>
+                <span aria-hidden>·</span>
+                <span>{refreshing ? "Generating…" : `Generated ${freshness}`}</span>
               </div>
+              <p className="text-sm leading-relaxed text-foreground/90">
+                <KeyFigures
+                  text={summaryUnderFilters(
+                    report.summary,
+                    filters.values,
+                    filterDefaults.values,
+                    filterContext.dimensions,
+                    dateLabel(filters.values.date).toLowerCase()
+                  )}
+                />
+              </p>
             </section>
 
             {/* What the canvas is scoped to, always visible — including what
