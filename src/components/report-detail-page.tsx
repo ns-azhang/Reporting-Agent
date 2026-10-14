@@ -154,6 +154,18 @@ export function ReportDetailPage({
    */
   const [aboutOpen, setAboutOpen] = React.useState(false)
   React.useEffect(() => setAboutOpen(false), [reportId])
+  /**
+   * Rewrite with AI regenerates About — the blurb and the questions — and
+   * nothing else. It is not a data refresh: the widgets and the summary are
+   * untouched, so it has its own beat rather than borrowing Refresh's.
+   */
+  const [rewriting, setRewriting] = React.useState(false)
+  const rewriteAbout = () => {
+    if (rewriting) return
+    setAboutOpen(true)
+    setRewriting(true)
+    window.setTimeout(() => setRewriting(false), REFRESH_MS)
+  }
   const [draft, setDraft] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const threadEnd = React.useRef<HTMLDivElement>(null)
@@ -718,6 +730,12 @@ export function ReportDetailPage({
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="flex max-w-3xl flex-col gap-2 pt-2 pl-5">
+                    <div
+                      className={cn(
+                        "flex flex-col gap-2 transition-opacity duration-300",
+                        rewriting && "opacity-40"
+                      )}
+                    >
                     <p className="text-sm text-muted-foreground">{report.about.blurb}</p>
                     <ul className="flex flex-col gap-1">
                       {report.about.questions.map((q: string) => (
@@ -727,6 +745,7 @@ export function ReportDetailPage({
                         </li>
                       ))}
                     </ul>
+                    </div>
                     {/* The actions close the section, under the text they
                         change — where a block's own controls belong. */}
                     <div className="-ml-2 flex items-center gap-1 pt-1">
@@ -738,14 +757,11 @@ export function ReportDetailPage({
                         variant="ghost"
                         size="xs"
                         className="text-muted-foreground"
-                        onClick={() => {
-                          refresh()
-                          setAboutOpen(true)
-                        }}
-                        disabled={refreshing}
+                        onClick={rewriteAbout}
+                        disabled={rewriting}
                       >
-                        <AiMark />
-                        Rewrite with AI
+                        <AiMark className={rewriting ? "animate-pulse" : undefined} />
+                        {rewriting ? "Rewriting…" : "Rewrite with AI"}
                       </Button>
                     </div>
                   </div>
