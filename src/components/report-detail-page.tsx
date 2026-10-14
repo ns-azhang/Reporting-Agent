@@ -626,15 +626,16 @@ export function ReportDetailPage({
                 is the Date chip's — so it never contradicts the canvas. */}
             <section
               aria-label="Summary"
-              className="@container flex flex-col gap-1.5 rounded-xl bg-muted/50 px-4 py-3.5"
+              className="flex flex-col gap-1.5 rounded-xl bg-muted/50 px-4 py-3.5"
             >
               {/* A tinted block the full width of the canvas, so the first
                   thing to read is also the first thing the eye lands on. The
-                  paragraph keeps a readable measure by flowing into two
-                  columns once the block is wide enough for two, instead of
-                  running 140-character lines or leaving half the box empty.
-                  One sparkle, inline with the label, is the page's single
-                  "generated" cue; the widget insights don't repeat it. */}
+                  paragraph is one column with a generous cap on its measure —
+                  columns are a print device, not a SaaS one — so on a very
+                  wide canvas the box may carry some air to the right, which
+                  reads as padding rather than as a hole. One sparkle, inline
+                  with the label, is the page's single "generated" cue; the
+                  widget insights don't repeat it. */}
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5 font-medium">
                   <Sparkle className="size-3.5" />
@@ -643,7 +644,7 @@ export function ReportDetailPage({
                 <span aria-hidden>·</span>
                 <span>{refreshing ? "Generating…" : `Generated ${freshness}`}</span>
               </div>
-              <p className="text-sm leading-relaxed text-foreground/90 @3xl:columns-2 @3xl:gap-10">
+              <p className="max-w-[100ch] text-sm leading-relaxed text-foreground/90">
                 <KeyFigures
                   text={summaryUnderFilters(
                     report.summary,
