@@ -2,10 +2,11 @@ import * as React from "react"
 import {
   ArrowLeft,
   Check,
-  Info,
+  ChevronRight,
   MessageSquare,
   MoreVertical,
   PanelRightClose,
+  Pencil,
   RefreshCw,
   Save,
   Send,
@@ -23,12 +24,10 @@ import type { ChatTurn } from "@/lib/use-chat"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -147,7 +146,6 @@ export function ReportDetailPage({
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
   const [chatOpen, setChatOpen] = React.useState(true)
-  const [aboutOpen, setAboutOpen] = React.useState(false)
   const [draft, setDraft] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const threadEnd = React.useRef<HTMLDivElement>(null)
@@ -588,12 +586,6 @@ export function ReportDetailPage({
                           <Share2 />
                           Share
                         </DropdownMenuItem>
-                        {report.about && (
-                          <DropdownMenuItem onClick={() => setAboutOpen(true)}>
-                            <Info />
-                            About this report
-                          </DropdownMenuItem>
-                        )}
                       </DropdownMenuGroup>
                       <DropdownMenuSeparator />
                       <DropdownMenuGroup>
@@ -644,13 +636,19 @@ export function ReportDetailPage({
                   is where the reports are heading. One sparkle, inline
                   with the label, is the page's single "generated" cue; the
                   widget insights don't repeat it. */}
+              {/* One clock on the page — the header's "Updated". The summary
+                  only speaks up while it is being regenerated. */}
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5 font-medium">
                   <AiMark className="size-3.5" />
                   Summary
                 </span>
-                <span aria-hidden>·</span>
-                <span>{refreshing ? "Generating…" : `Generated ${freshness}`}</span>
+                {refreshing && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>Generating…</span>
+                  </>
+                )}
               </div>
               {report.summaryPoints ? (
                 /* Structured: a one-line lead, then short key points side by
@@ -680,6 +678,60 @@ export function ReportDetailPage({
                 <p className="text-sm leading-relaxed text-foreground/90">
                   <KeyFigures text={summarize(report.summary)} />
                 </p>
+              )}
+
+              {/* About this report: why the report exists and the questions
+                  it answers. Less important than what the data says, so it is
+                  a collapsed row beneath the summary — but it is editable (the
+                  questions drive generation), so it stays on the canvas rather
+                  than behind the ⋮. */}
+              {report.about && (
+                <Collapsible className="-mb-1 border-t border-border/60 pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                    <CollapsibleTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="group flex items-center gap-1.5 rounded-sm text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+                        />
+                      }
+                    >
+                      <ChevronRight className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-90" />
+                      <span className="font-medium">About this report</span>
+                      <span aria-hidden>·</span>
+                      <span>{report.about.questions.length} questions</span>
+                    </CollapsibleTrigger>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="xs" className="text-muted-foreground">
+                        <Pencil />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        className="text-muted-foreground"
+                        onClick={refresh}
+                        disabled={refreshing}
+                      >
+                        <AiMark />
+                        Rewrite with AI
+                      </Button>
+                    </div>
+                  </div>
+                  <CollapsibleContent>
+                    <div className="flex flex-col gap-2 pt-2 pl-5">
+                      <p className="text-sm text-muted-foreground">{report.about.blurb}</p>
+                      <ul className="flex flex-col gap-1">
+                        {report.about.questions.map((q: string) => (
+                          <li key={q} className="flex gap-2 text-sm text-muted-foreground">
+                            <span aria-hidden>•</span>
+                            {q}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               )}
             </section>
 
@@ -724,33 +776,6 @@ export function ReportDetailPage({
           </div>
         </div>
       </div>
-
-      {/* What the report is for — the blurb and the questions it answers.
-          Reference material, so it lives behind the ⋮ rather than on the
-          canvas; the summary above the widgets is what you read first. */}
-      {report.about && (
-        <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-          <DialogContent className="ring-0 shadow-xl sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>About this report</DialogTitle>
-              <DialogDescription>{report.about.blurb}</DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">
-                Questions this report answers
-              </span>
-              <ul className="flex flex-col gap-1.5">
-                {report.about.questions.map((q: string) => (
-                  <li key={q} className="flex gap-2 text-sm text-muted-foreground">
-                    <span aria-hidden>•</span>
-                    {q}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
       {/* Chat pane */}
       {chatOpen && (
