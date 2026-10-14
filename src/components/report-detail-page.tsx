@@ -661,9 +661,15 @@ export function ReportDetailPage({
                   <p className="text-sm font-medium leading-relaxed text-foreground">
                     <KeyFigures text={summarize(report.summaryPoints.lead)} />
                   </p>
-                  <div className="grid gap-x-6 gap-y-3 sm:grid-cols-3">
+                  {/* Hairlines between the points — vertical side by side,
+                      horizontal when they stack — so three findings read as
+                      three, not as one run of text. */}
+                  <div className="grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                     {report.summaryPoints.points.map((pt) => (
-                      <div key={pt.title} className="flex min-w-0 flex-col gap-0.5">
+                      <div
+                        key={pt.title}
+                        className="flex min-w-0 flex-col gap-0.5 py-3 first:pt-0 last:pb-0 sm:px-6 sm:py-0 sm:first:pl-0 sm:last:pr-0"
+                      >
                         <span className="text-xs font-medium text-muted-foreground">{pt.title}</span>
                         <p className="text-sm leading-relaxed text-foreground/90">
                           <KeyFigures text={summarize(pt.text)} />
