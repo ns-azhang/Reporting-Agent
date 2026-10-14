@@ -680,60 +680,66 @@ export function ReportDetailPage({
                 </p>
               )}
 
-              {/* About this report: why the report exists and the questions
-                  it answers. Less important than what the data says, so it is
-                  a collapsed row beneath the summary — but it is editable (the
-                  questions drive generation), so it stays on the canvas rather
-                  than behind the ⋮. */}
-              {report.about && (
-                <Collapsible className="-mb-1 border-t border-border/60 pt-2">
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                    <CollapsibleTrigger
-                      render={
-                        <button
-                          type="button"
-                          className="group flex items-center gap-1.5 rounded-sm text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-                        />
-                      }
-                    >
-                      <ChevronRight className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-90" />
-                      <span className="font-medium">About this report</span>
-                      <span aria-hidden>·</span>
-                      <span>{report.about.questions.length} questions</span>
-                    </CollapsibleTrigger>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="xs" className="text-muted-foreground">
-                        <Pencil />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        className="text-muted-foreground"
-                        onClick={refresh}
-                        disabled={refreshing}
-                      >
-                        <AiMark />
-                        Rewrite with AI
-                      </Button>
-                    </div>
-                  </div>
-                  <CollapsibleContent>
-                    <div className="flex flex-col gap-2 pt-2 pl-5">
-                      <p className="text-sm text-muted-foreground">{report.about.blurb}</p>
-                      <ul className="flex flex-col gap-1">
-                        {report.about.questions.map((q: string) => (
-                          <li key={q} className="flex gap-2 text-sm text-muted-foreground">
-                            <span aria-hidden>•</span>
-                            {q}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
             </section>
+
+            {/* About this report: why the report exists and the questions it
+                answers. Less important than what the data says, so it is a
+                collapsed row — and its own row, outside the summary block, so
+                its Edit and Rewrite actions can't be read as acting on the
+                summary. They appear only once it is open, beside the questions
+                they change. Editable (the questions drive generation), so it
+                stays on the canvas rather than behind the ⋮. */}
+            {report.about && (
+              <Collapsible className="-mt-3">
+                <CollapsibleTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="group flex items-center gap-1.5 rounded-sm text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+                    />
+                  }
+                >
+                  <ChevronRight className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-90" />
+                  <span className="font-medium">About this report</span>
+                  <span aria-hidden>·</span>
+                  <span>{report.about.questions.length} questions</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="flex max-w-3xl flex-col gap-2 pt-2 pl-5">
+                    <p className="text-sm text-muted-foreground">{report.about.blurb}</p>
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Questions this report answers
+                      </span>
+                      <div className="-mr-2 flex items-center gap-1">
+                        <Button variant="ghost" size="xs" className="text-muted-foreground">
+                          <Pencil />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          className="text-muted-foreground"
+                          onClick={refresh}
+                          disabled={refreshing}
+                        >
+                          <AiMark />
+                          Rewrite with AI
+                        </Button>
+                      </div>
+                    </div>
+                    <ul className="flex flex-col gap-1">
+                      {report.about.questions.map((q: string) => (
+                        <li key={q} className="flex gap-2 text-sm text-muted-foreground">
+                          <span aria-hidden>•</span>
+                          {q}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
             {/* What the canvas is scoped to, always visible — including what
                 the assistant assumed on the user's behalf. */}
