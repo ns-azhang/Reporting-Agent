@@ -16,6 +16,7 @@ import {
 
 import { Conversation } from "@/components/conversation"
 import { FilterBar } from "@/components/filter-bar"
+import { KeyFigures } from "@/components/key-figures"
 import { WidgetNames } from "@/components/widget-names"
 import { ReportWidget } from "@/components/report-widgets"
 import type { SavableReport } from "@/components/card-menu"
@@ -628,16 +629,26 @@ export function ReportDetailPage({
               className="flex gap-3 rounded-xl bg-muted/50 px-4 py-3.5"
             >
               <Sparkle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <div className="flex min-w-0 flex-col gap-1">
-                <span className="text-xs font-medium text-muted-foreground">Summary</span>
-                <p className="max-w-3xl text-sm leading-relaxed">
-                  {summaryUnderFilters(
-                    report.summary,
-                    filters.values,
-                    filterDefaults.values,
-                    filterContext.dimensions,
-                    dateLabel(filters.values.date).toLowerCase()
-                  )}
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                {/* Labelled as generated, and when — the same stamp Refresh
+                    keeps, since a filter change re-runs the summary too. */}
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-xs font-medium text-muted-foreground">Summary</span>
+                  <span className="text-xs whitespace-nowrap text-muted-foreground">
+                    {refreshing ? "Generating…" : `Generated ${freshness}`}
+                  </span>
+                </div>
+                {/* Figures in bold so it scans like a headline. */}
+                <p className="max-w-3xl text-sm leading-relaxed text-foreground/90">
+                  <KeyFigures
+                    text={summaryUnderFilters(
+                      report.summary,
+                      filters.values,
+                      filterDefaults.values,
+                      filterContext.dimensions,
+                      dateLabel(filters.values.date).toLowerCase()
+                    )}
+                  />
                 </p>
               </div>
             </section>
