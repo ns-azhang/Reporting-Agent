@@ -1,7 +1,29 @@
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { defineConfig, type Plugin } from "vite"
+
+/**
+ * The review-comment widget, served by a local tool on :4000. Dev server
+ * only: it is injected into index.html while `pnpm dev` runs and never
+ * reaches a build, since localhost:4000 means nothing on the published
+ * /ux/ preview.
+ */
+const commentWidget = (): Plugin => ({
+  name: "comment-widget",
+  apply: "serve",
+  transformIndexHtml: () => [
+    {
+      tag: "script",
+      attrs: {
+        src: "http://localhost:4000/widget.js",
+        "data-project": "data-reporting-agent",
+        defer: true,
+      },
+      injectTo: "body",
+    },
+  ],
+})
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
@@ -14,7 +36,7 @@ export default defineConfig(({ command }) => ({
    * would move local dev to localhost:5180/Reporting-Agent/ux/.
    */
   base: command === "build" ? "/Reporting-Agent/ux/" : "/",
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), commentWidget()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
