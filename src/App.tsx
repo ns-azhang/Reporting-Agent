@@ -14,7 +14,11 @@ import {
   type ReportOrigin,
 } from "@/data/reports"
 import type { Widget } from "@/data/report-details"
-import type { Session } from "@/data/sessions"
+import {
+  SEEDED_PROMPTS,
+  addPrompt,
+  type PastPrompt,
+} from "@/data/prompt-history"
 import { useChat } from "@/lib/use-chat"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -48,8 +52,20 @@ export function App() {
    */
   const [reportOrigin, setReportOrigin] = useState<ReportOrigin>("library")
 
-  /** Session restored from history, rendered as a thread on the prompt page. */
-  const [resumed, setResumed] = useState<Session | null>(null)
+  /** A prompt picked from Session History, staged in a fresh composer. */
+  const [draft, setDraft] = useState<string | undefined>()
+  /**
+   * The signed-in user's Session History: their own prompts, newest first,
+   * capped by count (see @/data/prompt-history). Per user, so it lives beside
+   * the user's other state rather than being shared across the tenant.
+   */
+  const [history, setHistory] = useState<PastPrompt[]>(SEEDED_PROMPTS)
+  const recordPrompt = (text: string) => {
+    setHistory((prev) => addPrompt(prev, text))
+    // Once asked, a reused prompt is spent: coming back to New Session
+    // shouldn't stage it again.
+    setDraft(undefined)
+  }
 
   /**
    * Two conversations, deliberately separate.
@@ -75,25 +91,22 @@ export function App() {
 
   const newSession = () => {
     setOpenReportId(null)
-    setResumed(null)
+    setDraft(undefined)
     chat.reset()
     setPage("new-session")
     setSessionKey((k) => k + 1)
   }
 
-  /** Resuming drops you on the prompt page with the thread rebuilt above the
-      composer, so you can carry on where the conversation left off. */
-  const resumeSession = (session: Session) => {
-    setOpenReportId(null)
-    setResumed(session)
-    chat.reset(session.turns)
-    setPage("new-session")
-    setSessionKey((k) => k + 1)
+  /** Reusing a prompt starts a new session with it waiting in the composer,
+      rather than asking it straight away — see WelcomePage's `draft`. */
+  const reusePrompt = (text: string) => {
+    newSession()
+    setDraft(text)
   }
 
   const navigate = (next: Page) => {
     setOpenReportId(null)
-    if (next !== "new-session") setResumed(null)
+    if (next !== "new-session") setDraft(undefined)
     setPage(next)
   }
 
@@ -200,10 +213,11 @@ export function App() {
           ) : page === "new-session" ? (
             <WelcomePage
               key={sessionKey}
-              resumed={resumed}
+              draft={draft}
               turns={chat.turns}
               thinking={chat.thinking}
               onSend={chat.send}
+              onAsk={recordPrompt}
               onOpenReport={openReport}
               onOpenSavedReport={(id) => openReport(id, "my-reports")}
               savableReports={savableReports}
@@ -213,7 +227,7 @@ export function App() {
               onSaveWidget={saveWidgets}
             />
           ) : page === "session-history" ? (
-            <SessionHistoryPage onPickSession={resumeSession} />
+            <SessionHistoryPage prompts={history} onPickPrompt={reusePrompt} />
           ) : page === "report-library" ? (
             <ReportLibraryPage
               onOpenReport={(report) => openReport(report.id)}

@@ -16,7 +16,6 @@ import { ChevronDown, LayoutGrid, Lightbulb, Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ChatTurn } from "@/lib/use-chat"
 import type { SavableReport } from "@/components/card-menu"
-import type { Session } from "@/data/sessions"
 import type { Widget } from "@/data/report-details"
 
 /** The 6 cards shown when nothing is pinned — mirrors POPULAR_REPORTS. */
@@ -80,12 +79,19 @@ type WelcomePageProps = {
    * follows the route in.
    */
   onOpenSavedReport?: (id: string) => void
-  /** Set when arriving from Session History — renders the restored thread. */
-  resumed?: Session | null
+  /** Set when arriving from Session History — the prompt to reuse, staged in
+      the composer. */
+  draft?: string
   /** The conversation so far. Lives in App so it survives opening a report. */
   turns: ChatTurn[]
   thinking: boolean
   onSend: (text: string, responseId?: string) => void
+  /**
+   * A question you asked — typed, or a follow-up you picked — for Session
+   * History. Not every send: answering a clarifying question also sends, and
+   * "Last 7 days" on its own is nothing you'd want to ask again.
+   */
+  onAsk?: (text: string) => void
   /** Reports a card's ⋮ menu can save a chart into. */
   savableReports?: SavableReport[]
   /** Record a finished ⋮ action in the thread. */
@@ -97,23 +103,35 @@ type WelcomePageProps = {
 export function WelcomePage({
   onOpenReport,
   onOpenSavedReport,
-  resumed,
+  draft,
   turns,
   thinking,
   onSend,
+  onAsk,
   savableReports,
   onNote,
   onSaveWidget,
 }: WelcomePageProps) {
-  const [value, setValue] = React.useState("")
+  const [value, setValue] = React.useState(draft ?? "")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const threadEnd = React.useRef<HTMLDivElement>(null)
 
   const send = () => {
     if (!value.trim() || thinking) return
     onSend(value)
+    onAsk?.(value)
     setValue("")
   }
+
+  // A prompt reused from Session History lands in the composer with the caret
+  // at the end, for the same reason a suggested prompt does (see `pick`): its
+  // time range is usually the part you want to change before asking again.
+  React.useEffect(() => {
+    if (!draft) return
+    const el = textareaRef.current
+    el?.focus()
+    el?.setSelectionRange(draft.length, draft.length)
+  }, [draft])
 
   /**
    * A suggested prompt fills the composer and puts the caret at the end rather
@@ -136,7 +154,10 @@ export function WelcomePage({
     )
   }
 
-  const followUp = (text: string, responseId?: string) => onSend(text, responseId)
+  const followUp = (text: string, responseId?: string) => {
+    onSend(text, responseId)
+    onAsk?.(text)
+  }
 
   // Keep the newest turn in view as the thread grows.
   const turnCount = turns.length
@@ -159,12 +180,10 @@ export function WelcomePage({
             (nav "Overview" -> title "Overview"). */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">
-            {resumed ? resumed.title : "New Session"}
+            New Session
           </h1>
           <p className="text-sm text-muted-foreground">
-            {resumed
-              ? `Resumed from Session History · ${resumed.when}`
-              : "Ask a question about your security data."}
+            Ask a question about your security data.
           </p>
         </div>
 

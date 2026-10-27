@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { IS_BETA_WORKFLOWS } from "@/lib/variant"
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import {
@@ -61,16 +62,16 @@ export type Page =
 
 /**
  * `disabled` keeps a destination visible but unreachable. Session History is
- * turned off for now — the page and its resume-a-session flow are still in the
- * codebase, just with no way in, the same treatment the out-of-scope actions
- * get in @/data/beta-scope. Drop the flag to bring it back.
+ * turned off in the beta — the page is still in the codebase, just with no way
+ * in, the same treatment the out-of-scope actions get in @/data/beta-scope.
+ * The beta-workflows branch turns it back on.
  */
 const NAV_ITEMS = [
   {
     page: "session-history",
     title: "Session History",
     icon: History,
-    disabled: true,
+    disabled: !IS_BETA_WORKFLOWS,
   },
   { page: "report-library", title: "Report Library", icon: LibraryBig },
   { page: "my-reports", title: "My Reports", icon: User },
