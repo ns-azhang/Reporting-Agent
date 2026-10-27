@@ -37,6 +37,18 @@ export default defineConfig(({ command }) => ({
    */
   base: command === "build" ? "/Reporting-Agent/ux/" : "/",
   plugins: [react(), tailwindcss(), commentWidget()],
+  /**
+   * Two pages: the beta (index.html) and its beta-workflows branch. The dev
+   * server serves both from the root already; the build needs them listed.
+   */
+  build: {
+    rollupOptions: {
+      input: {
+        index: path.resolve(__dirname, "index.html"),
+        "beta-workflows": path.resolve(__dirname, "beta-workflows.html"),
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
