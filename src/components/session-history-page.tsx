@@ -7,7 +7,15 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import {
-  HISTORY_LIMIT,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  KEEP_OPTIONS,
   askedLabel,
   type PastPrompt,
 } from "@/data/prompt-history"
@@ -15,25 +23,33 @@ import {
 type SessionHistoryPageProps = {
   /** The signed-in user's prompts, newest first. */
   prompts: PastPrompt[]
+  /** "Keep last N" — one of KEEP_OPTIONS' labels. */
+  keep: string
+  onKeepChange: (keep: string) => void
   /** Reuse a prompt — the caller decides what "reuse" means. */
   onPickPrompt?: (text: string) => void
 }
 
 /**
- * The last HISTORY_LIMIT prompts you asked, newest first. There is no date
- * range: the history is capped by count, so an old question stays until newer
- * ones push it out, however long ago it was asked.
+ * The last N prompts you asked, newest first, where you choose N. The control
+ * sits where the date range used to, and replaces it: the history is capped
+ * by count, so an old question stays until newer ones push it out, however
+ * long ago it was asked.
  */
 export function SessionHistoryPage({
   prompts,
+  keep,
+  onKeepChange,
   onPickPrompt,
 }: SessionHistoryPageProps) {
   const [query, setQuery] = React.useState("")
 
+  const keepCount = KEEP_OPTIONS.find((o) => o.label === keep)?.count ?? 20
+  const kept = prompts.slice(0, keepCount)
   const q = query.trim().toLowerCase()
   const results = q
-    ? prompts.filter((p) => p.text.toLowerCase().includes(q))
-    : prompts
+    ? kept.filter((p) => p.text.toLowerCase().includes(q))
+    : kept
 
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
@@ -42,14 +58,36 @@ export function SessionHistoryPage({
           position as you move through the nav. */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-8 py-8">
         {/* Title matches the active nav entry, per the sibling agent pages. */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Session History
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Your last {HISTORY_LIMIT} prompts, newest first. Pick one to ask it
-            again in a new session.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Session History
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Your last {keepCount} prompts, newest first. Pick one to ask it
+              again in a new session.
+            </p>
+          </div>
+          {/* Base UI can emit null when a Select is cleared; ignore that and
+              keep the current setting rather than falling into an unset
+              state. */}
+          <Select
+            value={keep}
+            onValueChange={(value) => value && onKeepChange(value)}
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {KEEP_OPTIONS.map((o) => (
+                  <SelectItem key={o.label} value={o.label}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         <InputGroup>
@@ -102,7 +140,7 @@ export function SessionHistoryPage({
             {/* Say how the list is kept, so a short list doesn't read as
                 "older ones expired" and a full one explains the drop-off. */}
             <p className="text-xs text-muted-foreground">
-              {prompts.length} of {HISTORY_LIMIT} kept. Only you can see these.
+              {kept.length} of {keepCount} kept. Only you can see these.
               Once the list is full, each new prompt replaces the oldest.
             </p>
           </div>

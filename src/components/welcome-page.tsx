@@ -79,9 +79,13 @@ type WelcomePageProps = {
    * follows the route in.
    */
   onOpenSavedReport?: (id: string) => void
-  /** Set when arriving from Session History — the prompt to reuse, staged in
-      the composer. */
-  draft?: string
+  /**
+   * What's in the composer. Held by App rather than here, so leaving the page
+   * and coming back finds it as you left it. A prompt reused from Session
+   * History arrives through it too.
+   */
+  draft: string
+  onDraftChange: (text: string) => void
   /** The conversation so far. Lives in App so it survives opening a report. */
   turns: ChatTurn[]
   thinking: boolean
@@ -104,6 +108,7 @@ export function WelcomePage({
   onOpenReport,
   onOpenSavedReport,
   draft,
+  onDraftChange,
   turns,
   thinking,
   onSend,
@@ -112,7 +117,8 @@ export function WelcomePage({
   onNote,
   onSaveWidget,
 }: WelcomePageProps) {
-  const [value, setValue] = React.useState(draft ?? "")
+  const value = draft
+  const setValue = onDraftChange
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const threadEnd = React.useRef<HTMLDivElement>(null)
 
@@ -123,15 +129,17 @@ export function WelcomePage({
     setValue("")
   }
 
-  // A prompt reused from Session History lands in the composer with the caret
-  // at the end, for the same reason a suggested prompt does (see `pick`): its
-  // time range is usually the part you want to change before asking again.
+  // Arriving with something already in the composer — a prompt reused from
+  // Session History, or a draft you left — puts the caret at the end of it,
+  // ready to carry on. For a reused prompt that's the same reason a suggested
+  // prompt does it (see `pick`): its time range is usually what you change.
+  // Mount only, and read from the element, so typing doesn't re-run it.
   React.useEffect(() => {
-    if (!draft) return
     const el = textareaRef.current
-    el?.focus()
-    el?.setSelectionRange(draft.length, draft.length)
-  }, [draft])
+    if (!el?.value) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
+  }, [])
 
   /**
    * A suggested prompt fills the composer and puts the caret at the end rather

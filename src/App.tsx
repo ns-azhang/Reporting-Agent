@@ -15,6 +15,7 @@ import {
 } from "@/data/reports"
 import type { Widget } from "@/data/report-details"
 import {
+  DEFAULT_KEEP,
   SEEDED_PROMPTS,
   addPrompt,
   type PastPrompt,
@@ -52,20 +53,24 @@ export function App() {
    */
   const [reportOrigin, setReportOrigin] = useState<ReportOrigin>("library")
 
-  /** A prompt picked from Session History, staged in a fresh composer. */
-  const [draft, setDraft] = useState<string | undefined>()
+  /**
+   * What's typed in the New Session composer. It lives here, not in
+   * WelcomePage, so leaving the page mid-sentence and coming back finds it as
+   * you left it. Sending is what clears it. + New Session doesn't: it is also
+   * the only way back to this page, and it starts a new thread, not a new
+   * sentence.
+   */
+  const [draft, setDraft] = useState("")
   /**
    * The signed-in user's Session History: their own prompts, newest first,
    * capped by count (see @/data/prompt-history). Per user, so it lives beside
    * the user's other state rather than being shared across the tenant.
    */
   const [history, setHistory] = useState<PastPrompt[]>(SEEDED_PROMPTS)
-  const recordPrompt = (text: string) => {
+  const recordPrompt = (text: string) =>
     setHistory((prev) => addPrompt(prev, text))
-    // Once asked, a reused prompt is spent: coming back to New Session
-    // shouldn't stage it again.
-    setDraft(undefined)
-  }
+  /** How many of them the user keeps — their own setting, like the list. */
+  const [keep, setKeep] = useState<string>(DEFAULT_KEEP)
 
   /**
    * Two conversations, deliberately separate.
@@ -91,7 +96,6 @@ export function App() {
 
   const newSession = () => {
     setOpenReportId(null)
-    setDraft(undefined)
     chat.reset()
     setPage("new-session")
     setSessionKey((k) => k + 1)
@@ -106,7 +110,6 @@ export function App() {
 
   const navigate = (next: Page) => {
     setOpenReportId(null)
-    if (next !== "new-session") setDraft(undefined)
     setPage(next)
   }
 
@@ -214,6 +217,7 @@ export function App() {
             <WelcomePage
               key={sessionKey}
               draft={draft}
+              onDraftChange={setDraft}
               turns={chat.turns}
               thinking={chat.thinking}
               onSend={chat.send}
@@ -227,7 +231,12 @@ export function App() {
               onSaveWidget={saveWidgets}
             />
           ) : page === "session-history" ? (
-            <SessionHistoryPage prompts={history} onPickPrompt={reusePrompt} />
+            <SessionHistoryPage
+              prompts={history}
+              keep={keep}
+              onKeepChange={setKeep}
+              onPickPrompt={reusePrompt}
+            />
           ) : page === "report-library" ? (
             <ReportLibraryPage
               onOpenReport={(report) => openReport(report.id)}
