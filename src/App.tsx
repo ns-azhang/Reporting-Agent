@@ -15,7 +15,6 @@ import {
 } from "@/data/reports"
 import type { Widget } from "@/data/report-details"
 import {
-  DEFAULT_KEEP,
   SEEDED_PROMPTS,
   addPrompt,
   type PastPrompt,
@@ -69,8 +68,6 @@ export function App() {
   const [history, setHistory] = useState<PastPrompt[]>(SEEDED_PROMPTS)
   const recordPrompt = (text: string) =>
     setHistory((prev) => addPrompt(prev, text))
-  /** How many of them the user keeps — their own setting, like the list. */
-  const [keep, setKeep] = useState<string>(DEFAULT_KEEP)
 
   /**
    * Two conversations, deliberately separate.
@@ -231,12 +228,7 @@ export function App() {
               onSaveWidget={saveWidgets}
             />
           ) : page === "session-history" ? (
-            <SessionHistoryPage
-              prompts={history}
-              keep={keep}
-              onKeepChange={setKeep}
-              onPickPrompt={reusePrompt}
-            />
+            <SessionHistoryPage prompts={history} onPickPrompt={reusePrompt} />
           ) : page === "report-library" ? (
             <ReportLibraryPage
               onOpenReport={(report) => openReport(report.id)}
