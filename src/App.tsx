@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties } from "react"
 
 import { AppSidebar, type Page } from "@/components/app-sidebar"
 import { MyReportsPage } from "@/components/my-reports-page"
+import { PastSessionPage } from "@/components/past-session-page"
 import { ReportDetailPage } from "@/components/report-detail-page"
 import { ReportLibraryPage } from "@/components/report-library-page"
 import { SessionHistoryPage } from "@/components/session-history-page"
@@ -66,8 +67,13 @@ export function App() {
    * the user's other state rather than being shared across the tenant.
    */
   const [history, setHistory] = useState<PastPrompt[]>(SEEDED_PROMPTS)
-  const recordPrompt = (text: string) =>
-    setHistory((prev) => addPrompt(prev, text))
+  const recordPrompt = (text: string, responseId?: string) =>
+    setHistory((prev) => addPrompt(prev, text, responseId))
+  /**
+   * The prompt open from Session History, shown read-only in place of the
+   * list. Tracked like an open report, so its Back returns to the list.
+   */
+  const [pastPrompt, setPastPrompt] = useState<PastPrompt | null>(null)
 
   /**
    * Two conversations, deliberately separate.
@@ -93,6 +99,7 @@ export function App() {
 
   const newSession = () => {
     setOpenReportId(null)
+    setPastPrompt(null)
     chat.reset()
     setPage("new-session")
     setSessionKey((k) => k + 1)
@@ -107,6 +114,7 @@ export function App() {
 
   const navigate = (next: Page) => {
     setOpenReportId(null)
+    setPastPrompt(null)
     setPage(next)
   }
 
@@ -228,7 +236,19 @@ export function App() {
               onSaveWidget={saveWidgets}
             />
           ) : page === "session-history" ? (
-            <SessionHistoryPage prompts={history} onPickPrompt={reusePrompt} />
+            pastPrompt ? (
+              <PastSessionPage
+                prompt={pastPrompt}
+                onBack={() => setPastPrompt(null)}
+                onAskAgain={reusePrompt}
+                onOpenReport={openReport}
+              />
+            ) : (
+              <SessionHistoryPage
+                prompts={history}
+                onPickPrompt={setPastPrompt}
+              />
+            )
           ) : page === "report-library" ? (
             <ReportLibraryPage
               onOpenReport={(report) => openReport(report.id)}

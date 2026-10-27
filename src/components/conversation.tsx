@@ -348,6 +348,7 @@ function FeedbackRow({ summary }: { summary: string }) {
 
 function ResponseCard({
   response,
+  readOnly = false,
   onPickFollowUp,
   savableReports = [],
   currentReport,
@@ -355,6 +356,8 @@ function ResponseCard({
   onSaveWidget,
 }: {
   response: Response
+  /** A past answer: nothing on it carries the conversation on. */
+  readOnly?: boolean
   onPickFollowUp?: (text: string, responseId?: string) => void
   savableReports?: SavableReport[]
   currentReport?: SavableReport
@@ -387,7 +390,7 @@ function ResponseCard({
         {/* Only where there is something to save. An action or ack card has no
             chart, and a menu that can only say "nothing to save" is a dead
             control. */}
-        {widgets.length > 0 && (
+        {widgets.length > 0 && !readOnly && (
         <CardMenu
           reports={savableReports}
           currentReport={currentReport}
@@ -449,7 +452,7 @@ function ResponseCard({
         <p className="text-xs leading-relaxed">{response.summary}</p>
       </div>
 
-      {response.followUps.length > 0 && (
+      {response.followUps.length > 0 && !readOnly && (
         <div className="flex flex-col gap-2">
           {/* Sentence case, matching the Insight label above it. */}
           <span className="text-[11px] font-semibold text-muted-foreground">
@@ -481,6 +484,7 @@ function ResponseCard({
 
 export function Conversation({
   turns,
+  readOnly,
   thinking,
   onPickFollowUp,
   onAnswerClarify,
@@ -492,6 +496,12 @@ export function Conversation({
   renderText,
 }: {
   turns: ChatTurn[]
+  /**
+   * A past session, shown to read rather than continue: no follow-up chips,
+   * no drilling into a chart, and no ⋮ menu, since each of those adds to the
+   * thread.
+   */
+  readOnly?: boolean
   thinking?: boolean
   onPickFollowUp?: (text: string, responseId?: string) => void
   onAnswerClarify?: (label: string) => void
@@ -544,7 +554,8 @@ export function Conversation({
           <ResponseCard
             key={i}
             response={response}
-            onPickFollowUp={onPickFollowUp}
+            readOnly={readOnly}
+            onPickFollowUp={readOnly ? undefined : onPickFollowUp}
             savableReports={savableReports}
             currentReport={currentReport}
             onNote={onNote}

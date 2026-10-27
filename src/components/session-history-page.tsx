@@ -9,8 +9,8 @@ import {
 type SessionHistoryPageProps = {
   /** The signed-in user's prompts, newest first. */
   prompts: PastPrompt[]
-  /** Reuse a prompt — the caller decides what "reuse" means. */
-  onPickPrompt?: (text: string) => void
+  /** Open a prompt — the caller decides what opening one shows. */
+  onPickPrompt?: (prompt: PastPrompt) => void
 }
 
 /**
@@ -34,8 +34,8 @@ export function SessionHistoryPage({
             Session History
           </h1>
           <p className="text-sm text-muted-foreground">
-            Your last {HISTORY_LIMIT} prompts, newest first. Pick one to ask it
-            again in a new session.
+            Your last {HISTORY_LIMIT} prompts, newest first. Open one to see
+            what the agent answered.
           </p>
         </div>
 
@@ -50,7 +50,7 @@ export function SessionHistoryPage({
               {prompts.map((p) => (
                 <button
                   key={p.text}
-                  onClick={() => onPickPrompt?.(p.text)}
+                  onClick={() => onPickPrompt?.(p)}
                   className="group flex w-full items-center gap-4 px-5 py-3.5 text-left transition-colors outline-none hover:bg-muted focus-visible:bg-muted"
                 >
                   <History className="size-4 shrink-0 text-muted-foreground" />

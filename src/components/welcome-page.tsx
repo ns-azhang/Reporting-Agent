@@ -95,7 +95,7 @@ type WelcomePageProps = {
    * History. Not every send: answering a clarifying question also sends, and
    * "Last 7 days" on its own is nothing you'd want to ask again.
    */
-  onAsk?: (text: string) => void
+  onAsk?: (text: string, responseId?: string) => void
   /** Reports a card's ⋮ menu can save a chart into. */
   savableReports?: SavableReport[]
   /** Record a finished ⋮ action in the thread. */
@@ -164,7 +164,7 @@ export function WelcomePage({
 
   const followUp = (text: string, responseId?: string) => {
     onSend(text, responseId)
-    onAsk?.(text)
+    onAsk?.(text, responseId)
   }
 
   // Keep the newest turn in view as the thread grows.
