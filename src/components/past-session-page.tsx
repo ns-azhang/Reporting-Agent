@@ -1,19 +1,13 @@
-import { ArrowLeft, Lock, RotateCcw } from "lucide-react"
+import { Lock, RotateCcw } from "lucide-react"
 
 import { Conversation } from "@/components/conversation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  askedLabel,
-  replayTurns,
-  type PastPrompt,
-} from "@/data/prompt-history"
+import { askedLabel, type PastSession } from "@/data/prompt-history"
 
 type PastSessionPageProps = {
-  prompt: PastPrompt
-  /** Back to the Session History list. */
-  onBack: () => void
+  session: PastSession
   /** Carry the question on — in a new session, since this one is closed. */
   onAskAgain: (text: string) => void
   /** Follow the report link when the prompt opened a report. */
@@ -21,14 +15,13 @@ type PastSessionPageProps = {
 }
 
 /**
- * A prompt from Session History and what the agent answered, to read but not
- * continue. The thread is read-only and the composer stays on screen, locked,
+ * A session from the sidebar's Recent list that has gone past LIVE_FOR_MS,
+ * to read but not continue. The thread is read-only and the composer stays on screen, locked,
  * so it is plain that you can't keep asking here rather than the box just
  * being missing; its one live control starts a new session with the prompt.
  */
 export function PastSessionPage({
-  prompt,
-  onBack,
+  session,
   onAskAgain,
   onOpenReport,
 }: PastSessionPageProps) {
@@ -37,39 +30,27 @@ export function PastSessionPage({
       {/* div, not <main> — SidebarInset already renders the page's <main>.
           Same centred max-w-6xl column as every other page. */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-8 py-8">
-        <div className="flex flex-col gap-3">
-          {/* Same Back as an open report: it returns to the list you came from. */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="-ml-2 w-fit text-muted-foreground"
-          >
-            <ArrowLeft />
-            Back
-          </Button>
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                Past session
-              </h1>
-              <Badge variant="secondary">
-                <Lock />
-                Read-only
-              </Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {/* "Asked today, 9:14 AM" / "Asked 12 days ago" */}
-              Asked{" "}
-              {askedLabel(prompt.askedAt).replace(/^(Today|Yesterday)/, (w) =>
-                w.toLowerCase()
-              )}
-            </p>
+        {/* No Back: the session was opened from the sidebar, which is
+            still there to go anywhere else. */}
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {session.title}
+            </h1>
+            <Badge variant="secondary">
+              <Lock />
+              Read-only
+            </Badge>
           </div>
+          <p className="text-sm text-muted-foreground">
+            {/* "Last asked 12 days ago" — and why that means read-only. */}
+            Last asked {askedLabel(session.askedAt, undefined, true)}. Sessions stay
+            open for 24 hours after the last prompt.
+          </p>
         </div>
 
         <Conversation
-          turns={replayTurns(prompt)}
+          turns={session.turns}
           readOnly
           onOpenReport={onOpenReport}
         />
@@ -88,7 +69,7 @@ export function PastSessionPage({
               <Lock className="size-3.5" />
               Read-only
             </span>
-            <Button size="sm" onClick={() => onAskAgain(prompt.text)}>
+            <Button size="sm" onClick={() => onAskAgain(session.title)}>
               <RotateCcw />
               Ask again in a new session
             </Button>

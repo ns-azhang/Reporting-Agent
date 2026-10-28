@@ -5,7 +5,6 @@ import { MyReportsPage } from "@/components/my-reports-page"
 import { PastSessionPage } from "@/components/past-session-page"
 import { ReportDetailPage } from "@/components/report-detail-page"
 import { ReportLibraryPage } from "@/components/report-library-page"
-import { SessionHistoryPage } from "@/components/session-history-page"
 import { StyleGuide } from "@/components/style-guide"
 import { WelcomePage } from "@/components/welcome-page"
 import {
@@ -16,10 +15,14 @@ import {
 } from "@/data/reports"
 import type { Widget } from "@/data/report-details"
 import {
-  SEEDED_PROMPTS,
-  addPrompt,
-  type PastPrompt,
+  SEEDED_SESSIONS,
+  askInto,
+  askedLabel,
+  isLive,
+  newSessionId,
+  type PastSession,
 } from "@/data/prompt-history"
+import { matchReportByKeyword } from "@/lib/classify-prompt"
 import { useChat } from "@/lib/use-chat"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -54,26 +57,27 @@ export function App() {
   const [reportOrigin, setReportOrigin] = useState<ReportOrigin>("library")
 
   /**
-   * What's typed in the New Session composer. It lives here, not in
-   * WelcomePage, so leaving the page mid-sentence and coming back finds it as
-   * you left it. Sending is what clears it. + New Session doesn't: it is also
-   * the only way back to this page, and it starts a new thread, not a new
-   * sentence.
+   * The signed-in user's sessions, newest first, capped by count (see
+   * @/data/prompt-history) and listed under Recent in the nav. Per user, so
+   * they live beside the user's other state rather than being shared across
+   * the tenant.
    */
-  const [draft, setDraft] = useState("")
+  const [sessions, setSessions] = useState<PastSession[]>(SEEDED_SESSIONS)
   /**
-   * The signed-in user's Session History: their own prompts, newest first,
-   * capped by count (see @/data/prompt-history). Per user, so it lives beside
-   * the user's other state rather than being shared across the tenant.
+   * The session on the prompt page: null for a new one not yet asked into.
+   * A live one is in `chat`; a read-only one is only shown. Leaving for
+   * another page keeps it, so its Recent entry takes you back to it as left.
    */
-  const [history, setHistory] = useState<PastPrompt[]>(SEEDED_PROMPTS)
-  const recordPrompt = (text: string, responseId?: string) =>
-    setHistory((prev) => addPrompt(prev, text, responseId))
+  const [openSessionId, setOpenSessionId] = useState<string | null>(null)
+
   /**
-   * The prompt open from Session History, shown read-only in place of the
-   * list. Tracked like an open report, so its Back returns to the list.
+   * What's typed in each composer, by session ("new" for New Session). It
+   * lives here, not in WelcomePage, so leaving mid-sentence and coming back
+   * finds it as you left it. Sending is what clears it. + New Session
+   * doesn't: it starts a new thread, not a new sentence.
    */
-  const [pastPrompt, setPastPrompt] = useState<PastPrompt | null>(null)
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const draftKey = openSessionId ?? "new"
 
   /**
    * Two conversations, deliberately separate.
@@ -97,24 +101,65 @@ export function App() {
   }
   const chat = useChat(openReport)
 
-  const newSession = () => {
+  /**
+   * `sessions` with the live thread in place. The chat holds the open
+   * session's turns while you are in it and they are written back only when
+   * you switch away, so the list never trails a turn behind the screen.
+   */
+  const withChat = sessions.map((s) =>
+    s.id === openSessionId && chat.turns.length > 0
+      ? { ...s, turns: chat.turns }
+      : s
+  )
+  const openSession = withChat.find((s) => s.id === openSessionId) ?? null
+
+  /** Every switch of session goes through here, so the one left is saved. */
+  const switchSession = (id: string | null) => {
+    setSessions(withChat)
     setOpenReportId(null)
-    setPastPrompt(null)
-    chat.reset()
+    setOpenSessionId(id)
+    const next = withChat.find((s) => s.id === id)
+    // Only a live session goes back into the chat; a read-only one is shown
+    // as is, and an empty chat keeps `withChat` from writing over it.
+    chat.reset(next && isLive(next) ? next.turns : [])
     setPage("new-session")
     setSessionKey((k) => k + 1)
+  }
+
+  const newSession = () => switchSession(null)
+
+  /** From Recent. The session already open just comes back to the front, so
+      an answer still on its way isn't cut off. */
+  const openSessionFromNav = (id: string) => {
+    if (id === openSessionId) {
+      setOpenReportId(null)
+      setPage("new-session")
+      return
+    }
+    switchSession(id)
+  }
+
+  /**
+   * A prompt asked on the prompt page. The first one starts a session under
+   * it; later ones move it back to the top. A prompt that named a report
+   * opened that report instead of being answered here, so it starts nothing.
+   */
+  const recordAsk = (text: string, responseId?: string) => {
+    if (!responseId && matchReportByKeyword(text)) return
+    const id = openSessionId ?? newSessionId()
+    setOpenSessionId(id)
+    setSessions((prev) => askInto(prev, id, text))
   }
 
   /** Reusing a prompt starts a new session with it waiting in the composer,
       rather than asking it straight away — see WelcomePage's `draft`. */
   const reusePrompt = (text: string) => {
     newSession()
-    setDraft(text)
+    setDrafts((d) => ({ ...d, new: text }))
   }
 
   const navigate = (next: Page) => {
     setOpenReportId(null)
-    setPastPrompt(null)
     setPage(next)
   }
 
@@ -196,6 +241,11 @@ export function App() {
           page={page}
           onNavigate={navigate}
           onNewSession={newSession}
+          sessions={withChat}
+          activeSessionId={
+            page === "new-session" && !openReportId ? openSessionId : null
+          }
+          onOpenSession={openSessionFromNav}
         />
         <SidebarInset>
           {openReportId ? (
@@ -218,15 +268,29 @@ export function App() {
               onSaveWidget={saveWidgets}
               onOpenReport={(id) => openReport(id, "my-reports")}
             />
+          ) : page === "new-session" && openSession && !isLive(openSession) ? (
+            <PastSessionPage
+              session={openSession}
+              onAskAgain={reusePrompt}
+              onOpenReport={openReport}
+            />
           ) : page === "new-session" ? (
             <WelcomePage
               key={sessionKey}
-              draft={draft}
-              onDraftChange={setDraft}
+              title={openSession?.title}
+              subtitle={
+                openSession
+                  ? `Last asked ${askedLabel(openSession.askedAt, undefined, true)}. You can keep asking for 24 hours after your last prompt.`
+                  : undefined
+              }
+              draft={drafts[draftKey] ?? ""}
+              onDraftChange={(text) =>
+                setDrafts((d) => ({ ...d, [draftKey]: text }))
+              }
               turns={chat.turns}
               thinking={chat.thinking}
               onSend={chat.send}
-              onAsk={recordPrompt}
+              onAsk={recordAsk}
               onOpenReport={openReport}
               onOpenSavedReport={(id) => openReport(id, "my-reports")}
               savableReports={savableReports}
@@ -235,20 +299,6 @@ export function App() {
               onNote={chat.note}
               onSaveWidget={saveWidgets}
             />
-          ) : page === "session-history" ? (
-            pastPrompt ? (
-              <PastSessionPage
-                prompt={pastPrompt}
-                onBack={() => setPastPrompt(null)}
-                onAskAgain={reusePrompt}
-                onOpenReport={openReport}
-              />
-            ) : (
-              <SessionHistoryPage
-                prompts={history}
-                onPickPrompt={setPastPrompt}
-              />
-            )
           ) : page === "report-library" ? (
             <ReportLibraryPage
               onOpenReport={(report) => openReport(report.id)}

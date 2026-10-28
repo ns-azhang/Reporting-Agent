@@ -5,6 +5,7 @@ import {
   ExternalLink,
   History,
   LibraryBig,
+  Lock,
   LogOut,
   Moon,
   Plus,
@@ -12,6 +13,7 @@ import {
   User,
 } from "lucide-react"
 
+import { isLive, type PastSession } from "@/data/prompt-history"
 import { cn } from "@/lib/utils"
 import { IS_BETA_WORKFLOWS } from "@/lib/variant"
 import { useTheme } from "@/components/theme-provider"
@@ -29,6 +31,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -51,6 +54,10 @@ import netskopeLogo from "@/assets/netskope-logo.svg"
  * The entries diverge from the Figma frame per review: the product is now
  * "Reporting", the destinations are the app's own screens, and New Session
  * leads the list as an action (no active state — it resets the thread).
+ *
+ * The beta-workflows branch lists your sessions in the nav itself, under
+ * Recent, at the same level as New Session — the way chat assistants do —
+ * rather than behind a Session History page.
  */
 
 /** Pages the nav can reach. "new-session" is the prompt page. */
@@ -64,7 +71,8 @@ export type Page =
  * `disabled` keeps a destination visible but unreachable. Session History is
  * turned off in the beta — the page is still in the codebase, just with no way
  * in, the same treatment the out-of-scope actions get in @/data/beta-scope.
- * The beta-workflows branch turns it back on.
+ * The beta-workflows branch drops the entry: its sessions are listed in the
+ * nav instead (see Recent below).
  */
 const NAV_ITEMS = [
   {
@@ -92,6 +100,11 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   page: Page
   onNavigate: (page: Page) => void
   onNewSession?: () => void
+  /** Your sessions, newest first, for the Recent list (beta-workflows only). */
+  sessions?: PastSession[]
+  /** The session on screen, if any — it takes the active state. */
+  activeSessionId?: string | null
+  onOpenSession?: (id: string) => void
 }
 
 export function AppSidebar({
@@ -99,8 +112,14 @@ export function AppSidebar({
   page,
   onNavigate,
   onNewSession,
+  sessions = [],
+  activeSessionId,
+  onOpenSession,
   ...props
 }: AppSidebarProps) {
+  const navItems = IS_BETA_WORKFLOWS
+    ? NAV_ITEMS.filter((item) => item.page !== "session-history")
+    : NAV_ITEMS
   return (
     // No divider between nav and content (the Figma nav has none). The stock
     // border is applied as `group-data-[side=left]:border-r`, so the override
@@ -149,7 +168,7 @@ export function AppSidebar({
               </SidebarMenuButton>
             </SidebarMenuItem>
 
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const disabled = "disabled" in item && item.disabled
               return (
                 <SidebarMenuItem key={item.page}>
@@ -190,6 +209,35 @@ export function AppSidebar({
             })}
           </SidebarMenu>
         </SidebarGroup>
+
+        {IS_BETA_WORKFLOWS && sessions.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Recent</SidebarGroupLabel>
+            <SidebarMenu>
+              {sessions.map((session) => {
+                const live = isLive(session)
+                return (
+                  <SidebarMenuItem key={session.id}>
+                    <SidebarMenuButton
+                      isActive={session.id === activeSessionId}
+                      onClick={() => onOpenSession?.(session.id)}
+                      tooltip={session.title}
+                      /* The title truncates at this width; the native title
+                         gives the whole prompt on hover while expanded. */
+                      title={live ? session.title : `${session.title} (read-only)`}
+                      className="h-8"
+                    >
+                      {/* The icon carries the state, so read-only shows before
+                          you open it. */}
+                      {live ? <History /> : <Lock />}
+                      <span className="truncate">{session.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>

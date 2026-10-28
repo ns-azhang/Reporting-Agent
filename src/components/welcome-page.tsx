@@ -80,6 +80,12 @@ type WelcomePageProps = {
    */
   onOpenSavedReport?: (id: string) => void
   /**
+   * Set when this is a session picked up from Recent rather than a new one:
+   * the header names it instead of saying "New Session".
+   */
+  title?: string
+  subtitle?: string
+  /**
    * What's in the composer. Held by App rather than here, so leaving the page
    * and coming back finds it as you left it. A prompt reused from Session
    * History arrives through it too.
@@ -107,6 +113,8 @@ type WelcomePageProps = {
 export function WelcomePage({
   onOpenReport,
   onOpenSavedReport,
+  title,
+  subtitle,
   draft,
   onDraftChange,
   turns,
@@ -188,10 +196,10 @@ export function WelcomePage({
             (nav "Overview" -> title "Overview"). */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">
-            New Session
+            {title ?? "New Session"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Ask a question about your security data.
+            {subtitle ?? "Ask a question about your security data."}
           </p>
         </div>
 

@@ -1,11 +1,15 @@
 /**
- * Session History, as the PM settled it: the prompts you asked, not whole
- * conversations, kept per user and capped by count rather than by age.
+ * Session History, kept per user and capped by count rather than by age.
  *
  * Count, not time, because reporting admins schedule their reports and leave.
  * A 30-day window would be empty for someone back after six weeks, which is
  * exactly when their old questions are worth reusing; the last X are always
  * there however long the gap. The seed reaches past 30 days to show that.
+ *
+ * Each entry is a session — the thread a first prompt started, listed under
+ * that prompt — so a recent one can be picked up where it was left, the way
+ * chat assistants list their conversations. Only recent ones, though: see
+ * LIVE_FOR_MS.
  */
 
 import { splitQuestions } from "@/data/clarify"
@@ -17,26 +21,43 @@ import {
 import type { ChatTurn } from "@/lib/use-chat"
 
 /**
- * How many prompts a user keeps. Asking past it drops the oldest. Three is
- * enough for the demo; the real number is still open.
+ * How many sessions a user keeps. Starting one past it drops the oldest.
+ * Three is enough for the demo; the real number is still open.
  */
 export const HISTORY_LIMIT = 3
 
-export type PastPrompt = {
-  text: string
+/**
+ * How long a session stays open to more prompts after the last one. Past it
+ * the session is read-only: the data under its answers has moved on, so
+ * asking on top of them would mix old and new numbers in one thread.
+ */
+export const LIVE_FOR_MS = 24 * 60 * 60 * 1000
+
+export type PastSession = {
+  id: string
+  /** The prompt that started it — what it is listed under. */
+  title: string
+  /** When it was last asked into. Orders the list and decides if it's live. */
   askedAt: Date
-  /** Set when the prompt was a follow-up chip, which names its own answer. */
-  responseId?: string
+  turns: ChatTurn[]
 }
+
+/** Whether a session still takes prompts — see LIVE_FOR_MS. */
+export const isLive = (session: PastSession, now = Date.now()) =>
+  now - session.askedAt.getTime() < LIVE_FOR_MS
+
+let lastId = 0
+export const newSessionId = () => `session-${++lastId}`
 
 const ago = (days: number, hours = 0) =>
   new Date(Date.now() - (days * 24 + hours) * 60 * 60 * 1000)
 
 /**
- * Kevin Flyn's history, newest first. The oldest is six weeks back — past a
- * 30-day window, still among his last three.
+ * Kevin Flyn's history, newest first. The first is an hour old, so still
+ * live; the oldest is six weeks back — past a 30-day window, still among his
+ * last three, and read-only.
  */
-export const SEEDED_PROMPTS: PastPrompt[] = [
+export const SEEDED_SESSIONS: PastSession[] = [
   {
     text: "Show me only Critical incidents from the last 7 days",
     askedAt: ago(0, 1),
@@ -52,27 +73,37 @@ export const SEEDED_PROMPTS: PastPrompt[] = [
     askedAt: ago(45),
     responseId: "users-wetransfer",
   },
-]
+].map((seed, i) => ({
+  id: `seed-${i + 1}`,
+  title: seed.text,
+  askedAt: seed.askedAt,
+  turns: replayTurns(seed),
+}))
 
 /**
- * Add a prompt to the top of a history. Asking the same thing again moves it
- * up rather than listing it twice, so the cap counts distinct questions.
+ * A prompt asked into a session: it goes to the top, and is started under
+ * that prompt if it is new. Over the cap, the oldest session drops. Its turns
+ * are App's to fill in — they come from the chat.
  */
-export function addPrompt(
-  history: PastPrompt[],
-  text: string,
-  responseId?: string
-): PastPrompt[] {
-  const key = text.trim().toLowerCase()
-  return [
-    { text: text.trim(), askedAt: new Date(), responseId },
-    ...history.filter((p) => p.text.toLowerCase() !== key),
-  ].slice(0, HISTORY_LIMIT)
+export function askInto(
+  history: PastSession[],
+  id: string,
+  text: string
+): PastSession[] {
+  const existing = history.find((s) => s.id === id)
+  const asked: PastSession = existing
+    ? { ...existing, askedAt: new Date() }
+    : { id, title: text.trim(), askedAt: new Date(), turns: [] }
+  return [asked, ...history.filter((s) => s.id !== id)].slice(0, HISTORY_LIMIT)
 }
 
 /** "Today, 9:14 AM" / "Yesterday" / "12 days ago" / "6 weeks ago" /
-    "3 months ago". */
-export function askedLabel(askedAt: Date, now = new Date()): string {
+    "3 months ago". `inSentence` lowercases the day, for "last asked today". */
+export function askedLabel(
+  askedAt: Date,
+  now = new Date(),
+  inSentence = false
+): string {
   const startOfDay = (d: Date) =>
     new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   const days = Math.round((startOfDay(now) - startOfDay(askedAt)) / 86_400_000)
@@ -81,22 +112,24 @@ export function askedLabel(askedAt: Date, now = new Date()): string {
       hour: "numeric",
       minute: "2-digit",
     })
-    return `Today, ${time}`
+    return `${inSentence ? "today" : "Today"}, ${time}`
   }
-  if (days === 1) return "Yesterday"
+  if (days === 1) return inSentence ? "yesterday" : "Yesterday"
   if (days < 28) return `${days} days ago`
   if (days < 60) return `${Math.floor(days / 7)} weeks ago`
   return `${Math.floor(days / 30)} months ago`
 }
 
 /**
- * What the agent answered, rebuilt for the read-only view. The prototype's
- * answers are canned and picked from the prompt alone, so running the same
- * routing use-chat does reproduces them; there is no thread to store. A
- * clarifying wizard's steps aren't replayed, only what it ended in: one
- * answer per question.
+ * A seeded session's thread, rebuilt from its prompt. The prototype's answers
+ * are canned and picked from the prompt alone, so running the same routing
+ * use-chat does reproduces them. A clarifying wizard's steps aren't replayed,
+ * only what it ended in: one answer per question.
  */
-export function replayTurns(prompt: PastPrompt): ChatTurn[] {
+function replayTurns(prompt: {
+  text: string
+  responseId?: string
+}): ChatTurn[] {
   const asked: ChatTurn = { role: "user", text: prompt.text }
   if (prompt.responseId) {
     return [
