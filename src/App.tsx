@@ -18,6 +18,7 @@ import {
   SEEDED_SESSIONS,
   askInto,
   askedLabel,
+  closesAtLabel,
   isLive,
   newSessionId,
   type PastSession,
@@ -280,9 +281,10 @@ export function App() {
               title={openSession?.title}
               subtitle={
                 openSession
-                  ? `Last asked ${askedLabel(openSession.askedAt, undefined, true)}. You can keep asking for 24 hours after your last prompt.`
+                  ? `Last asked ${askedLabel(openSession.askedAt, undefined, true)}`
                   : undefined
               }
+              closesAt={openSession ? closesAtLabel(openSession) : undefined}
               draft={drafts[draftKey] ?? ""}
               onDraftChange={(text) =>
                 setDrafts((d) => ({ ...d, [draftKey]: text }))

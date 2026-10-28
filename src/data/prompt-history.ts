@@ -46,6 +46,17 @@ export type PastSession = {
 export const isLive = (session: PastSession, now = Date.now()) =>
   now - session.askedAt.getTime() < LIVE_FOR_MS
 
+/** "9:31 AM tomorrow" / "11:00 PM today" — when a live session closes. */
+export function closesAtLabel(session: PastSession, now = new Date()): string {
+  const closes = new Date(session.askedAt.getTime() + LIVE_FOR_MS)
+  const time = closes.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  })
+  // Closing is always within the next 24 hours, so today or tomorrow.
+  return `${time} ${closes.getDate() === now.getDate() ? "today" : "tomorrow"}`
+}
+
 let lastId = 0
 export const newSessionId = () => `session-${++lastId}`
 

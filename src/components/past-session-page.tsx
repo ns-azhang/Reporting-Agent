@@ -3,7 +3,6 @@ import { Lock, RotateCcw } from "lucide-react"
 import { Conversation } from "@/components/conversation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { askedLabel, type PastSession } from "@/data/prompt-history"
 
 type PastSessionPageProps = {
@@ -16,9 +15,10 @@ type PastSessionPageProps = {
 
 /**
  * A session from the sidebar's Recent list that has gone past LIVE_FOR_MS,
- * to read but not continue. The thread is read-only and the composer stays on screen, locked,
- * so it is plain that you can't keep asking here rather than the box just
- * being missing; its one live control starts a new session with the prompt.
+ * to read but not continue. The header only states facts; why it is closed
+ * and what to do instead sit in a bar where the composer would be, since
+ * that is where you'd try to keep asking — and it stays pinned there however
+ * far the thread scrolls.
  */
 export function PastSessionPage({
   session,
@@ -43,9 +43,7 @@ export function PastSessionPage({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {/* "Last asked 12 days ago" — and why that means read-only. */}
-            Last asked {askedLabel(session.askedAt, undefined, true)}. Sessions stay
-            open for 24 hours after the last prompt.
+            Last asked {askedLabel(session.askedAt, undefined, true)}
           </p>
         </div>
 
@@ -55,20 +53,15 @@ export function PastSessionPage({
           onOpenReport={onOpenReport}
         />
 
-        {/* The composer, locked. Same box as New Session's so it reads as the
-            place you'd type, with the reason in it instead of a prompt. */}
-        <div className="flex min-h-[112px] flex-col rounded-md border border-input bg-muted/50">
-          <Textarea
-            disabled
-            aria-label="Prompt"
-            placeholder="This session is read-only. You can't keep prompting here — ask again to continue in a new session."
-            className="min-h-0 flex-1 resize-none border-0 bg-transparent px-4 pt-3.5 shadow-none focus-visible:border-0 focus-visible:ring-0 disabled:cursor-default disabled:opacity-100 dark:bg-transparent"
-          />
-          <div className="flex items-center justify-between px-3 pt-2 pb-2.5">
-            <span className="flex items-center gap-1.5 px-2 text-xs text-muted-foreground">
-              <Lock className="size-3.5" />
-              Read-only
-            </span>
+        {/* In place of the composer: a bar, not a greyed-out box — there is
+            nothing to type, so nothing should look typeable. Pinned like the
+            live composer so the state is always on screen. */}
+        <div className="sticky bottom-0 -mb-8 bg-background pt-2 pb-8">
+          <div className="flex flex-wrap items-center gap-3 rounded-md border border-input bg-muted/50 px-4 py-3">
+            <Lock className="size-4 shrink-0 text-muted-foreground" />
+            <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+              This session closed 24 hours after its last prompt.
+            </p>
             <Button size="sm" onClick={() => onAskAgain(session.title)}>
               <RotateCcw />
               Ask again in a new session

@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, LayoutGrid, Lightbulb, Send } from "lucide-react"
+import { ChevronDown, Clock, LayoutGrid, Lightbulb, Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ChatTurn } from "@/lib/use-chat"
 import type { SavableReport } from "@/components/card-menu"
@@ -86,6 +86,12 @@ type WelcomePageProps = {
   title?: string
   subtitle?: string
   /**
+   * When the session stops taking prompts — "9:31 AM tomorrow". Shown beside
+   * Send, where you keep asking, rather than in the header you've scrolled
+   * past by then.
+   */
+  closesAt?: string
+  /**
    * What's in the composer. Held by App rather than here, so leaving the page
    * and coming back finds it as you left it. A prompt reused from Session
    * History arrives through it too.
@@ -115,6 +121,7 @@ export function WelcomePage({
   onOpenSavedReport,
   title,
   subtitle,
+  closesAt,
   draft,
   onDraftChange,
   turns,
@@ -222,7 +229,13 @@ export function WelcomePage({
 
         {/* Composer. Mirrors the prototype: tall textarea, toolbar row beneath.
             It shrinks once the conversation starts, so the answers get the
-            space rather than an empty box. */}
+            space rather than an empty box — and pins to the bottom, so the
+            place you continue is on screen however long the thread gets. */}
+        <div
+          className={cn(
+            started && "sticky bottom-0 z-10 -mb-8 bg-background pt-2 pb-8"
+          )}
+        >
         <div
           className={cn(
             "flex flex-col rounded-md border border-input bg-background shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
@@ -293,10 +306,19 @@ export function WelcomePage({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button size="sm" disabled={!value.trim() || thinking} onClick={send}>
-              Send <Send />
-            </Button>
+            <div className="flex items-center gap-3">
+              {closesAt && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Clock className="size-3.5" />
+                  Open until {closesAt}
+                </span>
+              )}
+              <Button size="sm" disabled={!value.trim() || thinking} onClick={send}>
+                Send <Send />
+              </Button>
+            </div>
           </div>
+        </div>
         </div>
 
         {/* Auto-scroll anchor. It sits below the composer, not below the thread,
