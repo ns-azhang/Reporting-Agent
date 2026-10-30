@@ -22,9 +22,8 @@ import type { ChatTurn } from "@/lib/use-chat"
 
 /**
  * How many sessions a user keeps. Starting one past it drops the oldest.
- * Three is enough for the demo; the real number is still open.
  */
-export const HISTORY_LIMIT = 3
+export const HISTORY_LIMIT = 10
 
 /**
  * How long a session stays open to more prompts after the last one. Past it
@@ -64,31 +63,109 @@ const ago = (days: number, hours = 0) =>
   new Date(Date.now() - (days * 24 + hours) * 60 * 60 * 1000)
 
 /**
- * Kevin Flyn's history, newest first. The first is an hour old, so still
- * live; the oldest is six weeks back — past a 30-day window, still among his
- * last three, and read-only.
+ * Kevin Flyn's history, newest first, filling the cap. Three are from the
+ * last 24 hours, so still live; the rest are closed, the oldest past a 30-day
+ * window but still among his last ten. Two carry a follow-up, to show an
+ * entry is a whole session rather than one prompt.
  */
 export const SEEDED_SESSIONS: PastSession[] = [
   {
-    text: "Show me only Critical incidents from the last 7 days",
     askedAt: ago(0, 1),
-    responseId: "critical-only",
+    asks: [
+      {
+        text: "Show me only Critical incidents from the last 7 days",
+        responseId: "critical-only",
+      },
+      {
+        text: "Which policies generate the Critical incidents?",
+        responseId: "policies-critical",
+      },
+    ],
   },
   {
-    text: "Which apps are receiving the source code uploads?",
+    askedAt: ago(0, 4),
+    asks: [
+      {
+        text: "What DLP activity happened in the last 24 hours?",
+        responseId: "last-24h",
+      },
+    ],
+  },
+  {
+    askedAt: ago(0, 9),
+    asks: [
+      {
+        text: "Show failed login attempts in the last 24 hours",
+        responseId: "role-failed-logins",
+      },
+    ],
+  },
+  {
+    askedAt: ago(1, 6),
+    asks: [
+      {
+        text: "Compare DLP incidents this week vs. last week",
+        responseId: "compare-week",
+      },
+      { text: "What caused the Saturday spike?", responseId: "rca-saturday" },
+    ],
+  },
+  {
+    askedAt: ago(3),
+    asks: [
+      { text: "Which AI apps are the riskiest?", responseId: "ai-risk-top-apps" },
+    ],
+  },
+  {
+    askedAt: ago(6),
+    asks: [
+      {
+        text: "Break down DLP incidents by department",
+        responseId: "by-department",
+      },
+    ],
+  },
+  {
     askedAt: ago(12),
-    responseId: "apps-source-code",
+    asks: [
+      {
+        text: "Which apps are receiving the source code uploads?",
+        responseId: "apps-source-code",
+      },
+    ],
   },
   {
-    text: "Which users are uploading to high-risk destinations?",
+    askedAt: ago(21),
+    asks: [
+      {
+        text: "Forecast DLP incidents for the next 7 days",
+        responseId: "forecast-7d",
+      },
+    ],
+  },
+  {
     askedAt: ago(45),
-    responseId: "users-wetransfer",
+    asks: [
+      {
+        text: "Which users are uploading to high-risk destinations?",
+        responseId: "users-wetransfer",
+      },
+    ],
+  },
+  {
+    askedAt: ago(70),
+    asks: [
+      {
+        text: "Show the 30-day incident trend by top policies",
+        responseId: "trend-by-policy",
+      },
+    ],
   },
 ].map((seed, i) => ({
   id: `seed-${i + 1}`,
-  title: seed.text,
+  title: seed.asks[0].text,
   askedAt: seed.askedAt,
-  turns: replayTurns(seed),
+  turns: seed.asks.flatMap(replayTurns),
 }))
 
 /**
