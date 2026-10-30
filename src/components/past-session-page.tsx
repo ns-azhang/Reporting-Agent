@@ -1,14 +1,11 @@
-import { Lock, RotateCcw } from "lucide-react"
+import { Lock } from "lucide-react"
 
 import { Conversation } from "@/components/conversation"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { askedLabel, type PastSession } from "@/data/prompt-history"
 
 type PastSessionPageProps = {
   session: PastSession
-  /** Carry the question on — in a new session, since this one is closed. */
-  onAskAgain: (text: string) => void
   /** Follow the report link when the prompt opened a report. */
   onOpenReport?: (reportId: string) => void
 }
@@ -16,13 +13,12 @@ type PastSessionPageProps = {
 /**
  * A session from the sidebar's Recent list that has gone past LIVE_FOR_MS,
  * to read but not continue. The header only states facts; why it is closed
- * and what to do instead sit in a bar where the composer would be, since
+ * sits in a bar where the composer would be, since
  * that is where you'd try to keep asking — and it stays pinned there however
  * far the thread scrolls.
  */
 export function PastSessionPage({
   session,
-  onAskAgain,
   onOpenReport,
 }: PastSessionPageProps) {
   return (
@@ -62,10 +58,6 @@ export function PastSessionPage({
             <p className="min-w-0 flex-1 text-sm text-muted-foreground">
               This session closed 24 hours after its last prompt.
             </p>
-            <Button size="sm" onClick={() => onAskAgain(session.title)}>
-              <RotateCcw />
-              Ask again in a new session
-            </Button>
           </div>
         </div>
       </div>

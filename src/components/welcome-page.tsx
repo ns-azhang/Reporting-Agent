@@ -93,8 +93,7 @@ type WelcomePageProps = {
   closesAt?: string
   /**
    * What's in the composer. Held by App rather than here, so leaving the page
-   * and coming back finds it as you left it. A prompt reused from Session
-   * History arrives through it too.
+   * and coming back finds it as you left it.
    */
   draft: string
   onDraftChange: (text: string) => void
@@ -144,11 +143,9 @@ export function WelcomePage({
     setValue("")
   }
 
-  // Arriving with something already in the composer — a prompt reused from
-  // Session History, or a draft you left — puts the caret at the end of it,
-  // ready to carry on. For a reused prompt that's the same reason a suggested
-  // prompt does it (see `pick`): its time range is usually what you change.
-  // Mount only, and read from the element, so typing doesn't re-run it.
+  // Arriving with a draft you left in the composer puts the caret at the end
+  // of it, ready to carry on. Mount only, and read from the element, so
+  // typing doesn't re-run it.
   React.useEffect(() => {
     const el = textareaRef.current
     if (!el?.value) return

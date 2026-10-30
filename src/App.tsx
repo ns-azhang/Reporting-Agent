@@ -152,13 +152,6 @@ export function App() {
     setSessions((prev) => askInto(prev, id, text))
   }
 
-  /** Reusing a prompt starts a new session with it waiting in the composer,
-      rather than asking it straight away — see WelcomePage's `draft`. */
-  const reusePrompt = (text: string) => {
-    newSession()
-    setDrafts((d) => ({ ...d, new: text }))
-  }
-
   const navigate = (next: Page) => {
     setOpenReportId(null)
     setPage(next)
@@ -272,7 +265,6 @@ export function App() {
           ) : page === "new-session" && openSession && !isLive(openSession) ? (
             <PastSessionPage
               session={openSession}
-              onAskAgain={reusePrompt}
               onOpenReport={openReport}
             />
           ) : page === "new-session" ? (
