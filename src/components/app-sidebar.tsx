@@ -210,53 +210,68 @@ export function AppSidebar({
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* Two groups rather than a tag per row: at this width a tag would
-            leave a title a few characters, and a label said once explains
-            every lock under it. A group with nothing in it isn't shown. */}
-        {IS_BETA_WORKFLOWS &&
-          [
-            { label: "Last 24 hours", items: sessions.filter((s) => isLive(s)) },
-            {
-              label: "Older · read-only",
-              items: sessions.filter((s) => !isLive(s)),
-            },
-          ].map(
-            (group) =>
-              group.items.length > 0 && (
-                <SidebarGroup key={group.label}>
-                  <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-                  <SidebarMenu>
-                    {group.items.map((session) => {
-                      const live = isLive(session)
-                      return (
-                        <SidebarMenuItem key={session.id}>
-                          <SidebarMenuButton
-                            isActive={session.id === activeSessionId}
-                            onClick={() => onOpenSession?.(session.id)}
-                            tooltip={session.title}
-                            /* The title truncates at this width; the native
-                               title gives the whole prompt on hover while
-                               expanded. */
-                            title={
-                              live ? session.title : `${session.title} (read-only)`
-                            }
-                            /* Read-only rows are dimmed so the open ones stand
-                               out at a glance; hover and active restore them. */
-                            className={cn(
-                              "h-8",
-                              !live && "text-sidebar-foreground/60"
-                            )}
-                          >
-                            {live ? <History /> : <Lock />}
-                            <span className="truncate">{session.title}</span>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      )
-                    })}
-                  </SidebarMenu>
-                </SidebarGroup>
-              )
-          )}
+        {/* One section, split by whether a session still takes prompts. Two
+            groups rather than a tag per row: at this width a tag would leave
+            a title a few characters, and a label said once explains every
+            lock under it. The section heading says these are sessions — on
+            its own, "Last 24 hours" under My Reports could read as reports.
+            A group with nothing in it isn't shown. */}
+        {IS_BETA_WORKFLOWS && sessions.length > 0 && (
+          <SidebarGroup className="mt-1">
+            <SidebarGroupLabel>Recent sessions</SidebarGroupLabel>
+            {[
+              { label: "Last 24 hours", items: sessions.filter((s) => isLive(s)) },
+              {
+                label: "Older · read-only",
+                items: sessions.filter((s) => !isLive(s)),
+              },
+            ].map(
+              (group) =>
+                group.items.length > 0 && (
+                  <React.Fragment key={group.label}>
+                    {/* Smaller and lighter than the section heading, and tight
+                        to its rows, so it reads as a divider inside the
+                        section rather than a heading of its own. */}
+                    <div className="px-2 pt-1.5 pb-0.5 text-[11px] text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden">
+                      {group.label}
+                    </div>
+                    <SidebarMenu>
+                      {group.items.map((session) => {
+                        const live = isLive(session)
+                        return (
+                          <SidebarMenuItem key={session.id}>
+                            <SidebarMenuButton
+                              isActive={session.id === activeSessionId}
+                              onClick={() => onOpenSession?.(session.id)}
+                              tooltip={session.title}
+                              /* The title truncates at this width; the native
+                                 title gives the whole prompt on hover while
+                                 expanded. */
+                              title={
+                                live
+                                  ? session.title
+                                  : `${session.title} (read-only)`
+                              }
+                              /* Read-only rows are dimmed so the open ones
+                                 stand out at a glance; hover and active
+                                 restore them. */
+                              className={cn(
+                                "h-8",
+                                !live && "text-sidebar-foreground/60"
+                              )}
+                            >
+                              {live ? <History /> : <Lock />}
+                              <span className="truncate">{session.title}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        )
+                      })}
+                    </SidebarMenu>
+                  </React.Fragment>
+                )
+            )}
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
