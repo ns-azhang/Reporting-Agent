@@ -53,7 +53,7 @@ export function PastSessionPage({
             nothing to type, so nothing should look typeable. Pinned like the
             live composer so the state is always on screen. */}
         <div className="sticky bottom-0 -mb-8 bg-background pt-2 pb-8">
-          <div className="flex flex-wrap items-center gap-3 rounded-md border border-input bg-muted/50 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 rounded-md bg-muted/50 px-4 py-3">
             <Lock className="size-4 shrink-0 text-muted-foreground" />
             <p className="min-w-0 flex-1 text-sm text-muted-foreground">
               This session closed 24 hours after its last prompt.
