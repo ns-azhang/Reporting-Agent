@@ -55,9 +55,9 @@ import netskopeLogo from "@/assets/netskope-logo.svg"
  * "Reporting", the destinations are the app's own screens, and New Session
  * leads the list as an action (no active state — it resets the thread).
  *
- * The beta-workflows branch lists your sessions in the nav itself, under
- * Recent, at the same level as New Session — the way chat assistants do —
- * rather than behind a Session History page.
+ * The beta-workflows branch lists your sessions in the nav itself, at the
+ * same level as New Session — the way chat assistants do — rather than
+ * behind a Session History page, grouped by whether they still take prompts.
  */
 
 /** Pages the nav can reach. "new-session" is the prompt page. */
@@ -72,7 +72,7 @@ export type Page =
  * turned off in the beta — the page is still in the codebase, just with no way
  * in, the same treatment the out-of-scope actions get in @/data/beta-scope.
  * The beta-workflows branch drops the entry: its sessions are listed in the
- * nav instead (see Recent below).
+ * nav instead (see the session groups below).
  */
 const NAV_ITEMS = [
   {
@@ -100,7 +100,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   page: Page
   onNavigate: (page: Page) => void
   onNewSession?: () => void
-  /** Your sessions, newest first, for the Recent list (beta-workflows only). */
+  /** Your sessions, newest first, listed in the nav (beta-workflows only). */
   sessions?: PastSession[]
   /** The session on screen, if any — it takes the active state. */
   activeSessionId?: string | null
@@ -210,34 +210,53 @@ export function AppSidebar({
           </SidebarMenu>
         </SidebarGroup>
 
-        {IS_BETA_WORKFLOWS && sessions.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Recent</SidebarGroupLabel>
-            <SidebarMenu>
-              {sessions.map((session) => {
-                const live = isLive(session)
-                return (
-                  <SidebarMenuItem key={session.id}>
-                    <SidebarMenuButton
-                      isActive={session.id === activeSessionId}
-                      onClick={() => onOpenSession?.(session.id)}
-                      tooltip={session.title}
-                      /* The title truncates at this width; the native title
-                         gives the whole prompt on hover while expanded. */
-                      title={live ? session.title : `${session.title} (read-only)`}
-                      className="h-8"
-                    >
-                      {/* The icon carries the state, so read-only shows before
-                          you open it. */}
-                      {live ? <History /> : <Lock />}
-                      <span className="truncate">{session.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
+        {/* Two groups rather than a tag per row: at this width a tag would
+            leave a title a few characters, and a label said once explains
+            every lock under it. A group with nothing in it isn't shown. */}
+        {IS_BETA_WORKFLOWS &&
+          [
+            { label: "Last 24 hours", items: sessions.filter((s) => isLive(s)) },
+            {
+              label: "Older · read-only",
+              items: sessions.filter((s) => !isLive(s)),
+            },
+          ].map(
+            (group) =>
+              group.items.length > 0 && (
+                <SidebarGroup key={group.label}>
+                  <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+                  <SidebarMenu>
+                    {group.items.map((session) => {
+                      const live = isLive(session)
+                      return (
+                        <SidebarMenuItem key={session.id}>
+                          <SidebarMenuButton
+                            isActive={session.id === activeSessionId}
+                            onClick={() => onOpenSession?.(session.id)}
+                            tooltip={session.title}
+                            /* The title truncates at this width; the native
+                               title gives the whole prompt on hover while
+                               expanded. */
+                            title={
+                              live ? session.title : `${session.title} (read-only)`
+                            }
+                            /* Read-only rows are dimmed so the open ones stand
+                               out at a glance; hover and active restore them. */
+                            className={cn(
+                              "h-8",
+                              !live && "text-sidebar-foreground/60"
+                            )}
+                          >
+                            {live ? <History /> : <Lock />}
+                            <span className="truncate">{session.title}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      )
+                    })}
+                  </SidebarMenu>
+                </SidebarGroup>
+              )
+          )}
       </SidebarContent>
 
       <SidebarFooter>
