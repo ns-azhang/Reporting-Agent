@@ -222,7 +222,7 @@ export function AppSidebar({
             {[
               { label: "Last 24 hours", items: sessions.filter((s) => isLive(s)) },
               {
-                label: "Older · read-only",
+                label: "Closed",
                 items: sessions.filter((s) => !isLive(s)),
               },
             ].map(
