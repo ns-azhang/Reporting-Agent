@@ -252,13 +252,7 @@ export function AppSidebar({
                                   ? session.title
                                   : `${session.title} (read-only)`
                               }
-                              /* Read-only rows are dimmed so the open ones
-                                 stand out at a glance; hover and active
-                                 restore them. */
-                              className={cn(
-                                "h-8",
-                                !live && "text-sidebar-foreground/60"
-                              )}
+                              className="h-8"
                             >
                               {live ? <History /> : <Lock />}
                               <span className="truncate">{session.title}</span>
