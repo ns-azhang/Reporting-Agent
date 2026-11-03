@@ -14,7 +14,11 @@ import {
   getReport,
   type ReportOrigin,
 } from "@/data/reports"
-import { addReportDetail, type Widget } from "@/data/report-details"
+import {
+  addReportDetail,
+  getReportDetail,
+  type Widget,
+} from "@/data/report-details"
 import type { SavableReport } from "@/components/card-menu"
 import {
   SEEDED_SESSIONS,
@@ -211,7 +215,8 @@ export function App() {
     addReportDetail(id, {
       title,
       description: "Created from a chart in a session",
-      summary,
+      // Generated below, not authored: the report has no fixed summary.
+      summary: "",
       examplePrompts: [],
       about: null,
       widgets: [],
@@ -220,7 +225,33 @@ export function App() {
       ...prev,
       { id, createdAt: new Date().toISOString().slice(0, 10) },
     ])
+    // The caller saves the chart next, so this summary covers that one widget
+    // and the report isn't out of date the moment it exists.
+    setSummaries((prev) => ({ ...prev, [id]: { text: summary, covers: 1 } }))
     return { id, title }
+  }
+
+  /**
+   * Summaries generated since the report's authored one, by report id, with
+   * how many widgets each covered when it was written. A summary is only
+   * generated on the user's Refresh, and only when widgets were added since
+   * — never on open, never per widget — so reading a report costs nothing.
+   * Generation here stitches the widgets' insights; the product would ask
+   * the model.
+   */
+  const [summaries, setSummaries] = useState<
+    Record<string, { text: string; covers: number }>
+  >({})
+  const regenerateSummary = (reportId: string) => {
+    const base = getReportDetail(reportId)
+    const extras = savedWidgets[reportId] ?? []
+    const text = [
+      // A library report's authored summary still covers its own widgets.
+      ...(base && base.widgets.length > 0 ? [base.summary] : []),
+      ...extras.map((w) => w.insight),
+    ].join(" ")
+    const covers = (base?.widgets.length ?? 0) + extras.length
+    setSummaries((prev) => ({ ...prev, [reportId]: { text, covers } }))
   }
 
   /** Everything the user owns: seeded plus saved this session. */
@@ -290,6 +321,8 @@ export function App() {
               thinking={reportChat.thinking}
               onSend={reportChat.send}
               extraWidgets={savedWidgets[openReportId] ?? []}
+              generatedSummary={summaries[openReportId]}
+              onRegenerateSummary={regenerateSummary}
               savableReports={savableReports}
               onNote={reportChat.note}
               onAck={reportChat.ack}

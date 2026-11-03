@@ -128,6 +128,14 @@ type ReportDetailPageProps = {
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
   /** Save to → New report. */
   onCreateReport?: (title: string, summary: string) => SavableReport
+  /**
+   * The summary last generated for this report, if any, and how many widgets
+   * it covered. Without one, the authored summary stands and covers the
+   * report's own widgets.
+   */
+  generatedSummary?: { text: string; covers: number }
+  /** Write a summary covering every widget now on the canvas. */
+  onRegenerateSummary?: (reportId: string) => void
 }
 
 export function ReportDetailPage({
@@ -146,6 +154,8 @@ export function ReportDetailPage({
   onAck,
   onSaveWidget,
   onCreateReport,
+  generatedSummary,
+  onRegenerateSummary,
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
   const [chatOpen, setChatOpen] = React.useState(true)
@@ -196,6 +206,12 @@ export function ReportDetailPage({
   const [refreshedAt, setRefreshedAt] = React.useState(() => Date.now())
   const [now, setNow] = React.useState(() => Date.now())
   const [refreshing, setRefreshing] = React.useState(false)
+  /**
+   * Whether this Refresh is also writing a new summary. Only when widgets
+   * were added since the summary was written: a report nobody changed keeps
+   * its summary, so Refresh on its own costs no generation.
+   */
+  const [generating, setGenerating] = React.useState(false)
 
   React.useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000)
@@ -207,15 +223,29 @@ export function ReportDetailPage({
     setRefreshedAt(Date.now())
     setNow(Date.now())
     setRefreshing(false)
+    setGenerating(false)
   }, [reportId])
+
+  /**
+   * The summary on show, and how many widgets it speaks for. It falls behind
+   * only when widgets are saved onto the canvas; nothing else changes it.
+   */
+  const summaryText = generatedSummary?.text ?? report?.summary ?? ""
+  const summaryCovers = generatedSummary?.covers ?? report?.widgets.length ?? 0
+  const widgetTotal = (report?.widgets.length ?? 0) + extraWidgets.length
+  const summaryStale = widgetTotal > summaryCovers
 
   const refresh = () => {
     if (refreshing) return
     setRefreshing(true)
+    const regenerate = summaryStale && !!onRegenerateSummary
+    setGenerating(regenerate)
     window.setTimeout(() => {
+      if (regenerate) onRegenerateSummary(reportId)
       setRefreshedAt(Date.now())
       setNow(Date.now())
       setRefreshing(false)
+      setGenerating(false)
     }, REFRESH_MS)
   }
 
@@ -668,16 +698,36 @@ export function ReportDetailPage({
                   <AiMark className="size-3.5" />
                   Summary
                 </span>
-                {refreshing && (
+                {generating ? (
                   <>
                     <span aria-hidden>·</span>
                     <span>Generating…</span>
                   </>
+                ) : (
+                  summaryStale && (
+                    /* Says what the summary leaves out and offers the fix in
+                       place — the same Refresh as the header's. Nothing
+                       regenerates until it is asked for. */
+                    <>
+                      <span aria-hidden>·</span>
+                      <span>
+                        Covers {summaryCovers} of {widgetTotal} widgets
+                      </span>
+                      <button
+                        type="button"
+                        onClick={refresh}
+                        disabled={refreshing}
+                        className="font-medium text-foreground underline decoration-muted-foreground/40 underline-offset-2 outline-none hover:decoration-current focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
+                      >
+                        Refresh
+                      </button>
+                    </>
+                  )
                 )}
               </div>
               {/* Figures in bold so it scans like a headline. */}
               <p className="text-xs leading-relaxed text-foreground/90">
-                <KeyFigures text={summarize(report.summary)} />
+                <KeyFigures text={summarize(summaryText)} />
               </p>
 
             </section>
