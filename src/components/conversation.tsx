@@ -389,10 +389,12 @@ function ResponseCard({
           <h3 className="truncate text-sm font-semibold leading-snug">
             {response.title}
           </h3>
+          {/* A sentence, not fragments between dots: it is read, not scanned.
+              abc-corp is the tenant the answer was drawn from. */}
           <p className="text-xs text-muted-foreground">
             {isAction
-              ? "Action prepared · 0.4s"
-              : "Generated · 1.2s · scoped to abc-corp"}
+              ? "Prepared in 0.4s"
+              : "Generated in 1.2s from abc-corp data"}
           </p>
         </div>
         {isAction && <Badge variant="secondary">Action</Badge>}
@@ -464,12 +466,13 @@ function ResponseCard({
         </div>
       )}
 
-      {/* Insight — the narrative, set apart from the chart as in the prototype. */}
+      {/* Insight — the narrative, set apart from the chart as in the prototype.
+          No sparkle here: the card's header already carries the one
+          "generated" mark, and the whole card is generated, not just this. */}
       <div className="flex flex-col gap-1.5 rounded-lg bg-muted p-3">
         {/* Sentence case. tracking-wide went with it — the extra letter-spacing
             is there to make all-caps readable, and just looks loose without it. */}
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-          <AiMark className="size-3" />
+        <span className="text-[11px] font-semibold text-muted-foreground">
           Insight
         </span>
         <p className="text-xs leading-relaxed">{response.summary}</p>

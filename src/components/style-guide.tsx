@@ -211,7 +211,7 @@ export function StyleGuide() {
             <CardHeader>
               <CardTitle>DLP Incident Summary</CardTitle>
               <CardDescription>
-                Generated · 1.2s · scoped to abc-corp
+                Generated in 1.2s from abc-corp data
               </CardDescription>
             </CardHeader>
             <CardContent className="text-muted-foreground">
