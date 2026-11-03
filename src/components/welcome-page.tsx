@@ -113,6 +113,8 @@ type WelcomePageProps = {
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
   /** Add a chart to a report, so the note's link tells the truth. */
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
+  /** Save to → New report. */
+  onCreateReport?: (title: string, summary: string) => SavableReport
 }
 
 export function WelcomePage({
@@ -130,6 +132,7 @@ export function WelcomePage({
   savableReports,
   onNote,
   onSaveWidget,
+  onCreateReport,
 }: WelcomePageProps) {
   const value = draft
   const setValue = onDraftChange
@@ -220,6 +223,7 @@ export function WelcomePage({
             savableReports={savableReports}
             onNote={onNote}
             onSaveWidget={onSaveWidget}
+            onCreateReport={onCreateReport}
             onOpenReport={onOpenSavedReport}
           />
         )}

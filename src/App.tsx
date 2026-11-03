@@ -10,10 +10,12 @@ import { WelcomePage } from "@/components/welcome-page"
 import {
   OWNED_REPORTS,
   SHARED_ACCESS,
+  addUserReport,
   getReport,
   type ReportOrigin,
 } from "@/data/reports"
-import type { Widget } from "@/data/report-details"
+import { addReportDetail, type Widget } from "@/data/report-details"
+import type { SavableReport } from "@/components/card-menu"
 import {
   SEEDED_SESSIONS,
   askInto,
@@ -35,6 +37,9 @@ import { TooltipProvider } from "@/components/ui/tooltip"
  * Routing is deliberately just state: this is a prototype, and a router would
  * add a dependency and URL surface we don't need yet.
  */
+/** Ids for reports created this session. */
+let lastReportId = 0
+
 export function App() {
   const showStyleGuide = new URLSearchParams(window.location.search).has(
     "styleguide"
@@ -189,6 +194,35 @@ export function App() {
             { id: reportId, createdAt: new Date().toISOString().slice(0, 10) },
           ]
     )
+  /**
+   * Save to → New report. The report is the user's from the start, so it
+   * joins `savedReports` — which is what lists it in My Reports and in every
+   * later Save to. Its first summary is the chart's own insight; the caller
+   * adds the chart itself, the same way as saving into an existing report.
+   */
+  const createReport = (title: string, summary: string): SavableReport => {
+    const id = `my-report-${++lastReportId}`
+    addUserReport({
+      id,
+      title,
+      desc: "Created from a chart in a session",
+      folder: "Custom",
+    })
+    addReportDetail(id, {
+      title,
+      description: "Created from a chart in a session",
+      summary,
+      examplePrompts: [],
+      about: null,
+      widgets: [],
+    })
+    setSavedReports((prev) => [
+      ...prev,
+      { id, createdAt: new Date().toISOString().slice(0, 10) },
+    ])
+    return { id, title }
+  }
+
   /** Everything the user owns: seeded plus saved this session. */
   const ownedReports = useMemo(
     () => [
@@ -260,6 +294,7 @@ export function App() {
               onNote={reportChat.note}
               onAck={reportChat.ack}
               onSaveWidget={saveWidgets}
+              onCreateReport={createReport}
               onOpenReport={(id) => openReport(id, "my-reports")}
             />
           ) : page === "new-session" && openSession && !isLive(openSession) ? (
@@ -292,6 +327,7 @@ export function App() {
                  there is still a record of it once a toast would have gone. */
               onNote={chat.note}
               onSaveWidget={saveWidgets}
+              onCreateReport={createReport}
             />
           ) : page === "report-library" ? (
             <ReportLibraryPage

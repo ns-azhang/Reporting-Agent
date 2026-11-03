@@ -4867,3 +4867,8 @@ export const getReportDetail = (id: string): ReportDetail | undefined => {
 }
 
 export const hasReportDetail = (id: string) => id in ALL_DETAILS
+
+/** A report the user created, so it opens like any other. */
+export const addReportDetail = (id: string, detail: Omit<ReportDetail, "id">) => {
+  ALL_DETAILS[id] = detail
+}

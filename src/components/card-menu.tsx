@@ -39,6 +39,7 @@ export function CardMenu({
   title,
   onNote,
   onSaveTo,
+  onCreate,
 }: {
   reports: SavableReport[]
   /**
@@ -56,6 +57,11 @@ export function CardMenu({
    * the response the widgets come from — this menu just knows the target.
    */
   onSaveTo?: (report: SavableReport) => void
+  /**
+   * Create a report under this name with the card's chart in it. Like
+   * `onSaveTo`, the caller does the work; without it, Create only notes.
+   */
+  onCreate?: (name: string) => void
 }) {
   const [name, setName] = React.useState("")
   // Controlled, because Create is a plain button rather than a menu item —
@@ -67,7 +73,9 @@ export function CardMenu({
     setOpen(false)
   }
   const create = () => {
-    onNote?.(`Created “${name.trim() || title}” with this chart.`)
+    const reportName = name.trim() || title
+    if (onCreate) onCreate(reportName)
+    else onNote?.(`Created “${reportName}” with this chart.`)
     dismiss()
   }
   const saveTo = (report: SavableReport) => {

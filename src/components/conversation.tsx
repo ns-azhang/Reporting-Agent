@@ -354,6 +354,7 @@ function ResponseCard({
   currentReport,
   onNote,
   onSaveWidget,
+  onCreateReport,
 }: {
   response: Response
   /** A past answer: nothing on it carries the conversation on. */
@@ -363,6 +364,7 @@ function ResponseCard({
   currentReport?: SavableReport
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
+  onCreateReport?: (title: string, summary: string) => SavableReport
 }) {
   const widgets = responseWidgets(response)
   const isAction =
@@ -407,6 +409,21 @@ function ResponseCard({
               label: report.title,
             })
           }}
+          onCreate={
+            onCreateReport &&
+            ((name) => {
+              const widget = widgetToSave(response, widgets)
+              if (!widget) return
+              // The chart's insight is the new report's first summary: with
+              // one chart in it, that is all there is to summarise.
+              const report = onCreateReport(name, response.summary)
+              onSaveWidget?.(report.id, [widget])
+              onNote?.(`Added “${response.title}” to a new report,`, {
+                reportId: report.id,
+                label: report.title,
+              })
+            })
+          }
         />
         )}
       </div>
@@ -492,6 +509,7 @@ export function Conversation({
   currentReport,
   onNote,
   onSaveWidget,
+  onCreateReport,
   onOpenReport,
   renderText,
 }: {
@@ -515,6 +533,8 @@ export function Conversation({
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
   /** Actually add a chart to a report, so the note's link tells the truth. */
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
+  /** Make a new report of the user's own, for Save to → New report. */
+  onCreateReport?: (title: string, summary: string) => SavableReport
   /** Follow the report link in a note. */
   onOpenReport?: (reportId: string) => void
 }) {
@@ -560,6 +580,7 @@ export function Conversation({
             currentReport={currentReport}
             onNote={onNote}
             onSaveWidget={onSaveWidget}
+            onCreateReport={onCreateReport}
           />
         )
       })}

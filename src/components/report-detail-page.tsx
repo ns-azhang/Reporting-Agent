@@ -126,6 +126,8 @@ type ReportDetailPageProps = {
   onAck?: (text: string, reply: string) => void
   /** Add a chart to a report, so the note's link tells the truth. */
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
+  /** Save to → New report. */
+  onCreateReport?: (title: string, summary: string) => SavableReport
 }
 
 export function ReportDetailPage({
@@ -143,6 +145,7 @@ export function ReportDetailPage({
   onNote,
   onAck,
   onSaveWidget,
+  onCreateReport,
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
   const [chatOpen, setChatOpen] = React.useState(true)
@@ -821,6 +824,7 @@ export function ReportDetailPage({
                 }}
                 onNote={onNote}
                 onSaveWidget={onSaveWidget}
+                onCreateReport={onCreateReport}
                 onOpenReport={onOpenReport}
                 renderText={renderText}
               />
@@ -829,9 +833,13 @@ export function ReportDetailPage({
             {/* Openers, shown until the conversation has its own momentum. */}
             {turns.length === 0 && !thinking && (
               <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Try asking
-                </span>
+                {/* A report you made from a chart has no openers of its
+                    own yet, so the heading goes with them. */}
+                {report.examplePrompts.length > 0 && (
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Try asking
+                  </span>
+                )}
                 {report.examplePrompts.map((prompt) => (
                   <button
                     key={prompt}
@@ -846,7 +854,12 @@ export function ReportDetailPage({
                     say this" rather than as a separate control. */}
                 {filterPrompts.length > 0 && (
                   <>
-                    <span className="mt-2 text-xs font-medium text-muted-foreground">
+                    <span
+                      className={cn(
+                        "text-xs font-medium text-muted-foreground",
+                        report.examplePrompts.length > 0 && "mt-2"
+                      )}
+                    >
                       Try filtering
                     </span>
                     {filterPrompts.map((prompt) => (

@@ -147,7 +147,19 @@ export const SHARED_ACCESS: Record<string, string> = {
   "dlp-overview": "Specific people (aarondemo, maydemo, jamesdemo)",
 }
 
-export const getReport = (id: string) => REPORTS.find((r) => r.id === id)
+/**
+ * Reports the user created this session, from a chart's Save to → New report.
+ * Kept apart from REPORTS so the Report Library doesn't list them as Netskope
+ * templates; getReport finds both. Module state like the rest of this file —
+ * App records ownership and re-renders when one is added.
+ */
+const USER_REPORTS: Report[] = []
+export const addUserReport = (report: Report) => {
+  USER_REPORTS.push(report)
+}
+
+export const getReport = (id: string) =>
+  REPORTS.find((r) => r.id === id) ?? USER_REPORTS.find((r) => r.id === id)
 
 /**
  * Extra phrases that should open a report, beyond its title, folder and id —
