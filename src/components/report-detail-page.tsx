@@ -70,7 +70,7 @@ import {
   type Scope,
 } from "@/lib/filters"
 import { WIDGET_DOWNLOAD_ENABLED } from "@/data/beta-scope"
-import { getReportDetail, type Widget } from "@/data/report-details"
+import { getReportDetail, type About, type Widget } from "@/data/report-details"
 import {
   SHARED_ACCESS,
   reportBadgeLabel,
@@ -127,7 +127,16 @@ type ReportDetailPageProps = {
   /** Add a chart to a report, so the note's link tells the truth. */
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
   /** Save to → New report. */
-  onCreateReport?: (title: string, summary: string) => SavableReport
+  onCreateReport?: (title: string, widget: Widget) => SavableReport
+  /**
+   * About this report as written since — by hand or by Rewrite with AI.
+   * Without one, the authored About stands; a report created from a chart
+   * always has one written for it.
+   */
+  about?: About
+  onAboutChange?: (reportId: string, about: About) => void
+  /** Write About from what is on the canvas. */
+  onRewriteAbout?: (reportId: string) => void
   /**
    * The summary last generated for this report, if any, and how many widgets
    * it covered. Without one, the authored summary stands and covers the
@@ -156,8 +165,12 @@ export function ReportDetailPage({
   onCreateReport,
   generatedSummary,
   onRegenerateSummary,
+  about: aboutOverride,
+  onAboutChange,
+  onRewriteAbout,
 }: ReportDetailPageProps) {
   const report = getReportDetail(reportId)
+  const about = aboutOverride ?? report?.about ?? null
   const [chatOpen, setChatOpen] = React.useState(true)
   /**
    * About this report opens by itself only in the moment its questions are
@@ -166,7 +179,30 @@ export function ReportDetailPage({
    * every ordinary visit, so it never costs the fold.
    */
   const [aboutOpen, setAboutOpen] = React.useState(false)
-  React.useEffect(() => setAboutOpen(false), [reportId])
+  /** Editing About in place: the blurb and the questions, one per line. */
+  const [editingAbout, setEditingAbout] = React.useState(false)
+  const [aboutDraft, setAboutDraft] = React.useState({ blurb: "", questions: "" })
+  React.useEffect(() => {
+    setAboutOpen(false)
+    setEditingAbout(false)
+  }, [reportId])
+  const startEditAbout = () => {
+    setAboutDraft({
+      blurb: about?.blurb ?? "",
+      questions: about?.questions.join("\n") ?? "",
+    })
+    setEditingAbout(true)
+  }
+  const saveAbout = () => {
+    onAboutChange?.(reportId, {
+      blurb: aboutDraft.blurb.trim(),
+      questions: aboutDraft.questions
+        .split("\n")
+        .map((q) => q.trim())
+        .filter(Boolean),
+    })
+    setEditingAbout(false)
+  }
   /**
    * Rewrite with AI regenerates About — the blurb and the questions — and
    * nothing else. It is not a data refresh: the widgets and the summary are
@@ -176,8 +212,12 @@ export function ReportDetailPage({
   const rewriteAbout = () => {
     if (rewriting) return
     setAboutOpen(true)
+    setEditingAbout(false)
     setRewriting(true)
-    window.setTimeout(() => setRewriting(false), REFRESH_MS)
+    window.setTimeout(() => {
+      onRewriteAbout?.(reportId)
+      setRewriting(false)
+    }, REFRESH_MS)
   }
   const [draft, setDraft] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
@@ -713,14 +753,20 @@ export function ReportDetailPage({
                       <span>
                         Covers {summaryCovers} of {widgetTotal} widgets
                       </span>
-                      <button
-                        type="button"
+                      {/* An icon, not another word: the row is already text.
+                          Same glyph as the header's Refresh, since it is the
+                          same action. */}
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label="Refresh summary"
+                        title="Refresh summary"
                         onClick={refresh}
                         disabled={refreshing}
-                        className="font-medium text-foreground underline decoration-muted-foreground/40 underline-offset-2 outline-none hover:decoration-current focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
+                        className="-my-1 text-muted-foreground"
                       >
-                        Refresh
-                      </button>
+                        <RefreshCw />
+                      </Button>
                     </>
                   )
                 )}
@@ -739,7 +785,7 @@ export function ReportDetailPage({
                 summary. They appear only once it is open, beside the questions
                 they change. Editable (the questions drive generation), so it
                 stays on the canvas rather than behind the ⋮. */}
-            {report.about && (
+            {about && (
               <Collapsible open={aboutOpen} onOpenChange={setAboutOpen}>
                 <CollapsibleTrigger
                   render={
@@ -752,19 +798,60 @@ export function ReportDetailPage({
                   <ChevronRight className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-90" />
                   <span className="font-medium">About this report</span>
                   <span aria-hidden>·</span>
-                  <span>{report.about.questions.length} questions</span>
+                  <span>
+                    {about.questions.length}{" "}
+                    {about.questions.length === 1 ? "question" : "questions"}
+                  </span>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="flex max-w-3xl flex-col gap-2 pt-2 pl-5">
+                    {editingAbout ? (
+                      /* In place, in the same spot the text sits, so what you
+                         are editing is plain. The questions are one per line:
+                         they are a list, and that is how you'd write one. */
+                      <div className="flex flex-col gap-2">
+                        <Textarea
+                          aria-label="About this report"
+                          value={aboutDraft.blurb}
+                          onChange={(e) =>
+                            setAboutDraft((d) => ({ ...d, blurb: e.target.value }))
+                          }
+                          className="min-h-16 text-sm"
+                        />
+                        <Textarea
+                          aria-label="Questions this report answers, one per line"
+                          placeholder="Questions this report answers, one per line"
+                          value={aboutDraft.questions}
+                          onChange={(e) =>
+                            setAboutDraft((d) => ({ ...d, questions: e.target.value }))
+                          }
+                          className="min-h-24 text-sm"
+                        />
+                        <div className="flex items-center gap-1">
+                          <Button size="xs" onClick={saveAbout}>
+                            <Check />
+                            Save
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            className="text-muted-foreground"
+                            onClick={() => setEditingAbout(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
                     <div
                       className={cn(
                         "flex flex-col gap-2 transition-opacity duration-300",
                         rewriting && "opacity-40"
                       )}
                     >
-                    <p className="text-sm text-muted-foreground">{report.about.blurb}</p>
+                    <p className="text-sm text-muted-foreground">{about.blurb}</p>
                     <ul className="flex flex-col gap-1">
-                      {report.about.questions.map((q: string) => (
+                      {about.questions.map((q: string) => (
                         <li key={q} className="flex gap-2 text-sm text-muted-foreground">
                           <span aria-hidden>•</span>
                           {q}
@@ -772,10 +859,18 @@ export function ReportDetailPage({
                       ))}
                     </ul>
                     </div>
+                    )}
                     {/* The actions close the section, under the text they
                         change — where a block's own controls belong. */}
+                    {!editingAbout && (
                     <div className="-ml-2 flex items-center gap-1 pt-1">
-                      <Button variant="ghost" size="xs" className="text-muted-foreground">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        className="text-muted-foreground"
+                        onClick={startEditAbout}
+                        disabled={rewriting}
+                      >
                         <Pencil />
                         Edit
                       </Button>
@@ -790,6 +885,7 @@ export function ReportDetailPage({
                         {rewriting ? "Rewriting…" : "Rewrite with AI"}
                       </Button>
                     </div>
+                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>

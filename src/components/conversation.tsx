@@ -90,10 +90,14 @@ function responseWidgets(response: Response): Widget[] {
  * only one goes: a response's KPI row is context for its chart, not a second
  * chart, so saving both would put two untitled things on the canvas.
  */
-function widgetToSave(response: Response, widgets: Widget[]): Widget | undefined {
+function widgetToSave(
+  response: Response,
+  widgets: Widget[],
+  question?: string
+): Widget | undefined {
   const primary = widgets.find((w) => w.type !== "kpi") ?? widgets[0]
   if (!primary) return undefined
-  return { ...primary, title: response.title, insight: response.summary }
+  return { ...primary, title: response.title, insight: response.summary, question }
 }
 
 /** How a page wants plain chat text drawn — e.g. with widget names in bold. */
@@ -355,8 +359,11 @@ function ResponseCard({
   onNote,
   onSaveWidget,
   onCreateReport,
+  prompt,
 }: {
   response: Response
+  /** The question this card answered, carried onto a saved chart. */
+  prompt?: string
   /** A past answer: nothing on it carries the conversation on. */
   readOnly?: boolean
   onPickFollowUp?: (text: string, responseId?: string) => void
@@ -364,7 +371,7 @@ function ResponseCard({
   currentReport?: SavableReport
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
-  onCreateReport?: (title: string, summary: string) => SavableReport
+  onCreateReport?: (title: string, widget: Widget) => SavableReport
 }) {
   const widgets = responseWidgets(response)
   const isAction =
@@ -401,7 +408,7 @@ function ResponseCard({
           /* The card owns saving because only it holds the response the widgets
              come from; the menu just says which report was picked. */
           onSaveTo={(report) => {
-            const widget = widgetToSave(response, widgets)
+            const widget = widgetToSave(response, widgets, prompt)
             if (!widget) return
             onSaveWidget?.(report.id, [widget])
             onNote?.(`Added “${response.title}” to`, {
@@ -412,12 +419,11 @@ function ResponseCard({
           onCreate={
             onCreateReport &&
             ((name) => {
-              const widget = widgetToSave(response, widgets)
+              const widget = widgetToSave(response, widgets, prompt)
               if (!widget) return
-              // The chart's insight is the new report's first summary: with
-              // one chart in it, that is all there is to summarise.
-              const report = onCreateReport(name, response.summary)
-              onSaveWidget?.(report.id, [widget])
+              // The report is made around the chart: its first summary is
+              // the chart's insight, its About the question that led to it.
+              const report = onCreateReport(name, widget)
               onNote?.(`Added “${response.title}” to a new report,`, {
                 reportId: report.id,
                 label: report.title,
@@ -533,8 +539,8 @@ export function Conversation({
   onNote?: (text: string, link?: { reportId: string; label: string }) => void
   /** Actually add a chart to a report, so the note's link tells the truth. */
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
-  /** Make a new report of the user's own, for Save to → New report. */
-  onCreateReport?: (title: string, summary: string) => SavableReport
+  /** Make a new report of the user's own around a chart, for Save to → New report. */
+  onCreateReport?: (title: string, widget: Widget) => SavableReport
   /** Follow the report link in a note. */
   onOpenReport?: (reportId: string) => void
 }) {
@@ -570,10 +576,14 @@ export function Conversation({
         // Gated: out-of-scope follow-up chips are stripped before render.
         const response = getVisibleResponse(turn.responseId)
         if (!response) return null
+        // The question this answer was to: the user's last line before it.
+        const prior = turns.slice(0, i).reverse().find((t) => t.role === "user")
+        const prompt = prior?.role === "user" ? prior.text : undefined
         return (
           <ResponseCard
             key={i}
             response={response}
+            prompt={prompt}
             readOnly={readOnly}
             onPickFollowUp={readOnly ? undefined : onPickFollowUp}
             savableReports={savableReports}

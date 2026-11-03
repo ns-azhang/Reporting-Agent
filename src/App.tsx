@@ -16,7 +16,9 @@ import {
 } from "@/data/reports"
 import {
   addReportDetail,
+  generateAbout,
   getReportDetail,
+  type About,
   type Widget,
 } from "@/data/report-details"
 import type { SavableReport } from "@/components/card-menu"
@@ -204,7 +206,7 @@ export function App() {
    * later Save to. Its first summary is the chart's own insight; the caller
    * adds the chart itself, the same way as saving into an existing report.
    */
-  const createReport = (title: string, summary: string): SavableReport => {
+  const createReport = (title: string, widget: Widget): SavableReport => {
     const id = `my-report-${++lastReportId}`
     addUserReport({
       id,
@@ -225,10 +227,35 @@ export function App() {
       ...prev,
       { id, createdAt: new Date().toISOString().slice(0, 10) },
     ])
-    // The caller saves the chart next, so this summary covers that one widget
-    // and the report isn't out of date the moment it exists.
-    setSummaries((prev) => ({ ...prev, [id]: { text: summary, covers: 1 } }))
+    setSavedWidgets((prev) => ({ ...prev, [id]: [widget] }))
+    // Written once, around the one chart, so the report isn't out of date
+    // the moment it exists: the chart's insight as summary, its question as
+    // About.
+    setSummaries((prev) => ({
+      ...prev,
+      [id]: { text: widget.insight, covers: 1 },
+    }))
+    setAbouts((prev) => ({ ...prev, [id]: generateAbout(null, [widget]) }))
     return { id, title }
+  }
+
+  /**
+   * About this report as written in this session, by report id, over the
+   * authored one: edited by hand, or rewritten on request from the canvas.
+   * Like the summary, never rewritten unasked.
+   */
+  const [abouts, setAbouts] = useState<Record<string, About>>({})
+  const setAbout = (reportId: string, about: About) =>
+    setAbouts((prev) => ({ ...prev, [reportId]: about }))
+  const rewriteAbout = (reportId: string) => {
+    const base = getReportDetail(reportId)
+    setAbout(
+      reportId,
+      generateAbout(
+        base && base.widgets.length > 0 ? base.about : null,
+        savedWidgets[reportId] ?? []
+      )
+    )
   }
 
   /**
@@ -323,6 +350,9 @@ export function App() {
               extraWidgets={savedWidgets[openReportId] ?? []}
               generatedSummary={summaries[openReportId]}
               onRegenerateSummary={regenerateSummary}
+              about={abouts[openReportId]}
+              onAboutChange={setAbout}
+              onRewriteAbout={rewriteAbout}
               savableReports={savableReports}
               onNote={reportChat.note}
               onAck={reportChat.ack}

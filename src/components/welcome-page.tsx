@@ -114,7 +114,7 @@ type WelcomePageProps = {
   /** Add a chart to a report, so the note's link tells the truth. */
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
   /** Save to → New report. */
-  onCreateReport?: (title: string, summary: string) => SavableReport
+  onCreateReport?: (title: string, widget: Widget) => SavableReport
 }
 
 export function WelcomePage({

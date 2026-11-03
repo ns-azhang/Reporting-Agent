@@ -30,6 +30,9 @@ type Base = {
   size?: string
   insight: string
   title?: string
+  /** The prompt that produced a chart saved from chat — a question the
+      report now answers, for About this report. */
+  question?: string
   /**
    * Set when the period *is* the subject — a quarter-over-quarter compare —
    * so the widget keeps its own window rather than following the Date filter,
@@ -4867,6 +4870,48 @@ export const getReportDetail = (id: string): ReportDetail | undefined => {
 }
 
 export const hasReportDetail = (id: string) => id in ALL_DETAILS
+
+export type About = NonNullable<ReportDetail["about"]>
+
+const listOf = (items: string[]) =>
+  items.length <= 1
+    ? items.join("")
+    : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`
+
+/**
+ * About this report, written from what is on the canvas: the prompts that
+ * produced each saved chart are the questions the report answers. An
+ * authored About keeps its blurb and questions and gains the new ones; a
+ * report built from charts gets a blurb naming them. Deterministic here —
+ * the product would ask the model — and only run when asked (Rewrite with
+ * AI), or once when a report is created from a chart.
+ */
+export function generateAbout(
+  authored: About | null,
+  extras: Widget[]
+): About {
+  const names = extras.flatMap((w) => (w.title ? [w.title] : []))
+  const asked = [
+    ...new Set(
+      extras.map((w) => w.question ?? `What does ${w.title ?? "this chart"} show?`)
+    ),
+  ]
+  if (authored) {
+    return {
+      blurb: names.length
+        ? `${authored.blurb} It also tracks ${listOf(names)}.`
+        : authored.blurb,
+      questions: [
+        ...authored.questions,
+        ...asked.filter((q) => !authored.questions.includes(q)),
+      ],
+    }
+  }
+  return {
+    blurb: `Use this report to keep track of ${listOf(names)}, from questions asked in a session.`,
+    questions: asked,
+  }
+}
 
 /** A report the user created, so it opens like any other. */
 export const addReportDetail = (id: string, detail: Omit<ReportDetail, "id">) => {
