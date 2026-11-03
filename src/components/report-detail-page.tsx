@@ -289,20 +289,6 @@ export function ReportDetailPage({
     }, REFRESH_MS)
   }
 
-  /**
-   * The summary block's own refresh: a new summary and nothing else. Its
-   * hint says the summary is behind, so the fix is the summary — not a
-   * re-query of every widget. The data is as it was, so "Updated" stays.
-   */
-  const regenerateSummary = () => {
-    if (generating || refreshing || !onRegenerateSummary) return
-    setGenerating(true)
-    window.setTimeout(() => {
-      onRegenerateSummary(reportId)
-      setGenerating(false)
-    }, REFRESH_MS)
-  }
-
   const freshness = relativeAge(now - refreshedAt)
 
   /**
@@ -759,28 +745,15 @@ export function ReportDetailPage({
                   </>
                 ) : (
                   summaryStale && (
-                    /* Says what the summary leaves out and offers the fix in
-                       place — the same Refresh as the header's. Nothing
+                    /* Says what the summary leaves out. The header's Refresh
+                       is what brings it up to date — one control for re-
+                       running the report, summary included — and nothing
                        regenerates until it is asked for. */
                     <>
                       <span aria-hidden>·</span>
                       <span>
                         Covers {summaryCovers} of {widgetTotal} widgets
                       </span>
-                      {/* An icon, not another word: the row is already text.
-                          The header's glyph, but it only rewrites the
-                          summary; the header re-runs the report. */}
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label="Refresh summary"
-                        title="Refresh summary"
-                        onClick={regenerateSummary}
-                        disabled={refreshing || generating}
-                        className="-my-1 text-muted-foreground"
-                      >
-                        <RefreshCw />
-                      </Button>
                     </>
                   )
                 )}
