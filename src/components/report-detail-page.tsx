@@ -289,6 +289,20 @@ export function ReportDetailPage({
     }, REFRESH_MS)
   }
 
+  /**
+   * The summary block's own refresh: a new summary and nothing else. Its
+   * hint says the summary is behind, so the fix is the summary — not a
+   * re-query of every widget. The data is as it was, so "Updated" stays.
+   */
+  const regenerateSummary = () => {
+    if (generating || refreshing || !onRegenerateSummary) return
+    setGenerating(true)
+    window.setTimeout(() => {
+      onRegenerateSummary(reportId)
+      setGenerating(false)
+    }, REFRESH_MS)
+  }
+
   const freshness = relativeAge(now - refreshedAt)
 
   /**
@@ -754,15 +768,15 @@ export function ReportDetailPage({
                         Covers {summaryCovers} of {widgetTotal} widgets
                       </span>
                       {/* An icon, not another word: the row is already text.
-                          Same glyph as the header's Refresh, since it is the
-                          same action. */}
+                          The header's glyph, but it only rewrites the
+                          summary; the header re-runs the report. */}
                       <Button
                         variant="ghost"
                         size="icon-xs"
                         aria-label="Refresh summary"
                         title="Refresh summary"
-                        onClick={refresh}
-                        disabled={refreshing}
+                        onClick={regenerateSummary}
+                        disabled={refreshing || generating}
                         className="-my-1 text-muted-foreground"
                       >
                         <RefreshCw />
@@ -779,44 +793,91 @@ export function ReportDetailPage({
             </section>
 
             {/* About this report: why the report exists and the questions it
-                answers. Less important than what the data says, so it is a
-                collapsed row — and its own row, outside the summary block, so
-                its Edit and Rewrite actions can't be read as acting on the
-                summary. They appear only once it is open, beside the questions
-                they change. Editable (the questions drive generation), so it
-                stays on the canvas rather than behind the ⋮. */}
+                answers. The same tinted panel as the summary, so the page's
+                two generated texts read as a pair, with its controls in the
+                label row where the summary keeps its refresh. Collapsed on
+                an ordinary visit — less important than what the data says —
+                and its Edit and Rewrite show only once it is open, beside the
+                text they change. Editable (the questions drive generation),
+                so it stays on the canvas rather than behind the ⋮. */}
             {about && (
-              <Collapsible open={aboutOpen} onOpenChange={setAboutOpen}>
-                <CollapsibleTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="group flex items-center gap-1.5 rounded-sm text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-                    />
-                  }
-                >
-                  <ChevronRight className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-90" />
-                  <span className="font-medium">About this report</span>
-                  <span aria-hidden>·</span>
-                  <span>
-                    {about.questions.length}{" "}
-                    {about.questions.length === 1 ? "question" : "questions"}
-                  </span>
-                </CollapsibleTrigger>
+              <Collapsible
+                open={aboutOpen}
+                onOpenChange={setAboutOpen}
+                className="flex flex-col gap-1.5 rounded-xl bg-muted/50 px-4 py-3.5"
+              >
+                <div className="flex min-h-6 items-center justify-between gap-2">
+                  <CollapsibleTrigger
+                    render={
+                      <button
+                        type="button"
+                        className="group flex items-center gap-1.5 rounded-sm text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+                      />
+                    }
+                  >
+                    <ChevronRight className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-90" />
+                    <span className="font-medium">About this report</span>
+                    <span aria-hidden>·</span>
+                    <span>
+                      {about.questions.length}{" "}
+                      {about.questions.length === 1 ? "question" : "questions"}
+                    </span>
+                  </CollapsibleTrigger>
+                  {/* Outlined, not ghost: a ghost button here read as a
+                      caption until hovered. Save and Cancel take the same
+                      spot while editing. */}
+                  {aboutOpen &&
+                    (editingAbout ? (
+                      <div className="flex items-center gap-1">
+                        <Button size="xs" onClick={saveAbout}>
+                          <Check />
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => setEditingAbout(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={startEditAbout}
+                          disabled={rewriting}
+                        >
+                          <Pencil />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={rewriteAbout}
+                          disabled={rewriting}
+                        >
+                          <AiMark className={rewriting ? "animate-pulse" : undefined} />
+                          {rewriting ? "Rewriting…" : "Rewrite with AI"}
+                        </Button>
+                      </div>
+                    ))}
+                </div>
                 <CollapsibleContent>
-                  <div className="flex max-w-3xl flex-col gap-2 pt-2 pl-5">
+                  <div className="flex max-w-3xl flex-col gap-2 pt-1">
                     {editingAbout ? (
                       /* In place, in the same spot the text sits, so what you
                          are editing is plain. The questions are one per line:
                          they are a list, and that is how you'd write one. */
-                      <div className="flex flex-col gap-2">
+                      <>
                         <Textarea
                           aria-label="About this report"
                           value={aboutDraft.blurb}
                           onChange={(e) =>
                             setAboutDraft((d) => ({ ...d, blurb: e.target.value }))
                           }
-                          className="min-h-16 text-sm"
+                          className="min-h-16 bg-background text-sm"
                         />
                         <Textarea
                           aria-label="Questions this report answers, one per line"
@@ -825,66 +886,26 @@ export function ReportDetailPage({
                           onChange={(e) =>
                             setAboutDraft((d) => ({ ...d, questions: e.target.value }))
                           }
-                          className="min-h-24 text-sm"
+                          className="min-h-24 bg-background text-sm"
                         />
-                        <div className="flex items-center gap-1">
-                          <Button size="xs" onClick={saveAbout}>
-                            <Check />
-                            Save
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            className="text-muted-foreground"
-                            onClick={() => setEditingAbout(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
+                      </>
                     ) : (
-                    <div
-                      className={cn(
-                        "flex flex-col gap-2 transition-opacity duration-300",
-                        rewriting && "opacity-40"
-                      )}
-                    >
-                    <p className="text-sm text-muted-foreground">{about.blurb}</p>
-                    <ul className="flex flex-col gap-1">
-                      {about.questions.map((q: string) => (
-                        <li key={q} className="flex gap-2 text-sm text-muted-foreground">
-                          <span aria-hidden>•</span>
-                          {q}
-                        </li>
-                      ))}
-                    </ul>
-                    </div>
-                    )}
-                    {/* The actions close the section, under the text they
-                        change — where a block's own controls belong. */}
-                    {!editingAbout && (
-                    <div className="-ml-2 flex items-center gap-1 pt-1">
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        className="text-muted-foreground"
-                        onClick={startEditAbout}
-                        disabled={rewriting}
+                      <div
+                        className={cn(
+                          "flex flex-col gap-2 transition-opacity duration-300",
+                          rewriting && "opacity-40"
+                        )}
                       >
-                        <Pencil />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        className="text-muted-foreground"
-                        onClick={rewriteAbout}
-                        disabled={rewriting}
-                      >
-                        <AiMark className={rewriting ? "animate-pulse" : undefined} />
-                        {rewriting ? "Rewriting…" : "Rewrite with AI"}
-                      </Button>
-                    </div>
+                        <p className="text-sm text-muted-foreground">{about.blurb}</p>
+                        <ul className="flex flex-col gap-1">
+                          {about.questions.map((q: string) => (
+                            <li key={q} className="flex gap-2 text-sm text-muted-foreground">
+                              <span aria-hidden>•</span>
+                              {q}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
                 </CollapsibleContent>
