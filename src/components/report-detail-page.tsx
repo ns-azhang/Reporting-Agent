@@ -24,11 +24,6 @@ import type { ChatTurn } from "@/lib/use-chat"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -70,7 +65,12 @@ import {
   type Scope,
 } from "@/lib/filters"
 import { WIDGET_DOWNLOAD_ENABLED } from "@/data/beta-scope"
-import { getReportDetail, type About, type Widget } from "@/data/report-details"
+import {
+  getReportDetail,
+  type About,
+  type Answers,
+  type Widget,
+} from "@/data/report-details"
 import {
   SHARED_ACCESS,
   reportBadgeLabel,
@@ -79,6 +79,8 @@ import {
 
 /** How long a "run" takes before the numbers are called fresh again. */
 const REFRESH_MS = 900
+/** Questions the Overview shows before "Show more". */
+const OVERVIEW_SHOWN = 3
 
 /** "just now" / "3 min ago" / "2 hr ago" — coarse on purpose. */
 function relativeAge(elapsedMs: number) {
@@ -138,13 +140,12 @@ type ReportDetailPageProps = {
   /** Write About from what is on the canvas. */
   onRewriteAbout?: (reportId: string) => void
   /**
-   * The summary last generated for this report, if any, and how many widgets
-   * it covered. Without one, the authored summary stands and covers the
-   * report's own widgets.
+   * The Overview's answers, by question. A question with no entry has not
+   * been answered yet — it was added or reworded since the last Refresh.
    */
-  generatedSummary?: { text: string; covers: number }
-  /** Write a summary covering every widget now on the canvas. */
-  onRegenerateSummary?: (reportId: string) => void
+  answers?: Answers
+  /** Answer the questions that have no answer yet (on Refresh only). */
+  onAnswer?: (reportId: string) => void
 }
 
 export function ReportDetailPage({
@@ -163,8 +164,8 @@ export function ReportDetailPage({
   onAck,
   onSaveWidget,
   onCreateReport,
-  generatedSummary,
-  onRegenerateSummary,
+  answers = {},
+  onAnswer,
   about: aboutOverride,
   onAboutChange,
   onRewriteAbout,
@@ -173,17 +174,15 @@ export function ReportDetailPage({
   const about = aboutOverride ?? report?.about ?? null
   const [chatOpen, setChatOpen] = React.useState(true)
   /**
-   * About this report opens by itself only in the moment its questions are
-   * fresh — right after the report has been generated (here: first saved as
-   * the user's own copy) or its questions rewritten — and is collapsed on
-   * every ordinary visit, so it never costs the fold.
+   * The Overview shows its first OVERVIEW_SHOWN questions; the rest wait
+   * behind "Show more" so a long template doesn't push the canvas down.
    */
-  const [aboutOpen, setAboutOpen] = React.useState(false)
-  /** Editing About in place: the blurb and the questions, one per line. */
+  const [showAllQuestions, setShowAllQuestions] = React.useState(false)
+  /** Editing in place: the purpose line and the questions, one per line. */
   const [editingAbout, setEditingAbout] = React.useState(false)
   const [aboutDraft, setAboutDraft] = React.useState({ blurb: "", questions: "" })
   React.useEffect(() => {
-    setAboutOpen(false)
+    setShowAllQuestions(false)
     setEditingAbout(false)
   }, [reportId])
   const startEditAbout = () => {
@@ -204,14 +203,13 @@ export function ReportDetailPage({
     setEditingAbout(false)
   }
   /**
-   * Rewrite with AI regenerates About — the blurb and the questions — and
-   * nothing else. It is not a data refresh: the widgets and the summary are
-   * untouched, so it has its own beat rather than borrowing Refresh's.
+   * Rewrite with AI rewrites the purpose line and the questions — not the
+   * answers. It is not a data refresh: questions it adds wait unanswered for
+   * the next Refresh, so it has its own beat rather than borrowing Refresh's.
    */
   const [rewriting, setRewriting] = React.useState(false)
   const rewriteAbout = () => {
     if (rewriting) return
-    setAboutOpen(true)
     setEditingAbout(false)
     setRewriting(true)
     window.setTimeout(() => {
@@ -247,9 +245,9 @@ export function ReportDetailPage({
   const [now, setNow] = React.useState(() => Date.now())
   const [refreshing, setRefreshing] = React.useState(false)
   /**
-   * Whether this Refresh is also writing a new summary. Only when widgets
-   * were added since the summary was written: a report nobody changed keeps
-   * its summary, so Refresh on its own costs no generation.
+   * Whether this Refresh is also answering questions. Only when some have no
+   * answer yet: a report nobody changed keeps its Overview, so Refresh on its
+   * own costs no generation.
    */
   const [generating, setGenerating] = React.useState(false)
 
@@ -267,21 +265,20 @@ export function ReportDetailPage({
   }, [reportId])
 
   /**
-   * The summary on show, and how many widgets it speaks for. It falls behind
-   * only when widgets are saved onto the canvas; nothing else changes it.
+   * The Overview is the report's questions, each with its answer. Questions
+   * fall behind only when they change — a saved chart's prompt, an edit, a
+   * rewrite — and Refresh is what answers them.
    */
-  const summaryText = generatedSummary?.text ?? report?.summary ?? ""
-  const summaryCovers = generatedSummary?.covers ?? report?.widgets.length ?? 0
-  const widgetTotal = (report?.widgets.length ?? 0) + extraWidgets.length
-  const summaryStale = widgetTotal > summaryCovers
+  const questions = about?.questions ?? []
+  const unanswered = questions.filter((q) => !(q in answers))
 
   const refresh = () => {
     if (refreshing) return
     setRefreshing(true)
-    const regenerate = summaryStale && !!onRegenerateSummary
+    const regenerate = unanswered.length > 0 && !!onAnswer
     setGenerating(regenerate)
     window.setTimeout(() => {
-      if (regenerate) onRegenerateSummary(reportId)
+      if (regenerate) onAnswer(reportId)
       setRefreshedAt(Date.now())
       setNow(Date.now())
       setRefreshing(false)
@@ -517,9 +514,9 @@ export function ReportDetailPage({
     const becomingMine = origin === "library" && !owned
     onSaveReport(reportId)
     setSavedAt(changeCount)
-    // A report that just became yours: show the questions it was built to
-    // answer, since this is when you would want to check or change them.
-    if (becomingMine) setAboutOpen(true)
+    // A report that just became yours: its questions are now yours to
+    // change, so show them all.
+    if (becomingMine) setShowAllQuestions(true)
   }
 
   /**
@@ -553,14 +550,24 @@ export function ReportDetailPage({
   const exportAs = (format: ExportFormat) => {
     if (!report) return
     const base = slug(report.title)
+    // The file carries the Overview as it reads on screen: the questions as
+    // they stand, and the answers written so far.
+    const answered = questions.filter((q) => q in answers)
+    const exported = {
+      ...report,
+      about,
+      summary: answered.length
+        ? answered.map((q) => `${q} ${answers[q]}`).join(" ")
+        : report.summary,
+    }
     if (format === "JSON") {
-      downloadBytes(`${base}.zip`, reportBundle(report, shownWidgets), "application/zip")
+      downloadBytes(`${base}.zip`, reportBundle(exported, shownWidgets), "application/zip")
     } else if (format === "CSV") {
       // As in AA: one CSV per widget, zipped — a single widget's ⋮ →
       // Download… → CSV is the same file on its own.
-      downloadBytes(`${base}-csv.zip`, reportCSVBundle(report, shownWidgets), "application/zip")
+      downloadBytes(`${base}-csv.zip`, reportCSVBundle(exported, shownWidgets), "application/zip")
     } else {
-      downloadBytes(`${base}.pdf`, toPDF(reportPDFLines(report, shownWidgets)), "application/pdf")
+      downloadBytes(`${base}.pdf`, toPDF(reportPDFLines(exported, shownWidgets)), "application/pdf")
     }
   }
 
@@ -718,172 +725,176 @@ export function ReportDetailPage({
               </div>
             </div>
 
-            {/* The headline: what the data shows right now, in the assistant's
-                words, before the controls and the widgets. It follows the
-                filters — figures scale with the widgets and the window it names
-                is the Date chip's — so it never contradicts the canvas. */}
+            {/* Overview: what the report is for and what the data says, in one
+                panel. The purpose line on top, then each question the report
+                answers with its answer — the summary, organised by what the
+                report is meant to tell you. Answers follow the filters (figures
+                scale, the window named is the Date chip's) so they never
+                contradict the canvas. Editing changes the questions; Refresh
+                answers the ones that changed. One sparkle, in the label, is the
+                page's single "generated" cue. */}
             <section
-              aria-label="Summary"
-              className="flex flex-col gap-1.5 rounded-xl bg-muted/50 px-4 py-3.5"
+              aria-label="Overview"
+              className="flex flex-col gap-2.5 rounded-xl bg-muted/50 px-4 py-3.5"
             >
-              {/* A tinted block the full width of the canvas, so the first
-                  thing to read is also the first thing the eye lands on. The
-                  paragraph runs the width of the block. One sparkle, inline
-                  with the label, is the page's single "generated" cue; the
-                  widget insights don't repeat it. */}
-              {/* One clock on the page — the header's "Updated". The summary
-                  only speaks up while it is being regenerated. */}
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <AiMark className="size-3.5" />
-                  Summary
-                </span>
-                {generating ? (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span>Generating…</span>
-                  </>
-                ) : (
-                  summaryStale && (
-                    /* Says what the summary leaves out. The header's Refresh
-                       is what brings it up to date — one control for re-
-                       running the report, summary included — and nothing
-                       regenerates until it is asked for. */
+              <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
+                {/* One clock on the page — the header's "Updated". The label
+                    row only speaks up for what is pending or in progress. */}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <AiMark className="size-3.5" />
+                    Overview
+                  </span>
+                  {generating ? (
                     <>
                       <span aria-hidden>·</span>
-                      <span>
-                        Covers {summaryCovers} of {widgetTotal} widgets
-                      </span>
+                      <span>Answering…</span>
                     </>
-                  )
+                  ) : (
+                    unanswered.length > 0 &&
+                    !editingAbout && (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span>
+                          {unanswered.length} not answered yet
+                        </span>
+                      </>
+                    )
+                  )}
+                </div>
+                {/* Outlined, not ghost: a ghost button here read as a caption
+                    until hovered. Save and Cancel take the same spot while
+                    editing. */}
+                {editingAbout ? (
+                  <div className="flex items-center gap-1">
+                    <Button size="xs" onClick={saveAbout}>
+                      <Check />
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => setEditingAbout(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={startEditAbout}
+                      disabled={rewriting || generating}
+                    >
+                      <Pencil />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={rewriteAbout}
+                      disabled={rewriting || generating}
+                    >
+                      <AiMark className={rewriting ? "animate-pulse" : undefined} />
+                      {rewriting ? "Rewriting…" : "Rewrite with AI"}
+                    </Button>
+                  </div>
                 )}
               </div>
-              {/* Figures in bold so it scans like a headline. */}
-              <p className="text-xs leading-relaxed text-foreground/90">
-                <KeyFigures text={summarize(summaryText)} />
-              </p>
 
-            </section>
-
-            {/* About this report: why the report exists and the questions it
-                answers. The same tinted panel as the summary, so the page's
-                two generated texts read as a pair, with its controls in the
-                label row where the summary keeps its refresh. Collapsed on
-                an ordinary visit — less important than what the data says —
-                and its Edit and Rewrite show only once it is open, beside the
-                text they change. Editable (the questions drive generation),
-                so it stays on the canvas rather than behind the ⋮. */}
-            {about && (
-              <Collapsible
-                open={aboutOpen}
-                onOpenChange={setAboutOpen}
-                className="flex flex-col gap-1.5 rounded-xl bg-muted/50 px-4 py-3.5"
-              >
-                <div className="flex min-h-6 items-center justify-between gap-2">
-                  <CollapsibleTrigger
-                    render={
-                      <button
-                        type="button"
-                        className="group flex items-center gap-1.5 rounded-sm text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-                      />
+              {editingAbout ? (
+                /* In place, where the text sits, so what you are editing is
+                   plain. The questions are one per line: they are a list, and
+                   that is how you'd write one. Answers aren't edited — they
+                   come from the data. */
+                <div className="flex max-w-3xl flex-col gap-2">
+                  <Textarea
+                    aria-label="What this report is for"
+                    placeholder="What this report is for"
+                    value={aboutDraft.blurb}
+                    onChange={(e) =>
+                      setAboutDraft((d) => ({ ...d, blurb: e.target.value }))
                     }
-                  >
-                    <ChevronRight className="size-3.5 transition-transform duration-200 group-aria-expanded:rotate-90" />
-                    <span className="font-medium">About this report</span>
-                    <span aria-hidden>·</span>
-                    <span>
-                      {about.questions.length}{" "}
-                      {about.questions.length === 1 ? "question" : "questions"}
-                    </span>
-                  </CollapsibleTrigger>
-                  {/* Outlined, not ghost: a ghost button here read as a
-                      caption until hovered. Save and Cancel take the same
-                      spot while editing. */}
-                  {aboutOpen &&
-                    (editingAbout ? (
-                      <div className="flex items-center gap-1">
-                        <Button size="xs" onClick={saveAbout}>
-                          <Check />
-                          Save
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="xs"
-                          onClick={() => setEditingAbout(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="xs"
-                          onClick={startEditAbout}
-                          disabled={rewriting}
-                        >
-                          <Pencil />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="xs"
-                          onClick={rewriteAbout}
-                          disabled={rewriting}
-                        >
-                          <AiMark className={rewriting ? "animate-pulse" : undefined} />
-                          {rewriting ? "Rewriting…" : "Rewrite with AI"}
-                        </Button>
-                      </div>
-                    ))}
+                    className="min-h-14 bg-background text-sm"
+                  />
+                  <Textarea
+                    aria-label="Questions this report answers, one per line"
+                    placeholder="Questions this report answers, one per line"
+                    value={aboutDraft.questions}
+                    onChange={(e) =>
+                      setAboutDraft((d) => ({ ...d, questions: e.target.value }))
+                    }
+                    className="min-h-24 bg-background text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    New or reworded questions are answered on the next Refresh.
+                  </p>
                 </div>
-                <CollapsibleContent>
-                  <div className="flex max-w-3xl flex-col gap-2 pt-1">
-                    {editingAbout ? (
-                      /* In place, in the same spot the text sits, so what you
-                         are editing is plain. The questions are one per line:
-                         they are a list, and that is how you'd write one. */
-                      <>
-                        <Textarea
-                          aria-label="About this report"
-                          value={aboutDraft.blurb}
-                          onChange={(e) =>
-                            setAboutDraft((d) => ({ ...d, blurb: e.target.value }))
-                          }
-                          className="min-h-16 bg-background text-sm"
-                        />
-                        <Textarea
-                          aria-label="Questions this report answers, one per line"
-                          placeholder="Questions this report answers, one per line"
-                          value={aboutDraft.questions}
-                          onChange={(e) =>
-                            setAboutDraft((d) => ({ ...d, questions: e.target.value }))
-                          }
-                          className="min-h-24 bg-background text-sm"
-                        />
-                      </>
-                    ) : (
-                      <div
+              ) : (
+                <div
+                  className={cn(
+                    "flex flex-col gap-3 transition-opacity duration-300",
+                    rewriting && "opacity-40"
+                  )}
+                >
+                  {about?.blurb && (
+                    <p className="text-xs text-muted-foreground">{about.blurb}</p>
+                  )}
+                  {questions.length === 0 ? (
+                    // No questions yet: the authored summary stands alone.
+                    <p className="text-xs leading-relaxed text-foreground/90">
+                      <KeyFigures text={summarize(report.summary)} />
+                    </p>
+                  ) : (
+                    <dl className="flex flex-col gap-2.5">
+                      {(showAllQuestions
+                        ? questions
+                        : questions.slice(0, OVERVIEW_SHOWN)
+                      ).map((q) => (
+                        <div key={q} className="flex flex-col gap-0.5">
+                          {/* A typed prompt keeps its words, but reads as a
+                              heading once it starts with a capital. */}
+                          <dt className="text-xs font-medium">
+                            {q.charAt(0).toUpperCase() + q.slice(1)}
+                          </dt>
+                          <dd className="text-xs leading-relaxed text-foreground/90">
+                            {q in answers ? (
+                              <KeyFigures text={summarize(answers[q])} />
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {generating
+                                  ? "Answering…"
+                                  : "Not answered yet. Refresh to answer it."}
+                              </span>
+                            )}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                  {questions.length > OVERVIEW_SHOWN && (
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="-ml-2 w-fit text-muted-foreground"
+                      onClick={() => setShowAllQuestions((v) => !v)}
+                    >
+                      <ChevronRight
                         className={cn(
-                          "flex flex-col gap-2 transition-opacity duration-300",
-                          rewriting && "opacity-40"
+                          "transition-transform duration-200",
+                          showAllQuestions && "-rotate-90",
+                          !showAllQuestions && "rotate-90"
                         )}
-                      >
-                        <p className="text-sm text-muted-foreground">{about.blurb}</p>
-                        <ul className="flex flex-col gap-1">
-                          {about.questions.map((q: string) => (
-                            <li key={q} className="flex gap-2 text-sm text-muted-foreground">
-                              <span aria-hidden>•</span>
-                              {q}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
+                      />
+                      {showAllQuestions
+                        ? "Show less"
+                        : `Show ${questions.length - OVERVIEW_SHOWN} more`}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </section>
 
             {/* What the canvas is scoped to, always visible — including what
                 the assistant assumed on the user's behalf. */}

@@ -4873,6 +4873,69 @@ export const hasReportDetail = (id: string) => id in ALL_DETAILS
 
 export type About = NonNullable<ReportDetail["about"]>
 
+/** A report's answers, by the question they answer. */
+export type Answers = Record<string, string>
+
+const STOPWORDS = new Set(
+  "what which where when who whom whose how many much does show shows this that these those from with into over last days week weeks month months there their they them have most more than about being been were your mine".split(
+    " "
+  )
+)
+const words = (text: string) =>
+  text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 3 && !STOPWORDS.has(w))
+
+/** The first `n` sentences — an answer is read in the Overview, not studied. */
+const firstSentences = (text: string, n = 2) =>
+  text
+    .split(/(?<=[.!?])\s+/)
+    .slice(0, n)
+    .join(" ")
+
+/**
+ * One question's answer, drawn from the chart that answers it. A chart saved
+ * from chat carries the prompt that made it, so its own question gets its own
+ * insight; any other question goes to the chart whose title and insight share
+ * most of its words, and to the report's authored summary if none does.
+ * Deterministic here — the product would ask the model.
+ */
+export function answerQuestion(
+  question: string,
+  widgets: Widget[],
+  fallback: string
+): string {
+  const exact = widgets.find((w) => w.question === question)
+  if (exact) return firstSentences(exact.insight)
+  const asked = words(question)
+  let best: Widget | undefined
+  let bestScore = 0
+  for (const w of widgets) {
+    const have = new Set(words(`${w.title ?? ""} ${w.insight}`))
+    const score = asked.filter((x) => have.has(x)).length
+    if (score > bestScore) {
+      best = w
+      bestScore = score
+    }
+  }
+  return firstSentences(best?.insight || fallback)
+}
+
+/**
+ * The answers a report ships with: its authored questions against its own
+ * widgets, as if written when the template was. Questions added later start
+ * unanswered — they are answered on Refresh.
+ */
+export function authoredAnswers(detail: ReportDetail): Answers {
+  return Object.fromEntries(
+    (detail.about?.questions ?? []).map((q) => [
+      q,
+      answerQuestion(q, detail.widgets, detail.summary),
+    ])
+  )
+}
+
 const listOf = (items: string[]) =>
   items.length <= 1
     ? items.join("")

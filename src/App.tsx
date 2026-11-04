@@ -16,8 +16,11 @@ import {
 } from "@/data/reports"
 import {
   addReportDetail,
+  answerQuestion,
+  authoredAnswers,
   generateAbout,
   getReportDetail,
+  type Answers,
   type About,
   type Widget,
 } from "@/data/report-details"
@@ -203,8 +206,9 @@ export function App() {
   /**
    * Save to → New report. The report is the user's from the start, so it
    * joins `savedReports` — which is what lists it in My Reports and in every
-   * later Save to. Its first summary is the chart's own insight; the caller
-   * adds the chart itself, the same way as saving into an existing report.
+   * later Save to. It is built around the one chart: the chart's prompt is
+   * its question and the chart's insight that question's answer, so the
+   * Overview is complete the moment the report exists.
    */
   const createReport = (title: string, widget: Widget): SavableReport => {
     const id = `my-report-${++lastReportId}`
@@ -228,21 +232,22 @@ export function App() {
       { id, createdAt: new Date().toISOString().slice(0, 10) },
     ])
     setSavedWidgets((prev) => ({ ...prev, [id]: [widget] }))
-    // Written once, around the one chart, so the report isn't out of date
-    // the moment it exists: the chart's insight as summary, its question as
-    // About.
-    setSummaries((prev) => ({
+    const about = generateAbout(null, [widget])
+    setAbouts((prev) => ({ ...prev, [id]: about }))
+    setAnswers((prev) => ({
       ...prev,
-      [id]: { text: widget.insight, covers: 1 },
+      [id]: Object.fromEntries(
+        about.questions.map((q) => [q, answerQuestion(q, [widget], "")])
+      ),
     }))
-    setAbouts((prev) => ({ ...prev, [id]: generateAbout(null, [widget]) }))
     return { id, title }
   }
 
   /**
    * About this report as written in this session, by report id, over the
-   * authored one: edited by hand, or rewritten on request from the canvas.
-   * Like the summary, never rewritten unasked.
+   * authored one: edited by hand, rewritten on request from the canvas, or
+   * extended by a saved chart's prompt. Changing the questions costs nothing;
+   * answering them is what Refresh does.
    */
   const [abouts, setAbouts] = useState<Record<string, About>>({})
   const setAbout = (reportId: string, about: About) =>
@@ -259,26 +264,28 @@ export function App() {
   }
 
   /**
-   * Summaries generated since the report's authored one, by report id, with
-   * how many widgets each covered when it was written. A summary is only
-   * generated on the user's Refresh, and only when widgets were added since
-   * — never on open, never per widget — so reading a report costs nothing.
-   * Generation here stitches the widgets' insights; the product would ask
-   * the model.
+   * The Overview's answers, by report id, then by question. A report starts
+   * with the answers its template shipped with; a question added or reworded
+   * since has none until the user's Refresh writes it — never on open, never
+   * per chart saved — so reading or editing a report costs no generation.
    */
-  const [summaries, setSummaries] = useState<
-    Record<string, { text: string; covers: number }>
-  >({})
-  const regenerateSummary = (reportId: string) => {
-    const base = getReportDetail(reportId)
-    const extras = savedWidgets[reportId] ?? []
-    const text = [
-      // A library report's authored summary still covers its own widgets.
-      ...(base && base.widgets.length > 0 ? [base.summary] : []),
-      ...extras.map((w) => w.insight),
-    ].join(" ")
-    const covers = (base?.widgets.length ?? 0) + extras.length
-    setSummaries((prev) => ({ ...prev, [reportId]: { text, covers } }))
+  const [answers, setAnswers] = useState<Record<string, Answers>>({})
+  const answersFor = (reportId: string): Answers => {
+    if (answers[reportId]) return answers[reportId]
+    const detail = getReportDetail(reportId)
+    return detail ? authoredAnswers(detail) : {}
+  }
+  /** Answer every question that has no answer yet, and only those. */
+  const answerOpenQuestions = (reportId: string) => {
+    const detail = getReportDetail(reportId)
+    if (!detail) return
+    const about = abouts[reportId] ?? detail.about
+    const widgets = [...detail.widgets, ...(savedWidgets[reportId] ?? [])]
+    const next = { ...answersFor(reportId) }
+    for (const q of about?.questions ?? []) {
+      if (!(q in next)) next[q] = answerQuestion(q, widgets, detail.summary)
+    }
+    setAnswers((prev) => ({ ...prev, [reportId]: next }))
   }
 
   /** Everything the user owns: seeded plus saved this session. */
@@ -291,11 +298,30 @@ export function App() {
   )
 
   const [savedWidgets, setSavedWidgets] = useState<Record<string, Widget[]>>({})
-  const saveWidgets = (reportId: string, widgets: Widget[]) =>
+  const saveWidgets = (reportId: string, widgets: Widget[]) => {
     setSavedWidgets((prev) => ({
       ...prev,
       [reportId]: [...(prev[reportId] ?? []), ...widgets],
     }))
+    // The prompt behind a saved chart is a question the report now answers.
+    // It joins About unanswered — no generation until the next Refresh.
+    const asked = widgets.flatMap((w) => (w.question ? [w.question] : []))
+    if (asked.length === 0) return
+    setAbouts((prev) => {
+      const current = prev[reportId] ??
+        getReportDetail(reportId)?.about ?? { blurb: "", questions: [] }
+      return {
+        ...prev,
+        [reportId]: {
+          ...current,
+          questions: [
+            ...current.questions,
+            ...asked.filter((q) => !current.questions.includes(q)),
+          ],
+        },
+      }
+    })
+  }
 
   /**
    * What a card's "Save to" can write into: the same set My Reports lists —
@@ -348,8 +374,8 @@ export function App() {
               thinking={reportChat.thinking}
               onSend={reportChat.send}
               extraWidgets={savedWidgets[openReportId] ?? []}
-              generatedSummary={summaries[openReportId]}
-              onRegenerateSummary={regenerateSummary}
+              answers={answersFor(openReportId)}
+              onAnswer={answerOpenQuestions}
               about={abouts[openReportId]}
               onAboutChange={setAbout}
               onRewriteAbout={rewriteAbout}
