@@ -866,15 +866,19 @@ export function ReportDetailPage({
                         rewriting && "opacity-40"
                       )}
                     >
+                      {/* The summary's own colour: About is read, not a caption
+                          to it. The labels above both stay muted. */}
                       {about?.blurb && (
-                        <p className="text-xs text-muted-foreground">{about.blurb}</p>
+                        <p className="text-xs leading-relaxed text-foreground/90">
+                          {about.blurb}
+                        </p>
                       )}
                       {questions.length > 0 && (
                         <ul className="flex flex-col gap-1">
                           {questions.map((q) => (
                             <li
                               key={q}
-                              className="flex gap-2 text-xs text-muted-foreground"
+                              className="flex gap-2 text-xs leading-relaxed text-foreground/90"
                             >
                               <span aria-hidden>•</span>
                               <span>
@@ -882,7 +886,7 @@ export function ReportDetailPage({
                                     as a question once it has a capital. */}
                                 {q.charAt(0).toUpperCase() + q.slice(1)}
                                 {!(q in answers) && (
-                                  <span className="ml-2 text-muted-foreground/70 italic">
+                                  <span className="ml-2 text-muted-foreground italic">
                                     {generating ? "Adding to the summary…" : "Not in the summary yet"}
                                   </span>
                                 )}
