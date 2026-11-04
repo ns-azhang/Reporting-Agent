@@ -79,8 +79,6 @@ import {
 
 /** How long a "run" takes before the numbers are called fresh again. */
 const REFRESH_MS = 900
-/** Questions the Overview shows before "Show more". */
-const OVERVIEW_SHOWN = 3
 
 /** "just now" / "3 min ago" / "2 hr ago" — coarse on purpose. */
 function relativeAge(elapsedMs: number) {
@@ -140,8 +138,9 @@ type ReportDetailPageProps = {
   /** Write About from what is on the canvas. */
   onRewriteAbout?: (reportId: string) => void
   /**
-   * The Overview's answers, by question. A question with no entry has not
-   * been answered yet — it was added or reworded since the last Refresh.
+   * What the summary says about each of About's questions. A question with
+   * no entry isn't in the summary yet — it was added or reworded since the
+   * last Refresh.
    */
   answers?: Answers
   /** Answer the questions that have no answer yet (on Refresh only). */
@@ -174,15 +173,16 @@ export function ReportDetailPage({
   const about = aboutOverride ?? report?.about ?? null
   const [chatOpen, setChatOpen] = React.useState(true)
   /**
-   * The Overview shows its first OVERVIEW_SHOWN questions; the rest wait
-   * behind "Show more" so a long template doesn't push the canvas down.
+   * The Summary panel shows three lines of the summary by default; Show more
+   * opens the rest of it and About this report, so the panel never costs the
+   * fold on an ordinary visit.
    */
-  const [showAllQuestions, setShowAllQuestions] = React.useState(false)
+  const [summaryExpanded, setSummaryExpanded] = React.useState(false)
   /** Editing in place: the purpose line and the questions, one per line. */
   const [editingAbout, setEditingAbout] = React.useState(false)
   const [aboutDraft, setAboutDraft] = React.useState({ blurb: "", questions: "" })
   React.useEffect(() => {
-    setShowAllQuestions(false)
+    setSummaryExpanded(false)
     setEditingAbout(false)
   }, [reportId])
   const startEditAbout = () => {
@@ -210,6 +210,7 @@ export function ReportDetailPage({
   const [rewriting, setRewriting] = React.useState(false)
   const rewriteAbout = () => {
     if (rewriting) return
+    setSummaryExpanded(true)
     setEditingAbout(false)
     setRewriting(true)
     window.setTimeout(() => {
@@ -246,7 +247,7 @@ export function ReportDetailPage({
   const [refreshing, setRefreshing] = React.useState(false)
   /**
    * Whether this Refresh is also answering questions. Only when some have no
-   * answer yet: a report nobody changed keeps its Overview, so Refresh on its
+   * answer yet: a report nobody changed keeps its summary, so Refresh on its
    * own costs no generation.
    */
   const [generating, setGenerating] = React.useState(false)
@@ -265,12 +266,25 @@ export function ReportDetailPage({
   }, [reportId])
 
   /**
-   * The Overview is the report's questions, each with its answer. Questions
-   * fall behind only when they change — a saved chart's prompt, an edit, a
-   * rewrite — and Refresh is what answers them.
+   * About's questions drive the summary: it is written to answer them. It
+   * falls behind only when they change — a saved chart's prompt, an edit, a
+   * rewrite — and Refresh is what brings it up to date.
+   *
+   * The paragraph is the template's authored summary, which already answers
+   * the template's own questions, followed by the answer to each question
+   * added since. A report built from charts has no authored summary, so it
+   * is its answers alone. AI-written only — edits go to About, since a hand
+   * edit here would be overwritten by the next Refresh.
    */
   const questions = about?.questions ?? []
   const unanswered = questions.filter((q) => !(q in answers))
+  const authoredQuestions = report?.about?.questions ?? []
+  const summaryText = [
+    ...(report?.summary ? [report.summary] : []),
+    ...questions
+      .filter((q) => q in answers && !authoredQuestions.includes(q))
+      .map((q) => answers[q]),
+  ].join(" ")
 
   const refresh = () => {
     if (refreshing) return
@@ -516,7 +530,7 @@ export function ReportDetailPage({
     setSavedAt(changeCount)
     // A report that just became yours: its questions are now yours to
     // change, so show them all.
-    if (becomingMine) setShowAllQuestions(true)
+    if (becomingMine) setSummaryExpanded(true)
   }
 
   /**
@@ -550,16 +564,8 @@ export function ReportDetailPage({
   const exportAs = (format: ExportFormat) => {
     if (!report) return
     const base = slug(report.title)
-    // The file carries the Overview as it reads on screen: the questions as
-    // they stand, and the answers written so far.
-    const answered = questions.filter((q) => q in answers)
-    const exported = {
-      ...report,
-      about,
-      summary: answered.length
-        ? answered.map((q) => `${q} ${answers[q]}`).join(" ")
-        : report.summary,
-    }
+    // The file carries the summary and About as they read on screen.
+    const exported = { ...report, about, summary: summaryText }
     if (format === "JSON") {
       downloadBytes(`${base}.zip`, reportBundle(exported, shownWidgets), "application/zip")
     } else if (format === "CSV") {
@@ -725,175 +731,188 @@ export function ReportDetailPage({
               </div>
             </div>
 
-            {/* Overview: what the report is for and what the data says, in one
-                panel. The purpose line on top, then each question the report
-                answers with its answer — the summary, organised by what the
-                report is meant to tell you. Answers follow the filters (figures
-                scale, the window named is the Date chip's) so they never
-                contradict the canvas. Editing changes the questions; Refresh
-                answers the ones that changed. One sparkle, in the label, is the
-                page's single "generated" cue. */}
+            {/* Summary: what the data shows, in the assistant's words, before
+                the controls and the widgets — with About this report folded
+                in beneath it. Three lines on an ordinary visit; Show more
+                opens the rest and About. The summary is AI-only and follows
+                the filters (figures scale, the window named is the Date
+                chip's) so it never contradicts the canvas. About is the part
+                you edit, and its questions are what the summary answers. One
+                sparkle, in the label, is the page's single "generated" cue. */}
             <section
-              aria-label="Overview"
-              className="flex flex-col gap-2.5 rounded-xl bg-muted/50 px-4 py-3.5"
+              aria-label="Summary"
+              className="flex flex-col gap-2 rounded-xl bg-muted/50 px-4 py-3.5"
             >
-              <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
-                {/* One clock on the page — the header's "Updated". The label
-                    row only speaks up for what is pending or in progress. */}
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <AiMark className="size-3.5" />
-                    Overview
-                  </span>
-                  {generating ? (
+              {/* One clock on the page — the header's "Updated". The label
+                  row only speaks up for what is pending or in progress, so a
+                  question the summary misses shows even while collapsed. */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <AiMark className="size-3.5" />
+                  Summary
+                </span>
+                {generating ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>Generating…</span>
+                  </>
+                ) : (
+                  unanswered.length > 0 && (
                     <>
                       <span aria-hidden>·</span>
-                      <span>Answering…</span>
+                      <span>
+                        {unanswered.length}{" "}
+                        {unanswered.length === 1 ? "question" : "questions"} not
+                        covered yet
+                      </span>
                     </>
-                  ) : (
-                    unanswered.length > 0 &&
-                    !editingAbout && (
-                      <>
-                        <span aria-hidden>·</span>
-                        <span>
-                          {unanswered.length} not answered yet
-                        </span>
-                      </>
-                    )
-                  )}
-                </div>
-                {/* Outlined, not ghost: a ghost button here read as a caption
-                    until hovered. Save and Cancel take the same spot while
-                    editing. */}
-                {editingAbout ? (
-                  <div className="flex items-center gap-1">
-                    <Button size="xs" onClick={saveAbout}>
-                      <Check />
-                      Save
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={() => setEditingAbout(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={startEditAbout}
-                      disabled={rewriting || generating}
-                    >
-                      <Pencil />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={rewriteAbout}
-                      disabled={rewriting || generating}
-                    >
-                      <AiMark className={rewriting ? "animate-pulse" : undefined} />
-                      {rewriting ? "Rewriting…" : "Rewrite with AI"}
-                    </Button>
-                  </div>
+                  )
                 )}
               </div>
 
-              {editingAbout ? (
-                /* In place, where the text sits, so what you are editing is
-                   plain. The questions are one per line: they are a list, and
-                   that is how you'd write one. Answers aren't edited — they
-                   come from the data. */
-                <div className="flex max-w-3xl flex-col gap-2">
-                  <Textarea
-                    aria-label="What this report is for"
-                    placeholder="What this report is for"
-                    value={aboutDraft.blurb}
-                    onChange={(e) =>
-                      setAboutDraft((d) => ({ ...d, blurb: e.target.value }))
-                    }
-                    className="min-h-14 bg-background text-sm"
-                  />
-                  <Textarea
-                    aria-label="Questions this report answers, one per line"
-                    placeholder="Questions this report answers, one per line"
-                    value={aboutDraft.questions}
-                    onChange={(e) =>
-                      setAboutDraft((d) => ({ ...d, questions: e.target.value }))
-                    }
-                    className="min-h-24 bg-background text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    New or reworded questions are answered on the next Refresh.
-                  </p>
-                </div>
-              ) : (
-                <div
-                  className={cn(
-                    "flex flex-col gap-3 transition-opacity duration-300",
-                    rewriting && "opacity-40"
-                  )}
-                >
-                  {about?.blurb && (
-                    <p className="text-xs text-muted-foreground">{about.blurb}</p>
-                  )}
-                  {questions.length === 0 ? (
-                    // No questions yet: the authored summary stands alone.
-                    <p className="text-xs leading-relaxed text-foreground/90">
-                      <KeyFigures text={summarize(report.summary)} />
-                    </p>
-                  ) : (
-                    <dl className="flex flex-col gap-2.5">
-                      {(showAllQuestions
-                        ? questions
-                        : questions.slice(0, OVERVIEW_SHOWN)
-                      ).map((q) => (
-                        <div key={q} className="flex flex-col gap-0.5">
-                          {/* A typed prompt keeps its words, but reads as a
-                              heading once it starts with a capital. */}
-                          <dt className="text-xs font-medium">
-                            {q.charAt(0).toUpperCase() + q.slice(1)}
-                          </dt>
-                          <dd className="text-xs leading-relaxed text-foreground/90">
-                            {q in answers ? (
-                              <KeyFigures text={summarize(answers[q])} />
-                            ) : (
-                              <span className="text-muted-foreground">
-                                {generating
-                                  ? "Answering…"
-                                  : "Not answered yet. Refresh to answer it."}
-                              </span>
-                            )}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                  {questions.length > OVERVIEW_SHOWN && (
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      className="-ml-2 w-fit text-muted-foreground"
-                      onClick={() => setShowAllQuestions((v) => !v)}
-                    >
-                      <ChevronRight
-                        className={cn(
-                          "transition-transform duration-200",
-                          showAllQuestions && "-rotate-90",
-                          !showAllQuestions && "rotate-90"
-                        )}
+              {/* Figures in bold so it scans like a headline. */}
+              <p
+                className={cn(
+                  "text-xs leading-relaxed text-foreground/90",
+                  !summaryExpanded && "line-clamp-3"
+                )}
+              >
+                <KeyFigures text={summarize(summaryText)} />
+              </p>
+
+              {summaryExpanded && (
+                /* About this report: why the report exists and the questions
+                   the summary answers. Its own heading and its own controls,
+                   so Edit and Rewrite read as acting on About, not on the
+                   summary above. */
+                <div className="mt-1 flex flex-col gap-2 border-t border-foreground/10 pt-3">
+                  <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      About this report
+                    </span>
+                    {/* Outlined, not ghost: a ghost button here read as a
+                        caption until hovered. Save and Cancel take the same
+                        spot while editing. */}
+                    {editingAbout ? (
+                      <div className="flex items-center gap-1">
+                        <Button size="xs" onClick={saveAbout}>
+                          <Check />
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => setEditingAbout(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={startEditAbout}
+                          disabled={rewriting || generating}
+                        >
+                          <Pencil />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={rewriteAbout}
+                          disabled={rewriting || generating}
+                        >
+                          <AiMark className={rewriting ? "animate-pulse" : undefined} />
+                          {rewriting ? "Rewriting…" : "Rewrite with AI"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {editingAbout ? (
+                    /* In place, where the text sits, so what you are editing
+                       is plain. The questions are one per line: they are a
+                       list, and that is how you'd write one. */
+                    <div className="flex max-w-3xl flex-col gap-2">
+                      <Textarea
+                        aria-label="What this report is for"
+                        placeholder="What this report is for"
+                        value={aboutDraft.blurb}
+                        onChange={(e) =>
+                          setAboutDraft((d) => ({ ...d, blurb: e.target.value }))
+                        }
+                        className="min-h-14 bg-background text-sm"
                       />
-                      {showAllQuestions
-                        ? "Show less"
-                        : `Show ${questions.length - OVERVIEW_SHOWN} more`}
-                    </Button>
+                      <Textarea
+                        aria-label="Questions this report answers, one per line"
+                        placeholder="Questions this report answers, one per line"
+                        value={aboutDraft.questions}
+                        onChange={(e) =>
+                          setAboutDraft((d) => ({ ...d, questions: e.target.value }))
+                        }
+                        className="min-h-24 bg-background text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The summary covers new or reworded questions on the next
+                        Refresh.
+                      </p>
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        "flex flex-col gap-2 transition-opacity duration-300",
+                        rewriting && "opacity-40"
+                      )}
+                    >
+                      {about?.blurb && (
+                        <p className="text-xs text-muted-foreground">{about.blurb}</p>
+                      )}
+                      {questions.length > 0 && (
+                        <ul className="flex flex-col gap-1">
+                          {questions.map((q) => (
+                            <li
+                              key={q}
+                              className="flex gap-2 text-xs text-muted-foreground"
+                            >
+                              <span aria-hidden>•</span>
+                              <span>
+                                {/* A typed prompt keeps its words, but reads
+                                    as a question once it has a capital. */}
+                                {q.charAt(0).toUpperCase() + q.slice(1)}
+                                {!(q in answers) && (
+                                  <span className="ml-2 text-muted-foreground/70 italic">
+                                    {generating ? "Adding to the summary…" : "Not in the summary yet"}
+                                  </span>
+                                )}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
+
+              <Button
+                variant="ghost"
+                size="xs"
+                className="-ml-2 w-fit text-muted-foreground"
+                onClick={() => {
+                  setSummaryExpanded((v) => !v)
+                  setEditingAbout(false)
+                }}
+              >
+                <ChevronRight
+                  className={cn(
+                    "transition-transform duration-200",
+                    summaryExpanded ? "-rotate-90" : "rotate-90"
+                  )}
+                />
+                {summaryExpanded ? "Show less" : "Show more"}
+              </Button>
             </section>
 
             {/* What the canvas is scoped to, always visible — including what

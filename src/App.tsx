@@ -208,7 +208,7 @@ export function App() {
    * joins `savedReports` — which is what lists it in My Reports and in every
    * later Save to. It is built around the one chart: the chart's prompt is
    * its question and the chart's insight that question's answer, so the
-   * Overview is complete the moment the report exists.
+   * summary is complete the moment the report exists.
    */
   const createReport = (title: string, widget: Widget): SavableReport => {
     const id = `my-report-${++lastReportId}`
@@ -264,7 +264,7 @@ export function App() {
   }
 
   /**
-   * The Overview's answers, by report id, then by question. A report starts
+   * What the summary says per question, by report id, then by question. A report starts
    * with the answers its template shipped with; a question added or reworded
    * since has none until the user's Refresh writes it — never on open, never
    * per chart saved — so reading or editing a report costs no generation.

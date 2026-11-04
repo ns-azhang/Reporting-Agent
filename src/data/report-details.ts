@@ -4887,7 +4887,7 @@ const words = (text: string) =>
     .split(/[^a-z0-9]+/)
     .filter((w) => w.length > 3 && !STOPWORDS.has(w))
 
-/** The first `n` sentences — an answer is read in the Overview, not studied. */
+/** The first `n` sentences — an answer is one part of a summary, not a page of its own. */
 const firstSentences = (text: string, n = 2) =>
   text
     .split(/(?<=[.!?])\s+/)
