@@ -133,7 +133,7 @@ export function WelcomePage({
   /**
    * A suggested prompt fills the composer and puts the caret at the end rather
    * than asking straight away. These are templates written ahead of time, and
-   * their scope — "this week", "last 30 days" — is the part you most often want
+   * their scope — "past 7 days", "last 30 days" — is the part you most often want
    * to change; sending first would answer the wrong window and cost a round
    * trip. Follow-ups are the opposite case: generated against the answer in
    * front of you, so their scope is already right and they send directly.
@@ -225,7 +225,7 @@ export function WelcomePage({
                   send()
                 }
               }}
-              placeholder={'Try a specific question, like "risky users this week"'}
+              placeholder={'Try a specific question, like "risky users in the past 7 days"'}
               /* px-4 pt-3.5 = 16px / 14px, overriding the Textarea's stock
                  px-2.5 py-2 so the prompt doesn't crowd the box edges. */
               className="min-h-0 flex-1 resize-none border-0 bg-transparent px-4 pt-3.5 shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"

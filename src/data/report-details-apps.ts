@@ -200,7 +200,7 @@ export const APP_DETAILS: Record<string, Omit<ReportDetail, "id">> = {
           { label: "Total file size", value: "0.08 GB", neutral: true },
         ],
         insight:
-          "5 Cloud Storage applications in use by 10 users, generating 940 events and 0.08 GB of file movement this week. Usage is concentrated in OneDrive for Business (479 events) and Box (428); the other three apps together account for 33 events.",
+          "5 Cloud Storage applications in use by 10 users, generating 940 events and 0.08 GB of file movement in the last 7 days. Usage is concentrated in OneDrive for Business (479 events) and Box (428); the other three apps together account for 33 events.",
       },
       {
         type: "donut",
@@ -300,7 +300,7 @@ export const APP_DETAILS: Record<string, Omit<ReportDetail, "id">> = {
           ["Box", "Delete", "0 KB", "1", "3"],
         ],
         insight:
-          "No sensitive data moved to unmanaged applications this week, and allowed movement to managed apps is tiny — 104 KB, all of it CASB API scans. The user-driven rows (Edit, Upload, Delete) carry no file size at all.",
+          "No sensitive data moved to unmanaged applications in the last 7 days, and allowed movement to managed apps is tiny — 104 KB, all of it CASB API scans. The user-driven rows (Edit, Upload, Delete) carry no file size at all.",
       },
     ],
   },
