@@ -65,10 +65,10 @@ const SUGGESTED_PROMPTS = [
   { tag: "Alerts", text: "7-day alert volume trend", responseId: "weekly-overview" },
   { tag: "Blocked", text: "Top blocked apps in past 7 days", responseId: "soc-weekly-top-apps" },
   { tag: "DLP", text: "Top users with DLP violations", responseId: "top-users" },
-  { tag: "Policies", text: "Top triggered policies & actions", responseId: "soc-policy-actions" },
   { tag: "DLP", text: "App violations by rule severity", responseId: "soc-top-apps" },
   { tag: "DLP", text: "7-day DLP alert trend", responseId: "weekly-overview" },
   { tag: "DLP", text: "Teams with most DLP alerts", responseId: "by-department" },
+  { tag: "Policies", text: "Top triggered policies & actions", responseId: "soc-policy-actions" },
   // No malware or site-category answer yet: the nearest ones stand in.
   { tag: "Malware", text: "Users with most malware blocks", responseId: "soc-weekly-risky-users" },
   { tag: "Risky Sites", text: "Top malicious site categories", responseId: "soc-weekly-categories" },
