@@ -53,21 +53,36 @@ const POPULAR_REPORTS = [
   },
 ] as const
 
-/** Tagged prompts — the category tag reduces scan cost in the dropdown. */
+/**
+ * Tagged prompts — the category pill reduces scan cost in the dropdown, so the
+ * label doesn't repeat it. Each names the answer it leads to: a short label
+ * like "7-day DLP alert trend" would otherwise open the DLP report on the bare
+ * word "dlp", or land on a near miss. Edit the label (its time range, say)
+ * and it is classified like any typed prompt.
+ */
 const SUGGESTED_PROMPTS = [
-  { tag: "DLP", text: "Show me top DLP incidents this week" },
-  { tag: "Users", text: "Which users have the most policy violations?" },
-  { tag: "Apps", text: "What are the riskiest cloud apps in use?" },
-  { tag: "Threats", text: "Show malware detections over the last 30 days" },
-  { tag: "Users", text: "Who are the top data exfiltrators this month?" },
-  { tag: "Executive", text: "Give me a CISO-level security overview" },
-  { tag: "Severity", text: "Show the severity breakdown of recent incidents" },
-  { tag: "Policies", text: "Which policies are triggered most frequently?" },
-  { tag: "Apps", text: "Show sanctioned vs. unsanctioned app usage" },
-  { tag: "DLP", text: "What is the 30-day DLP trend?" },
-  { tag: "GenAI", text: "Show GenAI app usage across the organization" },
-  { tag: "Forecast", text: "Give me a forecast for the next 7 days" },
+  { tag: "Alerts", text: "7-day alert volume by type", responseId: "soc-weekly-categories" },
+  { tag: "Alerts", text: "7-day alert volume trend", responseId: "weekly-overview" },
+  { tag: "Blocked", text: "Top blocked apps (last 7 days)", responseId: "soc-weekly-top-apps" },
+  { tag: "DLP", text: "Top users with DLP violations", responseId: "top-users" },
+  { tag: "Policies", text: "Top triggered policies & actions", responseId: "soc-policy-actions" },
+  { tag: "DLP", text: "App violations by rule severity", responseId: "soc-top-apps" },
+  { tag: "DLP", text: "7-day DLP alert trend", responseId: "weekly-overview" },
+  { tag: "DLP", text: "Teams with most DLP alerts", responseId: "by-department" },
+  // No malware or site-category answer yet: the nearest ones stand in.
+  { tag: "Malware", text: "Users with most malware blocks", responseId: "soc-weekly-risky-users" },
+  { tag: "Risky Sites", text: "Top malicious site categories", responseId: "soc-weekly-categories" },
+  { tag: "AI Apps", text: "Top AI apps by users & events", responseId: "ai-risk-top-apps" },
+  { tag: "Data", text: "Top users by upload file size", responseId: "soc-weekly-storage-users" },
+  { tag: "Shadow IT", text: "Unsanctioned apps moving files", responseId: "destinations" },
+  { tag: "AI Apps", text: "Policy actions on AI traffic", responseId: "ai-risk-user-activities" },
 ] as const
+
+/** The answer a suggested prompt leads to, when it is sent as written. */
+const suggestedAnswer = (text: string) =>
+  SUGGESTED_PROMPTS.find(
+    (p) => p.text.toLowerCase() === text.trim().toLowerCase()
+  )?.responseId
 
 /* All navigation now lives in the left sidebar — this page has no top bar. */
 
@@ -111,7 +126,7 @@ export function WelcomePage({
 
   const send = () => {
     if (!value.trim() || thinking) return
-    onSend(value)
+    onSend(value, suggestedAnswer(value))
     setValue("")
   }
 
