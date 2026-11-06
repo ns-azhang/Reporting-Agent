@@ -347,8 +347,10 @@ export function App() {
     // TooltipProvider is required by SidebarMenuButton's `tooltip` prop, which
     // is what labels the items once the sidebar collapses to icons.
     <TooltipProvider>
-      {/* 180px matches the Figma nav frame; shadcn's default is 16rem. */}
-      <SidebarProvider style={{ "--sidebar-width": "180px" } as CSSProperties}>
+      {/* 200px: the Figma nav frame's 180px, widened so the product name,
+          "Agentic Reporting", fits its header without truncating.
+          shadcn's default is 16rem. */}
+      <SidebarProvider style={{ "--sidebar-width": "200px" } as CSSProperties}>
         <AppSidebar
           page={page}
           onNavigate={navigate}
