@@ -48,7 +48,7 @@ import netskopeLogo from "@/assets/netskope-logo.svg"
  * brand art and is committed as an asset instead.
  *
  * The entries diverge from the Figma frame per review: the product is now
- * "Reporting", the destinations are the app's own screens, and New Session
+ * "Agentic Reporting", the destinations are the app's own screens, and New Session
  * leads the list as an action (no active state — it resets the thread).
  */
 
@@ -127,7 +127,7 @@ export function AppSidebar({
             <SidebarMenuItem>
               <SidebarMenuButton className="h-8">
                 <ArrowLeft />
-                <span className="truncate text-lg font-semibold">Reporting</span>
+                <span className="truncate text-base font-semibold">Agentic Reporting</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
