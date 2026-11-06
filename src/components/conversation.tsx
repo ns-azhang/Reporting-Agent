@@ -16,6 +16,7 @@ import { ReportWidget } from "@/components/report-widgets"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { answerRange, answerSubline, answerTitle } from "@/lib/answer-naming"
 import { cn } from "@/lib/utils"
 import type { ChatTurn } from "@/lib/use-chat"
 import { CLARIFY_STEPS } from "@/data/clarify"
@@ -90,10 +91,21 @@ function responseWidgets(response: Response): Widget[] {
  * only one goes: a response's KPI row is context for its chart, not a second
  * chart, so saving both would put two untitled things on the canvas.
  */
-function widgetToSave(response: Response, widgets: Widget[]): Widget | undefined {
+function widgetToSave(
+  response: Response,
+  widgets: Widget[],
+  prompt?: string
+): Widget | undefined {
   const primary = widgets.find((w) => w.type !== "kpi") ?? widgets[0]
   if (!primary) return undefined
-  return { ...primary, title: response.title, insight: response.summary }
+  // The card's own name and window go with it: the title without the window,
+  // and the window as data, so a report scales the chart from what it covers.
+  return {
+    ...primary,
+    title: answerTitle(response.title, prompt),
+    range: answerRange(response.title, prompt),
+    insight: response.summary,
+  }
 }
 
 /** How a page wants plain chat text drawn — e.g. with widget names in bold. */
@@ -353,8 +365,11 @@ function ResponseCard({
   currentReport,
   onNote,
   onSaveWidget,
+  prompt,
 }: {
   response: Response
+  /** The question this card answered — it names the card when it was a suggested prompt. */
+  prompt?: string
   onPickFollowUp?: (text: string, responseId?: string) => void
   savableReports?: SavableReport[]
   currentReport?: SavableReport
@@ -362,6 +377,9 @@ function ResponseCard({
   onSaveWidget?: (reportId: string, widgets: Widget[]) => void
 }) {
   const widgets = responseWidgets(response)
+  // Named after what was asked when it was a suggested prompt; the window
+  // goes in the subline, not the title.
+  const title = answerTitle(response.title, prompt)
   const isAction =
     response.chartType === "action" || response.chartType === "ack"
 
@@ -375,12 +393,13 @@ function ResponseCard({
         )}
         <div className="flex min-w-0 flex-1 flex-col">
           <h3 className="truncate text-sm font-semibold leading-snug">
-            {response.title}
+            {title}
           </h3>
+          {/* A sentence, not fragments between dots: it is read, not scanned. */}
           <p className="text-xs text-muted-foreground">
             {isAction
-              ? "Action prepared · 0.4s"
-              : "Generated · 1.2s · scoped to abc-corp"}
+              ? "Prepared in 0.4s"
+              : answerSubline(answerRange(response.title, prompt))}
           </p>
         </div>
         {isAction && <Badge variant="secondary">Action</Badge>}
@@ -391,15 +410,15 @@ function ResponseCard({
         <CardMenu
           reports={savableReports}
           currentReport={currentReport}
-          title={response.title}
+          title={title}
           onNote={onNote}
           /* The card owns saving because only it holds the response the widgets
              come from; the menu just says which report was picked. */
           onSaveTo={(report) => {
-            const widget = widgetToSave(response, widgets)
+            const widget = widgetToSave(response, widgets, prompt)
             if (!widget) return
             onSaveWidget?.(report.id, [widget])
-            onNote?.(`Added “${response.title}” to`, {
+            onNote?.(`Added “${title}” to`, {
               reportId: report.id,
               label: report.title,
             })
@@ -540,10 +559,14 @@ export function Conversation({
         // Gated: out-of-scope follow-up chips are stripped before render.
         const response = getVisibleResponse(turn.responseId)
         if (!response) return null
+        // The question this answer was to: the user's last line before it.
+        const prior = turns.slice(0, i).reverse().find((t) => t.role === "user")
+        const prompt = prior?.role === "user" ? prior.text : undefined
         return (
           <ResponseCard
             key={i}
             response={response}
+            prompt={prompt}
             onPickFollowUp={onPickFollowUp}
             savableReports={savableReports}
             currentReport={currentReport}
