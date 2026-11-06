@@ -397,7 +397,7 @@ export const RESPONSES: Record<string, Response> = {
   "weekly-overview": {
     "title": "DLP Incidents — Last 7 Days",
     "chartType": "kpi+line",
-    "summary": "DLP incidents climbed 18% week-over-week, driven mostly by a Saturday spike that pushed Critical and High severity counts up 24%. The increase is concentrated in two policies — Confidential — Customer PII and Source Code — Internal Only — which together account for ~58% of new incidents. Triage time improved 9%, suggesting the analyst team is keeping pace despite higher volume.",
+    "summary": "DLP incidents climbed 18% vs. the prior 7 days, driven mostly by a Saturday spike that pushed Critical and High severity counts up 24%. The increase is concentrated in two policies — Confidential — Customer PII and Source Code — Internal Only — which together account for ~58% of new incidents. Triage time improved 9%, suggesting the analyst team is keeping pace despite higher volume.",
     "followUps": [
       {
         "text": "What caused the Saturday spike?",
@@ -408,7 +408,7 @@ export const RESPONSES: Record<string, Response> = {
         "id": "top-policies"
       },
       {
-        "text": "Show the same chart for last week for comparison",
+        "text": "Show the same chart for the prior 7 days for comparison",
         "id": "compare-week"
       },
       {
@@ -481,7 +481,7 @@ export const RESPONSES: Record<string, Response> = {
   "soc-dlp-monitoring": {
     "title": "Security Operations Analyst",
     "chartType": "table",
-    "summary": "56 DLP policies were violated across 65 files this week, alongside 56 UEBA alerts. The top policy — 'Detect Credit card information or GDPR info in managed ChatGPT Enterprise' — accounts for 233 alerts, more than 13× the next-highest policy, and is alert-only rather than blocked. Malware and malicious-URL detections stayed low (1 and 2 respectively), while 86 URLs were blocked outright.",
+    "summary": "56 DLP policies were violated across 65 files in the last 7 days, alongside 56 UEBA alerts. The top policy — 'Detect Credit card information or GDPR info in managed ChatGPT Enterprise' — accounts for 233 alerts, more than 13× the next-highest policy, and is alert-only rather than blocked. Malware and malicious-URL detections stayed low (1 and 2 respectively), while 86 URLs were blocked outright.",
     "followUps": [
       {
         "text": "Which policies were violated the most?",
@@ -648,10 +648,10 @@ export const RESPONSES: Record<string, Response> = {
   "soc-weekly-rca-wedfri": {
     "title": "Wednesday–Friday spike · root cause",
     "chartType": "kpi+line",
-    "summary": "15 of the week's 23 Critical incidents (65%) landed Wed–Fri. The cluster traces back to a surge in unsanctioned Generative AI usage — ChatGPT accounted for 387 alerts and three of the Critical incidents involved sensitive code or customer data being pasted into prompts. Friday May 9 was the peak day (2,504 events, 6 Critical). Weekend volume fell off as expected.",
+    "summary": "15 of the 23 Critical incidents in the last 7 days (65%) landed Wed–Fri. The cluster traces back to a surge in unsanctioned Generative AI usage — ChatGPT accounted for 387 alerts and three of the Critical incidents involved sensitive code or customer data being pasted into prompts. Friday May 9 was the peak day (2,504 events, 6 Critical). Weekend volume fell off as expected.",
     "followUps": [
       {
-        "text": "Show all DLP violations involving ChatGPT this week",
+        "text": "Show all DLP violations involving ChatGPT in the last 7 days",
         "id": "soc-weekly-chatgpt-dlp"
       },
       {
@@ -723,9 +723,9 @@ export const RESPONSES: Record<string, Response> = {
     ]
   },
   "soc-weekly-chatgpt-dlp": {
-    "title": "ChatGPT DLP violations · this week",
+    "title": "ChatGPT DLP violations · last 7 days",
     "chartType": "hbar",
-    "summary": "ChatGPT generated 387 DLP alerts this week — the single most-alerting app. The dominant trigger is source-code pasting (142 alerts), followed by customer PII (98) and credential exposure (64). Three of these escalated to Critical severity. Engineering and Sales departments account for ~70% of the volume, with sarah.chen@company.com responsible for the largest share.",
+    "summary": "ChatGPT generated 387 DLP alerts in the last 7 days — the single most-alerting app. The dominant trigger is source-code pasting (142 alerts), followed by customer PII (98) and credential exposure (64). Three of these escalated to Critical severity. Engineering and Sales departments account for ~70% of the volume, with sarah.chen@company.com responsible for the largest share.",
     "followUps": [
       {
         "text": "Show the users behind these ChatGPT alerts",
@@ -771,14 +771,14 @@ export const RESPONSES: Record<string, Response> = {
   "soc-weekly-storage-users": {
     "title": "Top users · unsanctioned cloud storage",
     "chartType": "table",
-    "summary": "Five users drive most of the unsanctioned cloud-storage alerts this week (49 of 654 total). Dropbox Personal and Google Drive (Personal) dominate the destinations. sarah.chen (Engineering, 14 alerts) is the same user behind the ChatGPT spike — her activity spans both shadow-IT vectors and warrants coordinated review.",
+    "summary": "Five users drive most of the unsanctioned cloud-storage alerts in the last 7 days (49 of 654 total). Dropbox Personal and Google Drive (Personal) dominate the destinations. sarah.chen (Engineering, 14 alerts) is the same user behind the ChatGPT spike — her activity spans both shadow-IT vectors and warrants coordinated review.",
     "followUps": [
       {
         "text": "Show all incidents for sarah.chen",
         "id": "soc-weekly-risky-users"
       },
       {
-        "text": "Top apps generating alerts this week",
+        "text": "Top apps generating alerts in the last 7 days",
         "id": "soc-weekly-top-apps"
       },
       {
@@ -828,7 +828,7 @@ export const RESPONSES: Record<string, Response> = {
     }
   },
   "soc-weekly-categories": {
-    "title": "Incidents by category · this week",
+    "title": "Incidents by category · last 7 days",
     "chartType": "donut",
     "summary": "DLP violations remain the top category at 31% of total incidents (1,452). Malware/Threats sit at 25% and anomalous behavior at 19%. Compromised credentials are the smallest slice (9%) but the highest-severity category — every entry here is treated as a potential breach precursor and should be triaged within 4 hours per SLA.",
     "followUps": [
@@ -874,9 +874,9 @@ export const RESPONSES: Record<string, Response> = {
     ]
   },
   "soc-weekly-top-apps": {
-    "title": "Top apps generating alerts · this week",
+    "title": "Top apps generating alerts · last 7 days",
     "chartType": "hbar",
-    "summary": "ChatGPT is the single most-alerting app this week at 387 alerts, followed by Dropbox Personal (312) and WeTransfer (234). All but Salesforce are unsanctioned. Generative-AI and personal cloud-storage together generate 64% of the week's app-level alerts — these are the two shadow-IT vectors most worth tightening policy on.",
+    "summary": "ChatGPT is the single most-alerting app in the last 7 days at 387 alerts, followed by Dropbox Personal (312) and WeTransfer (234). All but Salesforce are unsanctioned. Generative-AI and personal cloud-storage together generate 64% of app-level alerts in the last 7 days — these are the two shadow-IT vectors most worth tightening policy on.",
     "followUps": [
       {
         "text": "Show DLP violations on ChatGPT",
@@ -930,16 +930,16 @@ export const RESPONSES: Record<string, Response> = {
     ]
   },
   "soc-weekly-risky-users": {
-    "title": "Top 5 risky users · this week",
+    "title": "Top 5 risky users · last 7 days",
     "chartType": "table",
-    "summary": "Risk scores combine incident count, severity mix, and policy criticality. sarah.chen (87) leads the list on the strength of GenAI + cloud-storage activity from Engineering. mike.torres (82) and priya.patel (76) are next — both touching financially-sensitive data. The top 5 generate 49 of the week's 4,706 user-attributed incidents (≈1%) but drive nearly all of the Critical severity escalations.",
+    "summary": "Risk scores combine incident count, severity mix, and policy criticality. sarah.chen (87) leads the list on the strength of GenAI + cloud-storage activity from Engineering. mike.torres (82) and priya.patel (76) are next — both touching financially-sensitive data. The top 5 generate 49 of the 4,706 user-attributed incidents in the last 7 days (≈1%) but drive nearly all of the Critical severity escalations.",
     "followUps": [
       {
         "text": "Show sarah.chen's incidents in detail",
         "id": "soc-weekly-chatgpt-dlp"
       },
       {
-        "text": "Top apps generating alerts this week",
+        "text": "Top apps generating alerts in the last 7 days",
         "id": "soc-weekly-top-apps"
       },
       {
@@ -1267,7 +1267,7 @@ export const RESPONSES: Record<string, Response> = {
   "top-policies": {
     "title": "Top DLP Policies by Violation Count — Last 7 Days",
     "chartType": "hbar",
-    "summary": "Two policies — Confidential — Customer PII (412) and Source Code — Internal Only (318) — drive 57% of all violations this week. Customer PII incidents are concentrated in uploads to personal Google Drive, while Source Code violations are mostly Slack DMs to external workspaces.",
+    "summary": "Two policies — Confidential — Customer PII (412) and Source Code — Internal Only (318) — drive 57% of all violations in the last 7 days. Customer PII incidents are concentrated in uploads to personal Google Drive, while Source Code violations are mostly Slack DMs to external workspaces.",
     "followUps": [
       {
         "text": "Drill into Customer PII violations",
@@ -1453,7 +1453,7 @@ export const RESPONSES: Record<string, Response> = {
   "destinations": {
     "title": "Sensitive File Movement — Top Destination Apps",
     "chartType": "hbar",
-    "summary": "Unsanctioned destinations (red) account for 60% of sensitive file movement this week — Google Drive personal accounts alone received 284 files. Movement to corporate-managed apps (Box, OneDrive) is healthy at ~25% of volume. Slack external workspaces and public GitHub remain the top risk channels for source-code data.",
+    "summary": "Unsanctioned destinations (red) account for 60% of sensitive file movement in the last 7 days — Google Drive personal accounts alone received 284 files. Movement to corporate-managed apps (Box, OneDrive) is healthy at ~25% of volume. Slack external workspaces and public GitHub remain the top risk channels for source-code data.",
     "followUps": [
       {
         "text": "What types of files are going to personal Google Drive?",
@@ -1524,7 +1524,7 @@ export const RESPONSES: Record<string, Response> = {
         "id": "filetypes-gdrive"
       },
       {
-        "text": "Compare these users to last week",
+        "text": "Compare these users to the prior 7 days",
         "id": "users-compare-month"
       },
       {
@@ -1605,7 +1605,7 @@ export const RESPONSES: Record<string, Response> = {
         "id": "top-users"
       },
       {
-        "text": "Compare to last week",
+        "text": "Compare to the prior 7 days",
         "id": "users-compare-month"
       },
       {
@@ -1918,7 +1918,7 @@ export const RESPONSES: Record<string, Response> = {
   "dest-wetransfer": {
     "title": "Top 10 Users → WeTransfer — Last 7 Days",
     "chartType": "table",
-    "summary": "WeTransfer has no sanctioned use case at this company — all 61 file moves are policy violations. Source Code is the top policy (3 users, 28 files), concentrated in Engineering. s.chen appears here again (14 files), making this the third unsanctioned destination for this user this week. Blocking WeTransfer at the network level is the recommended immediate action.",
+    "summary": "WeTransfer has no sanctioned use case at this company — all 61 file moves are policy violations. Source Code is the top policy (3 users, 28 files), concentrated in Engineering. s.chen appears here again (14 files), making this the third unsanctioned destination for this user in the last 7 days. Blocking WeTransfer at the network level is the recommended immediate action.",
     "followUps": [
       {
         "text": "Block WeTransfer company-wide",
@@ -2075,7 +2075,7 @@ export const RESPONSES: Record<string, Response> = {
   "severity": {
     "title": "Incidents by Severity — Last 7 Days",
     "chartType": "donut",
-    "summary": "Of 1,284 total incidents this week, 16% are Critical or High severity — a notable shift from the typical 10–11%. Critical incidents (64) all involve regulated data classes (PII, PCI, PHI). Low and Medium severity together account for 84% of volume and are dominated by routine policy reminders that auto-resolve via user education prompts.",
+    "summary": "Of 1,284 total incidents in the last 7 days, 16% are Critical or High severity — a notable shift from the typical 10–11%. Critical incidents (64) all involve regulated data classes (PII, PCI, PHI). Low and Medium severity together account for 84% of volume and are dominated by routine policy reminders that auto-resolve via user education prompts.",
     "followUps": [
       {
         "text": "Show only the Critical incidents",
@@ -2365,9 +2365,9 @@ export const RESPONSES: Record<string, Response> = {
     ]
   },
   "compare-week": {
-    "title": "DLP Incidents — This Week vs. Last Week",
+    "title": "DLP Incidents — Last 7 Days vs. Prior 7 Days",
     "chartType": "kpi+line",
-    "summary": "Week-over-week, every day is up except Tue/Wed which are flat. Saturday shows the largest delta (+52%), again driven by quarter-close traffic. The base rate (Mon–Fri average) is up 14%, suggesting a real, sustained increase in DLP triggers — not just a one-day anomaly.",
+    "summary": "Against the prior 7 days, every day is up except Tue/Wed which are flat. Saturday shows the largest delta (+52%), again driven by quarter-close traffic. The base rate (Mon–Fri average) is up 14%, suggesting a real, sustained increase in DLP triggers — not just a one-day anomaly.",
     "followUps": [
       {
         "text": "What changed Mon–Fri to drive the base rate up?",
@@ -2378,7 +2378,7 @@ export const RESPONSES: Record<string, Response> = {
         "id": "trend-compare-month"
       },
       {
-        "text": "Did any new policies go live this week?",
+        "text": "Did any new policies go live in the last 7 days?",
         "id": "policy-compare-quarter"
       },
       {
@@ -2388,14 +2388,14 @@ export const RESPONSES: Record<string, Response> = {
     ],
     "kpis": [
       {
-        "label": "This week",
+        "label": "Last 7 days",
         "value": "1,284",
         "delta": "+18%",
         "deltaDir": "up",
         "invertColor": true
       },
       {
-        "label": "Last week",
+        "label": "Prior 7 days",
         "value": "1,089"
       },
       {
@@ -2409,7 +2409,7 @@ export const RESPONSES: Record<string, Response> = {
     ],
     "series": [
       {
-        "name": "This week",
+        "name": "Last 7 days",
         "color": "#2563eb",
         "values": [
           142,
@@ -2422,7 +2422,7 @@ export const RESPONSES: Record<string, Response> = {
         ]
       },
       {
-        "name": "Last week",
+        "name": "Prior 7 days",
         "color": "#94a3b8",
         "values": [
           124,
@@ -2616,7 +2616,7 @@ export const RESPONSES: Record<string, Response> = {
   "policy-detail-pii": {
     "title": "Confidential — Customer PII · last 7 days",
     "chartType": "kpi+line",
-    "summary": "Customer PII violations grew 22% week-over-week. Friday and Saturday concentrated 34% of the volume. 78% of incidents were uploads to personal Google Drive accounts, and the most-frequent data class match was customer email addresses + phone numbers in the same row.",
+    "summary": "Customer PII violations grew 22% vs. the prior 7 days. Friday and Saturday concentrated 34% of the volume. 78% of incidents were uploads to personal Google Drive accounts, and the most-frequent data class match was customer email addresses + phone numbers in the same row.",
     "followUps": [
       {
         "text": "Which users triggered this policy most?",
@@ -3621,7 +3621,7 @@ export const RESPONSES: Record<string, Response> = {
   "filetypes-gdrive": {
     "title": "File types uploaded to personal Google Drive",
     "chartType": "donut",
-    "summary": "Of the 284 sensitive files uploaded to personal Google Drive this week, 71% are spreadsheets or PDFs. Spreadsheets dominate (124 .xlsx files) and most match the Customer PII data class — typically customer lists, segmented reports, or campaign exports. PDFs are largely commercial contracts and quote documents.",
+    "summary": "Of the 284 sensitive files uploaded to personal Google Drive in the last 7 days, 71% are spreadsheets or PDFs. Spreadsheets dominate (124 .xlsx files) and most match the Customer PII data class — typically customer lists, segmented reports, or campaign exports. PDFs are largely commercial contracts and quote documents.",
     "followUps": [
       {
         "text": "Show users responsible for the .xlsx uploads",
@@ -3668,7 +3668,7 @@ export const RESPONSES: Record<string, Response> = {
   "users-wetransfer": {
     "title": "Users uploading to high-risk destinations",
     "chartType": "hbar",
-    "summary": "73 sensitive uploads this week went to WeTransfer, public GitHub, or Pastebin. 4 users contributed 70% of those incidents. j.morales and n.fernandez are first-time appearances on this list — worth a manager-level coaching conversation given the destinations involved.",
+    "summary": "73 sensitive uploads in the last 7 days went to WeTransfer, public GitHub, or Pastebin. 4 users contributed 70% of those incidents. j.morales and n.fernandez are first-time appearances on this list — worth a manager-level coaching conversation given the destinations involved.",
     "followUps": [
       {
         "text": "Show the file types involved",
@@ -3880,7 +3880,7 @@ export const RESPONSES: Record<string, Response> = {
       "recommendations": [
         {
           "title": "Block uploads of Customer PII to personal Google Drive accounts",
-          "detail": "Would have prevented 78% of this week's PII incidents (322 of 412). Estimated user impact: 47 unique users; provide an in-product justification flow to reduce friction."
+          "detail": "Would have prevented 78% of the last 7 days' PII incidents (322 of 412). Estimated user impact: 47 unique users; provide an in-product justification flow to reduce friction."
         },
         {
           "title": "Coach (do not block) source-code shares to external Slack workspaces",
@@ -3900,7 +3900,7 @@ export const RESPONSES: Record<string, Response> = {
   "critical-only": {
     "title": "Critical incidents only — last 7 days",
     "chartType": "kpi+line",
-    "summary": "Critical-severity incidents are up 39% week-over-week, with Saturday's spike (19) being the largest single-day count in the last quarter. PCI policy violations (24) account for the largest share of Criticals; PII (21) is close behind. 75% of Criticals are already resolved — but the remaining 16 have aged past the 4-hour SLA.",
+    "summary": "Critical-severity incidents are up 39% vs. the prior 7 days, with Saturday's spike (19) being the largest single-day count in the last quarter. PCI policy violations (24) account for the largest share of Criticals; PII (21) is close behind. 75% of Criticals are already resolved — but the remaining 16 have aged past the 4-hour SLA.",
     "followUps": [
       {
         "text": "Show the 16 unresolved Critical incidents",
@@ -4292,14 +4292,14 @@ export const RESPONSES: Record<string, Response> = {
   "forecast-7d": {
     "title": "DLP incident forecast — next 7 days",
     "chartType": "kpi+line",
-    "summary": "Based on the last 30 days, the model forecasts ~1,510 incidents over the next 7 days (±9% CI) — sustained at roughly the elevated current rate. Critical incidents are forecast at 76 (vs. 64 last week). The forecast assumes no new policy changes; a recommended block on personal Google Drive PII uploads would reduce the forecast by an estimated 22%.",
+    "summary": "Based on the last 30 days, the model forecasts ~1,510 incidents over the next 7 days (±9% CI) — sustained at roughly the elevated current rate. Critical incidents are forecast at 76 (vs. 64 in the prior 7 days). The forecast assumes no new policy changes; a recommended block on personal Google Drive PII uploads would reduce the forecast by an estimated 22%.",
     "followUps": [
       {
         "text": "Show forecast assuming the recommended PII block",
         "id": "block-recommendation"
       },
       {
-        "text": "Compare forecast accuracy vs. last week's projection",
+        "text": "Compare forecast accuracy vs. the prior 7 days' projection",
         "id": "compare-week"
       },
       {
@@ -5162,7 +5162,7 @@ export const RESPONSES: Record<string, Response> = {
   "slack-sent": {
     "title": "Send to Slack",
     "chartType": "action",
-    "summary": "Drafted a Slack message for #dlp-triage with the week's key DLP metrics and the CSV attached. Review the preview below — you can edit the message text or change the channel before sending.",
+    "summary": "Drafted a Slack message for #dlp-triage with the last 7 days' key DLP metrics and the CSV attached. Review the preview below — you can edit the message text or change the channel before sending.",
     "followUps": [
       {
         "text": "Send to a different channel",
@@ -5240,7 +5240,7 @@ export const RESPONSES: Record<string, Response> = {
   "role-exec-scorecard": {
     "title": "Weekly executive scorecard",
     "chartType": "kpi+line",
-    "summary": "Top-line security posture for the week. Total incidents are up 18% week-over-week. Critical SLA compliance has slipped from 94% to 76% — the team is missing the 4-hour resolution target on Critical incidents, concentrated in Saturday's quarter-close traffic. Compliance posture is Amber: PII (412) and PCI (196) violations both elevated.",
+    "summary": "Top-line security posture for the last 7 days. Total incidents are up 18% vs. the prior 7 days. Critical SLA compliance has slipped from 94% to 76% — the team is missing the 4-hour resolution target on Critical incidents, concentrated in Saturday's quarter-close traffic. Compliance posture is Amber: PII (412) and PCI (196) violations both elevated.",
     "followUps": [
       {
         "text": "Why is Critical SLA slipping?",
@@ -5458,7 +5458,7 @@ export const RESPONSES: Record<string, Response> = {
   "kpi-row-custom": {
     "title": "Custom KPI row — DLP at a glance",
     "chartType": "kpi",
-    "summary": "I built a KPI row with the four metrics you asked for, all compared to last week. Two of them (incidents, Critical/High) are trending up — those are the ones to watch. Triage time improved 9% even with the higher volume, which suggests the team's keeping pace.",
+    "summary": "I built a KPI row with the four metrics you asked for, all compared to the prior 7 days. Two of them (incidents, Critical/High) are trending up — those are the ones to watch. Triage time improved 9% even with the higher volume, which suggests the team's keeping pace.",
     "followUps": [
       {
         "text": "Add SLA compliance as a fifth metric",
@@ -5481,21 +5481,21 @@ export const RESPONSES: Record<string, Response> = {
       {
         "label": "Total incidents",
         "value": "1,284",
-        "delta": "+18% vs last week",
+        "delta": "+18% vs prior 7 days",
         "deltaDir": "up",
         "invertColor": true
       },
       {
         "label": "Critical / High",
         "value": "203",
-        "delta": "+24% vs last week",
+        "delta": "+24% vs prior 7 days",
         "deltaDir": "up",
         "invertColor": true
       },
       {
         "label": "Mean time to triage",
         "value": "42m",
-        "delta": "−9% vs last week",
+        "delta": "−9% vs prior 7 days",
         "deltaDir": "down",
         "invertColor": true
       },
@@ -5508,10 +5508,10 @@ export const RESPONSES: Record<string, Response> = {
   "kpi-row-with-sla": {
     "title": "Custom KPI row — with SLA compliance",
     "chartType": "kpi",
-    "summary": "Added SLA compliance as a fifth metric. It's at 94.2% — down 1.8 points week-over-week. The dip lines up with the Critical/High volume increase.",
+    "summary": "Added SLA compliance as a fifth metric. It's at 94.2% — down 1.8 points vs. the prior 7 days. The dip lines up with the Critical/High volume increase.",
     "followUps": [
       {
-        "text": "Drill into SLA misses this week",
+        "text": "Drill into SLA misses in the last 7 days",
         "id": "freeform"
       },
       {
@@ -5527,21 +5527,21 @@ export const RESPONSES: Record<string, Response> = {
       {
         "label": "Total incidents",
         "value": "1,284",
-        "delta": "+18% vs last week",
+        "delta": "+18% vs prior 7 days",
         "deltaDir": "up",
         "invertColor": true
       },
       {
         "label": "Critical / High",
         "value": "203",
-        "delta": "+24% vs last week",
+        "delta": "+24% vs prior 7 days",
         "deltaDir": "up",
         "invertColor": true
       },
       {
         "label": "Mean time to triage",
         "value": "42m",
-        "delta": "−9% vs last week",
+        "delta": "−9% vs prior 7 days",
         "deltaDir": "down",
         "invertColor": true
       },
@@ -5552,7 +5552,7 @@ export const RESPONSES: Record<string, Response> = {
       {
         "label": "SLA compliance",
         "value": "94.2%",
-        "delta": "−1.8 pts vs last week",
+        "delta": "−1.8 pts vs prior 7 days",
         "deltaDir": "down",
         "invertColor": false
       }
@@ -5564,7 +5564,7 @@ export const RESPONSES: Record<string, Response> = {
     "summary": "Switched the comparison window to last month. The trend is the same direction but smaller magnitude — incidents are up 9% MoM (vs. 18% WoW), suggesting the spike is recent rather than a long-term shift.",
     "followUps": [
       {
-        "text": "Compare vs. last week instead",
+        "text": "Compare vs. the prior 7 days instead",
         "id": "kpi-row-custom"
       },
       {

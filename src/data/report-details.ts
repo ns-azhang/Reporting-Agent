@@ -129,7 +129,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
           {
             "label": "Open DLP incidents",
             "value": "147",
-            "delta": "+18% vs prior week",
+            "delta": "+18% vs prior 7 days",
             "deltaDir": "up",
             "invertColor": true
           },
@@ -153,7 +153,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "table",
         "size": "half",
-        "insight": "Incident volume fell for two straight weeks (−17%, −33%) before reversing this week (+18% to 147). The rebound interrupts what looked like a downward trend — worth watching next week to see whether this is noise or a new baseline.",
+        "insight": "Incident volume fell for two straight weeks (−17%, −33%) before reversing in the last 7 days (+18% to 147). The rebound interrupts what looked like a downward trend — worth watching next week to see whether this is noise or a new baseline.",
         "title": "Weekly Incident Count",
         "columns": [
           "Event Week",
@@ -544,7 +544,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
   "dlp-policies": {
     "title": "DLP policies",
     "description": "Top-firing policies, 30-day trend by policy, and a quarter-over-quarter comparison.",
-    "summary": "Top-firing policies and how they're moving. Customer PII (412) and Source Code (318) drive 57% of all violations this week. Source Code is the fastest grower at +62% over 30 days; HR Documents is the only top policy declining (−14%). Two new policies went live mid-Q2 that may explain ~12% of the PII increase.",
+    "summary": "Top-firing policies and how they're moving. Customer PII (412) and Source Code (318) drive 57% of all violations in the last 7 days. Source Code is the fastest grower at +62% over 30 days; HR Documents is the only top policy declining (−14%). Two new policies went live mid-Q2 that may explain ~12% of the PII increase.",
     "examplePrompts": [
       "Drill into Customer PII",
       "What's driving Source Code growth?"
@@ -1100,7 +1100,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
   "severity-sla": {
     "title": "Severity & SLA",
     "description": "Severity mix and the trend across critical, high, medium, low — plus mean time to resolve by severity band.",
-    "summary": "Severity posture and SLA compliance. Critical incidents are up 39% week-over-week with a Saturday spike of 19 — the largest single-day Critical count this quarter. Critical share has crept from 3.8% to 4.9% over 30 days — a meaningful regression. Critical SLA is missing target by 30% (5h12m vs. 4h target), concentrated in the spike traffic.",
+    "summary": "Severity posture and SLA compliance. Critical incidents are up 39% vs. the prior 7 days with a Saturday spike of 19 — the largest single-day Critical count this quarter. Critical share has crept from 3.8% to 4.9% over 30 days — a meaningful regression. Critical SLA is missing target by 30% (5h12m vs. 4h target), concentrated in the spike traffic.",
     "examplePrompts": [
       "Why is Critical share rising?",
       "Show only the Critical incidents"
@@ -1388,10 +1388,10 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
   "forecast": {
     "title": "Incident forecast",
     "description": "Projected DLP incidents for the next 7 days based on the last 30, with confidence interval and identified drivers.",
-    "summary": "Projected next 7 days based on the last 30. Forecast is 1,510 incidents (+18% vs. prior week), with Critical at 76 (vs. 64 last week). Confidence interval ±9%. Customer PII and Source Code are the major drivers; the recommended PII upload block would reduce the forecast by an estimated 22%.",
+    "summary": "Projected next 7 days based on the last 30. Forecast is 1,510 incidents (+18% vs. the prior 7 days), with Critical at 76 (vs. 64 in the prior 7 days). Confidence interval ±9%. Customer PII and Source Code are the major drivers; the recommended PII upload block would reduce the forecast by an estimated 22%.",
     "examplePrompts": [
       "Forecast assuming the PII block",
-      "Compare forecast vs. last week"
+      "Compare forecast vs. the prior 7 days"
     ],
     "about": {
       "blurb": "Use this report to anticipate incident volume over the coming week.",
@@ -1567,7 +1567,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
   "soc-dlp-monitoring": {
     "title": "Security Operations Analyst",
     "description": "Policy violations, DLP files, malware, and UEBA alerts across your environment — last 7 days.",
-    "summary": "This week: 56 DLP policies were violated across 65 files, alongside 56 UEBA alerts. Malware and malicious-URL detections stayed low (1 and 2 respectively), while 86 URLs were blocked outright. The 'Detect Credit card information or GDPR info' policy dominates at 233 alerts — more than 13× the next-highest policy. Alert is the dominant action (233) versus 37 blocks and 8 revoke-public-sharing actions, meaning most detections are being monitored rather than actively stopped.",
+    "summary": "In the last 7 days: 56 DLP policies were violated across 65 files, alongside 56 UEBA alerts. Malware and malicious-URL detections stayed low (1 and 2 respectively), while 86 URLs were blocked outright. The 'Detect Credit card information or GDPR info' policy dominates at 233 alerts — more than 13× the next-highest policy. Alert is the dominant action (233) versus 37 blocks and 8 revoke-public-sharing actions, meaning most detections are being monitored rather than actively stopped.",
     "examplePrompts": [
       "Which policies were violated the most?",
       "Show top users behind these alerts"
@@ -1575,7 +1575,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
     "about": {
       "blurb": "Use this report for weekly SOC monitoring of policy violations and alerting apps.",
       "questions": [
-        "Which policies are firing the most this week?",
+        "Which policies are firing the most in the last 7 days?",
         "Which apps are generating alerts?",
         "How is weekly incident volume trending?"
       ]
@@ -1584,7 +1584,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "kpi",
         "size": "full",
-        "insight": "56 DLP policies were violated across 65 files this week, alongside 56 UEBA alerts. Threat signals stayed low — 1 malware and 2 malicious-URL detections — while 86 URLs were blocked outright, well ahead of the confirmed-malicious count. Policy violations and behavioral alerts, not malware, are the dominant signal this period.",
+        "insight": "56 DLP policies were violated across 65 files in the last 7 days, alongside 56 UEBA alerts. Threat signals stayed low — 1 malware and 2 malicious-URL detections — while 86 URLs were blocked outright, well ahead of the confirmed-malicious count. Policy violations and behavioral alerts, not malware, are the dominant signal this period.",
         "kpis": [
           {
             "label": "Total Policies Violated",
@@ -1825,7 +1825,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "line",
         "size": "half",
-        "insight": "Threat volume spiked the week of Apr 6 (+195% vs. prior week) then partially recovered, before climbing again through June. Users and Applications show steady organic growth. Policy count grew 79% over 12 weeks, indicating active security rule expansion keeping pace with adoption.",
+        "insight": "Threat volume spiked the week of Apr 6 (+195% vs. the prior 7 days) then partially recovered, before climbing again through June. Users and Applications show steady organic growth. Policy count grew 79% over 12 weeks, indicating active security rule expansion keeping pace with adoption.",
         "title": "Trend of Threats & Adoption",
         "series": [
           {
@@ -1967,7 +1967,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "line",
         "size": "half",
-        "insight": "DLP alert volume has climbed steadily since late March, with Browser Access as the dominant access method. The Apr 6–13 spike (+85% week-over-week) aligns with a policy expansion. The Jun 15 week shows the highest weekly DLP volume this quarter across all access methods.",
+        "insight": "DLP alert volume has climbed steadily since late March, with Browser Access as the dominant access method. The Apr 6–13 spike (+85% vs. the prior 7 days) aligns with a policy expansion. The Jun 15 week shows the highest weekly DLP volume this quarter across all access methods.",
         "title": "Trend of DLP Alerts",
         "anomalies": [
           {
@@ -3416,7 +3416,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "line",
         "size": "full",
-        "insight": "Both malware and malsite signals are trending upward through June — each hitting their 90-day high in the Jun 15 week. While absolute numbers remain low, a consistent week-over-week increase in both categories warrants attention. If the trend continues at this rate, July could see 10+ malware events per week.",
+        "insight": "Both malware and malsite signals are trending upward through June — each hitting their 90-day high in the Jun 15 week. While absolute numbers remain low, a consistent increase from one 7-day period to the next in both categories warrants attention. If the trend continues at this rate, July could see 10+ malware events per week.",
         "title": "Trend of Malware & Malicious Sites",
         "series": [
           {
@@ -3618,7 +3618,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "kpi",
         "size": "full",
-        "insight": "Half of all active users accessed AI apps this week (10 users), and half of those went beyond browsing to actively query them (5 users submitting prompts). Querying is the higher-risk activity — it means data is flowing into AI models, not just pages being visited.",
+        "insight": "Half of all active users accessed AI apps in the last 7 days (10 users), and half of those went beyond browsing to actively query them (5 users submitting prompts). Querying is the higher-risk activity — it means data is flowing into AI models, not just pages being visited.",
         "kpis": [
           {
             "label": "Users Accessing AI Apps",
@@ -3645,7 +3645,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "hbar",
         "size": "half",
-        "insight": "ChatGPT (246) and Microsoft 365 Copilot (175) together account for 86% of all AI app events this week. Detected activities span Post, Response, Upload, Delete, CASB API Scan, and Copilot's SubscribedToAIInteractions — a mix of direct prompting and background integration traffic.",
+        "insight": "ChatGPT (246) and Microsoft 365 Copilot (175) together account for 86% of all AI app events in the last 7 days. Detected activities span Post, Response, Upload, Delete, CASB API Scan, and Copilot's SubscribedToAIInteractions — a mix of direct prompting and background integration traffic.",
         "title": "Activity in AI Apps — Event Count by Application",
         "bars": [
           {
@@ -3711,7 +3711,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "line",
         "size": "full",
-        "insight": "ChatGPT and Microsoft 365 Copilot dominate weekly event volume, both trending down slightly week-over-week, while Anthropic Claude is the only app growing. Gemini activity is minimal at the app-event level — though its web-transaction footprint (below) tells a different story.",
+        "insight": "ChatGPT and Microsoft 365 Copilot dominate weekly event volume, both trending down slightly vs. the prior 7 days, while Anthropic Claude is the only app growing. Gemini activity is minimal at the app-event level — though its web-transaction footprint (below) tells a different story.",
         "title": "AI Usage Trend — App Events (weekly)",
         "series": [
           {
@@ -3763,7 +3763,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "hbar",
         "size": "full",
-        "insight": "ChatGPT has both the highest event count (246) and the broadest reach (7 users). Microsoft 365 Copilot's 175 events come from a single user via the SubscribedToAIInteractions integration — machine-driven volume rather than hands-on prompting. The remaining three apps are single- or two-user tools this week.",
+        "insight": "ChatGPT has both the highest event count (246) and the broadest reach (7 users). Microsoft 365 Copilot's 175 events come from a single user via the SubscribedToAIInteractions integration — machine-driven volume rather than hands-on prompting. The remaining three apps are single- or two-user tools in the last 7 days.",
         "title": "Top 10 AI Apps in Use — Event & User Count",
         "bars": [
           {
@@ -3986,7 +3986,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "sankey",
         "size": "full",
-        "insight": "Only two policies touch AI usage this week: the Credit card/GDPR detection on managed ChatGPT Enterprise (233 alert events via CASB API scan) and AI Guardrails (4 block events). Everything else — including all of Microsoft 365 Copilot's integration traffic — flows under No Policy to a default allow. The coverage gap, not the alert volume, is the headline.",
+        "insight": "Only two policies touch AI usage in the last 7 days: the Credit card/GDPR detection on managed ChatGPT Enterprise (233 alert events via CASB API scan) and AI Guardrails (4 block events). Everything else — including all of Microsoft 365 Copilot's integration traffic — flows under No Policy to a default allow. The coverage gap, not the alert volume, is the headline.",
         "title": "Top Policies and Actions Controlling AI Usage"
       },
       {
@@ -4305,7 +4305,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "line",
         "size": "full",
-        "insight": "Daily users of risky AI apps ranged from 0 to 4 this week, peaking at 4 on July 17. The zero-usage day mid-week suggests access is bursty rather than continuous, so point-in-time snapshots understate how many distinct users touch these apps over a full week.",
+        "insight": "Daily users of risky AI apps ranged from 0 to 4 in the last 7 days, peaking at 4 on July 17. The zero-usage day mid-week suggests access is bursty rather than continuous, so point-in-time snapshots understate how many distinct users touch these apps over a full week.",
         "title": "Number of Users Accessing Risky AI Apps",
         "anomalies": [
           {
@@ -4547,7 +4547,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
   "insider-threat": {
     "title": "Insider Threat Dashboard",
     "description": "Insider threat: the risk that never goes away — risky users across intentional risky behavior, potential data loss, and cloud threats. Last 7 days.",
-    "summary": "One user (vsundaram+web@demo-org.com, 37 events) shows risk indicators from all three insider-threat categories this week. Four users uploaded to non-corporate instances without data classification — vsundaram alone accounts for 27 events and 3.15 MB. On the data-loss side, one user ignored coaching and proceeded 16 times, and 15 users triggered DLP violations, led by automation identities (appconnector_user: 163). Cloud threats are limited to two users hitting blocked malicious sites. No shared-credential or compromised-credential alerts this period.",
+    "summary": "One user (vsundaram+web@demo-org.com, 37 events) shows risk indicators from all three insider-threat categories in the last 7 days. Four users uploaded to non-corporate instances without data classification — vsundaram alone accounts for 27 events and 3.15 MB. On the data-loss side, one user ignored coaching and proceeded 16 times, and 15 users triggered DLP violations, led by automation identities (appconnector_user: 163). Cloud threats are limited to two users hitting blocked malicious sites. No shared-credential or compromised-credential alerts this period.",
     "examplePrompts": [
       "Who are the top risky users?",
       "Show UEBA anomaly clusters",
@@ -4566,7 +4566,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "kpi",
         "size": "full",
-        "insight": "vsundaram+web@demo-org.com is the only user with events from all three risk indicator categories (37 events) — the strongest watchlist candidate this week. Four users uploaded to non-corporate instances, and 15 triggered DLP violations. A single user ignored coaching 16 times, which reads as either an unmet business need or a training gap.",
+        "insight": "vsundaram+web@demo-org.com is the only user with events from all three risk indicator categories (37 events) — the strongest watchlist candidate in the last 7 days. Four users uploaded to non-corporate instances, and 15 triggered DLP violations. A single user ignored coaching 16 times, which reads as either an unmet business need or a training gap.",
         "kpis": [
           {
             "label": "Users with All 3 Risk Categories",
@@ -4726,7 +4726,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "table",
         "size": "half",
-        "insight": "One user proceeded past coaching pages 16 times this week. Repeated proceeds indicate either a legitimate business need that should be enabled through an exception, or a user who needs security-awareness training — worth a direct follow-up either way.",
+        "insight": "One user proceeded past coaching pages 16 times in the last 7 days. Repeated proceeds indicate either a legitimate business need that should be enabled through an exception, or a user who needs security-awareness training — worth a direct follow-up either way.",
         "title": "Top 10 Users Choosing to Proceed when Coached",
         "columns": [
           "User",
@@ -4828,7 +4828,7 @@ const DETAILS: Record<string, Omit<ReportDetail, "id">> = {
       {
         "type": "table",
         "size": "half",
-        "insight": "Cloud-threat exposure is contained this week: two users on blocked malicious sites, one user with malware alerts via Enterprise Browser, and no compromised credentials detected for tracked domains. The recommended follow-ups are awareness training and keeping block/quarantine controls in place.",
+        "insight": "Cloud-threat exposure is contained in the last 7 days: two users on blocked malicious sites, one user with malware alerts via Enterprise Browser, and no compromised credentials detected for tracked domains. The recommended follow-ups are awareness training and keeping block/quarantine controls in place.",
         "title": "Cloud Threats — Users by Indicator",
         "columns": [
           "Threat Indicator",

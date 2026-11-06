@@ -104,7 +104,7 @@ export const SEEDED_SESSIONS: PastSession[] = [
     askedAt: ago(1, 6),
     asks: [
       {
-        text: "Compare DLP incidents this week vs. last week",
+        text: "Compare DLP incidents in the last 7 days vs. the prior 7 days",
         responseId: "compare-week",
       },
       { text: "What caused the Saturday spike?", responseId: "rca-saturday" },
