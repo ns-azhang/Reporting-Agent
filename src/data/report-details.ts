@@ -13,7 +13,7 @@
 
 import { expandRows } from "@/data/expand-rows"
 import { APP_DETAILS } from "@/data/report-details-apps"
-import type { Category } from "@/lib/filters"
+import type { Category, DateRange } from "@/lib/filters"
 
 export type Kpi = {
   label: string
@@ -30,6 +30,12 @@ type Base = {
   size?: string
   insight: string
   title?: string
+  /**
+   * The window a chart saved from chat covers. A report scales it from this
+   * rather than from its own default, so a 30-day chart in a 7-day report
+   * isn't read as 7 days' worth.
+   */
+  range?: DateRange
   /** The prompt that produced a chart saved from chat — a question the
       report now answers, for About this report. */
   question?: string

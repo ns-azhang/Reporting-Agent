@@ -35,6 +35,7 @@ import {
   type PastSession,
 } from "@/data/prompt-history"
 import { matchReportByKeyword } from "@/lib/classify-prompt"
+import { dateLabel } from "@/lib/filters"
 import { useChat } from "@/lib/use-chat"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -220,7 +221,12 @@ export function App() {
     })
     addReportDetail(id, {
       title,
-      description: "Created from a chart in a session",
+      // Naming the chart's window here is what makes the report open on it:
+      // its default Date is read from the description, and the window is
+      // dropped again from the line shown under the title.
+      description: `Created from a chart in a session, over the ${dateLabel(
+        widget.range ?? "7d"
+      ).toLowerCase()}.`,
       // Generated below, not authored: the report has no fixed summary.
       summary: "",
       examplePrompts: [],

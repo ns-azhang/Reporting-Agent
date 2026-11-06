@@ -509,8 +509,24 @@ export function filterWidget(
   defaults: FilterValues,
   dims: Dimension[] = []
 ): Widget {
+  // A chart saved from chat scales from the window it was drawn over.
+  if (widget.range) defaults = { ...defaults, date: widget.range }
   if (widget.fixedPeriod) values = { ...values, date: defaults.date }
   if (isDefaultView(values, defaults)) return widget
+  const filtered = scaleWidget(widget, values, defaults, dims)
+  // Its insight names the window it covers ("in the last 7 days"); that has
+  // to follow the Date chip like its figures do.
+  return values.date === defaults.date
+    ? filtered
+    : { ...filtered, insight: retime(filtered.insight, values.date) }
+}
+
+function scaleWidget(
+  widget: Widget,
+  values: FilterValues,
+  defaults: FilterValues,
+  dims: Dimension[]
+): Widget {
   const f = factorsFor(values, defaults, dims)
   switch (widget.type) {
     case "kpi": {
@@ -533,6 +549,22 @@ export function filterWidget(
     default:
       return widget
   }
+}
+
+/** Every rolling window a text names, as the one the Date chip shows. */
+const retime = (text: string, date: DateRange) =>
+  text.replace(
+    /\bthe (?:last|past) \d+ (?:hours|days|months)\b/gi,
+    `the ${DATE_LABELS[date]}`
+  )
+
+const DATE_LABELS: Record<DateRange, string> = {
+  "24h": "last 24 hours",
+  "7d": "last 7 days",
+  "30d": "last 30 days",
+  "60d": "last 60 days",
+  "90d": "last 90 days",
+  "12m": "last 12 months",
 }
 
 /**

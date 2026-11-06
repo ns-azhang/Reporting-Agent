@@ -162,8 +162,8 @@ export function withoutTimeSpan(description: string): string {
   return (
     description
       // "— last 7 days." / "for the last 90 days." / "over the last 7 days."
-      .replace(/\s*[—–-]\s*(?:over |for |in )?(?:the )?last \d+ (?:days|months)\.?$/i, ".")
-      .replace(/\s+(?:over|for|in) the last \d+ (?:days|months)\b/gi, "")
+      .replace(/\s*[—–-]\s*(?:over |for |in )?(?:the )?last \d+ (?:hours|days|months)\.?$/i, ".")
+      .replace(/,?\s+(?:over|for|in) the last \d+ (?:hours|days|months)\b/gi, "")
       // ". Last 7 days." at the end, or ". Last 7 days, X category."
       .replace(/\.\s*Last \d+ (?:days|months)\.$/i, ".")
       .replace(/\.\s*Last \d+ (?:days|months),\s*/i, ". ")
