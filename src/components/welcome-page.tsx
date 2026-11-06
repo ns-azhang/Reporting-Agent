@@ -72,9 +72,9 @@ const SUGGESTED_PROMPTS = [
   { tag: "Malware", text: "Users with most malware blocks", responseId: "soc-weekly-risky-users" },
   { tag: "Risky Sites", text: "Top malicious site categories", responseId: "soc-weekly-categories" },
   { tag: "AI Apps", text: "Top AI apps by users & events", responseId: "ai-risk-top-apps" },
+  { tag: "AI Apps", text: "Policy actions on AI traffic", responseId: "ai-risk-user-activities" },
   { tag: "Data", text: "Top users by upload file size", responseId: "soc-weekly-storage-users" },
   { tag: "Shadow IT", text: "Unsanctioned apps moving files", responseId: "destinations" },
-  { tag: "AI Apps", text: "Policy actions on AI traffic", responseId: "ai-risk-user-activities" },
 ] as const
 
 /** The answer a suggested prompt leads to, when it is sent as written. */
@@ -313,9 +313,14 @@ export function WelcomePage({
                          silently ignored, which is what made these inert. */
                       onClick={() => pick(p.text)}
                     >
-                      <Badge variant="secondary" className="mt-px shrink-0">
-                        {p.tag}
-                      </Badge>
+                      {/* A fixed column, as wide as the widest pill ("Risky
+                          Sites"), so every label starts on the same edge
+                          however long its pill is. */}
+                      <span className="flex w-[76px] shrink-0">
+                        <Badge variant="secondary" className="mt-px">
+                          {p.tag}
+                        </Badge>
+                      </span>
                       <span className="whitespace-normal">{p.text}</span>
                     </DropdownMenuItem>
                   ))}
