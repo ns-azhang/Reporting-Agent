@@ -62,7 +62,7 @@ const POPULAR_REPORTS = [
 const SUGGESTED_PROMPTS = [
   { tag: "Alerts", text: "7-day alert volume by type", responseId: "soc-weekly-categories" },
   { tag: "Alerts", text: "7-day alert volume trend", responseId: "weekly-overview" },
-  { tag: "Blocked", text: "Top blocked apps (last 7 days)", responseId: "soc-weekly-top-apps" },
+  { tag: "Blocked", text: "Top blocked apps in past 7 days?", responseId: "soc-weekly-top-apps" },
   { tag: "DLP", text: "Top users with DLP violations", responseId: "top-users" },
   { tag: "Policies", text: "Top triggered policies & actions", responseId: "soc-policy-actions" },
   { tag: "DLP", text: "App violations by rule severity", responseId: "soc-top-apps" },
